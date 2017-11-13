@@ -4,4 +4,4 @@ app = Bottle()
 
 @app.get('/')
 def viewNewGalleryForm():
-    return "Hello world"
+    return template('index.html')
