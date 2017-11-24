@@ -12,3 +12,6 @@ name = "pypi"
 [packages]
 
 bottle = "*"
+boddle = "*"
+pytest = "*"
+setuptools = "*"
