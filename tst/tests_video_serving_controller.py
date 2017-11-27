@@ -20,8 +20,7 @@ def test_view_index():
 @mock.patch('src.utils.database_utils.get_album_document')
 def test_video_serivng(mocked_database_utils):
     
-    mocked_database_utils.return_value = 
-        {
+    mocked_database_utils.return_value = {
             'album_id' : test_album_id,
             'videos' : 
                 {
