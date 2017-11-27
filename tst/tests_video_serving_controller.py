@@ -10,8 +10,28 @@ sys.path.insert(0,
 from src import video_serving_controller
 
 test_album_id = '1123213'
+test_album_id_2 = '11232dasda'
 test_video_id = '123123'
+test_album_name = 'ala ma kota'
+test_album_name_2 = 'ala ma kota 2'
 test_video_file_path = 'sampleVideo.mp4'
+
+test_album_list = [
+        {
+            '_id' : test_album_id,
+            'album_name' : test_album_name,
+            'videos' : {
+                test_video_id : 'sampleVideo.mp4'
+            }
+        },
+        {
+            'album_id' : test_album_id_2,
+            'album_name' : test_album_name_2,
+            'videos' : {
+                test_video_id : 'sampleVideo.mp4'
+            }
+        }
+    ]
 
 def test_view_index():
     with boddle():
@@ -21,7 +41,8 @@ def test_view_index():
 def test_video_serivng(mocked_database_utils):
     
     mocked_database_utils.return_value = {
-            'album_id' : test_album_id,
+            '_id' : test_album_id,
+            'album_name' : test_album_name,
             'videos' : 
                 {
                     test_video_id :'sampleVideo.mp4'
@@ -30,3 +51,11 @@ def test_video_serivng(mocked_database_utils):
 
     with boddle(method='get', params={'album_id':test_album_id, 'video_id':test_video_id}):
         assert video_serving_controller.view_video_page() == template('video.html', {'video_file_path':test_video_file_path})
+
+
+@mock.patch('src.utils.database_utils.get_all_album_documents')
+def test_get_list_of_albums(mocked_database_utils):
+    mocked_database_utils.return_value = test_album_list
+
+    with boddle(method='get'):
+        assert video_serving_controller.view_album_list() == template('albums.html', {'albums' : [test_album_name, test_album_name_2]})

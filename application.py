@@ -1,14 +1,12 @@
 import bottle
 
-from src import videoServingController
-from src import videoUploadingController
+from src import video_serving_controller
 
-from static import staticServingController
+from static import static_content_serving_controller
 
 def main():
-    bottle.mount('show', videoServingController.app)
-    bottle.mount('upload', videoUploadingController.app)
-    bottle.mount('static/', staticServingController.app)
+    bottle.mount('show', video_serving_controller.app)
+    bottle.mount('static/', static_content_serving_controller.app)
     bottle.run(host='0.0.0.0', port=8080, debug=True)
 
 if __name__ == "__main__":
