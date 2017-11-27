@@ -1,2 +1,5 @@
 # exclude all .pyc files
 *.pyc 
+
+#folders
+.cache/*
