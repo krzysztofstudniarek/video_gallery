@@ -3,3 +3,9 @@
 
 #folders
 .cache/*
+
+# exclude everything
+videos/*
+
+# exception to the rule
+!videos/.gitkeep
