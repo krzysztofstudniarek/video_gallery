@@ -16,7 +16,8 @@ def view_new_album_form():
 @app.post('/new_album')
 def create_new_album():
     videos = _extract_videos_from_request(request)
-    print database_utils.save_album_document(videos)
+    album_name = _extract_album_name_from_request(request)
+    print database_utils.save_album_document(videos, album_name)
     return template('index.html')
 
 @app.get('/upload')
@@ -33,3 +34,6 @@ def _get_video_file_names_from_directory():
 
 def _extract_videos_from_request(request):
     return request.forms.getlist('videos[]')
+
+def _extract_album_name_from_request(request):
+    return request.forms.get('album_name')

@@ -22,7 +22,7 @@ def view_video_page():
 @app.get('/albums')
 def view_album_list():
     album_documents = database_utils.get_all_album_documents()
-
+    print album_documents
     view_data = {
         'albums' : map(lambda x: x['album_name'], album_documents)
     }
