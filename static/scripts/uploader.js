@@ -1,7 +1,7 @@
 var uploader = new plupload.Uploader({
 browse_button: 'browse', // this can be an id of a DOM element or the DOM element itself
 container: document.getElementById('container'), 
-url: 'upload'
+url: '/add/upload'
 });
 
 uploader.init();
