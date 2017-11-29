@@ -8,3 +8,10 @@ def get_album_document(album_id):
 
 def get_all_album_documents():
     return db.view('_all_docs', include_docs=True)
+
+def save_album_document(videos, album_name):
+    album_document = {
+        'album_name' : album_name,
+        'videos' : videos
+    }
+    return db.save(album_document)
