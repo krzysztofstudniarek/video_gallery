@@ -13,3 +13,6 @@ def test_static_files_serving():
 
 def test_video_serving():
     assert static_content_serving_controller.serve_videos('sampleVideo.mp4').status_code == 200
+
+def test_script_serving():
+    assert static_content_serving_controller.serve_scripts('uploader.js').status_code == 200
