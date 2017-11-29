@@ -8,8 +8,11 @@ sys.path.insert(0,
 
 from static import static_content_serving_controller
 
-def test_static_files_serving():
-    assert static_content_serving_controller.serve_staic_files('style.css').status_code == 200
+def test_style_files_serving():
+    assert static_content_serving_controller.serve_style_files('style.css').status_code == 200
+
+def test_image_files_serving():
+    assert static_content_serving_controller.serve_image_files('img.css').status_code == 404
 
 def test_video_serving():
     assert static_content_serving_controller.serve_videos('sampleVideo.mp4').status_code == 200
