@@ -5,7 +5,7 @@
 .cache/*
 
 # exclude everything
-videos/*
+static/videos/*
 
 # exception to the rule
-!videos/.gitkeep
+!static/videos/.gitkeep
