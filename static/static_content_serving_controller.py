@@ -10,9 +10,9 @@ def serve_style_files(filename):
 def serve_image_files(filename):
     return static_file(filename, root='static/images')
 
-@app.route('/videos/<filename>')
-def serve_videos(filename):
-    return static_file(filename, root='videos/')
+@app.route('/videos/<album_id>/<filename>')
+def serve_videos(album_id,filename):
+    return static_file(filename, root='static/videos/'+album_id+'/')
 
 @app.route('/scripts/<filename>')
 def serve_scripts(filename):

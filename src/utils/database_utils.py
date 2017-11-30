@@ -10,9 +10,9 @@ def get_all_album_documents():
     documents = db.view('_all_docs', include_docs=True)
     return [row.doc for row in documents]
 
-def save_album_document(videos, album_name):
+def save_album_document(album_name):
     album_document = {
         'album_name' : album_name,
-        'videos' : videos
+        'videos' : []
     }
     return db.save(album_document)

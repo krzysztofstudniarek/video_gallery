@@ -1,5 +1,6 @@
 from bottle import Bottle, template, get, request
 from utils import database_utils
+from os import path
 
 app = Bottle()
 
@@ -10,11 +11,10 @@ def view_index_page():
 @app.get('/video')
 def view_video_page():
     album_id = request.params['album_id']
-    video_id = request.params['video_id']
-    album_document = database_utils.get_album_document(album_id)
+    video_name = request.params['video_name']
     
     view_data = {
-        'video_file_path' : album_document['videos'][str(video_id)]
+        'video_file_path' : album_id+'/'+video_name
     }
 
     return template('video.html', view_data)
@@ -22,7 +22,7 @@ def view_video_page():
 @app.get('/albums')
 def view_album_list():
     album_documents = database_utils.get_all_album_documents()
-    print album_documents
+    
     view_data = {
         'albums' : map(lambda x: x['album_name'], album_documents)
     }

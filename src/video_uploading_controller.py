@@ -8,16 +8,12 @@ app = Bottle()
 
 @app.get('/new_album')
 def view_new_album_form():
-    view_data = {
-        'videos' : _get_video_file_names_from_directory()
-    }
-    return template('newAlbum.html',view_data)
+    return template('newAlbum.html')
 
 @app.post('/new_album')
 def create_new_album():
-    videos = _extract_videos_from_request(request)
     album_name = _extract_album_name_from_request(request)
-    print database_utils.save_album_document(videos, album_name)
+    print database_utils.save_album_document(album_name)
     return template('index.html')
 
 @app.get('/upload')
@@ -26,11 +22,9 @@ def view_upload_video_form():
 
 @app.post('/upload')
 def upload_new_video(): 
-    path = getcwd() + '/videos'
+    print request.forms.get('album_id')
+    path = getcwd() + '/static/videos/' + request.forms.get('album_id') + '/'
     return plupload.save(request.forms, request.files, path)
-
-def _get_video_file_names_from_directory():
-    return [f for f in listdir(getcwd() + '/videos') if isfile(join(getcwd() + '/videos', f)) and f != '.gitkeep']
 
 def _extract_videos_from_request(request):
     return request.forms.getlist('videos[]')
