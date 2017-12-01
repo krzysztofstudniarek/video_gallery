@@ -3,6 +3,7 @@
 </head>
 <body>
     <h1>Videos in album {{album_name}}</h1>
+    <a href="/add/upload?album_id={{album_id}}">Upload new Video</a>
     <ul>
     % for video in videos:
         <li>{{video}}</li>

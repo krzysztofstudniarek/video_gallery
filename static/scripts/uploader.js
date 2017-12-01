@@ -3,7 +3,7 @@ var uploader = new plupload.Uploader({
     container: document.getElementById('container'), 
     url: '/add/upload',
     multipart_params : {
-        "album_id" : "03906417f65665185d96ef53c40012c1"
+        "album_id" : document.getElementById("album_id").innerText
     }
 });
 

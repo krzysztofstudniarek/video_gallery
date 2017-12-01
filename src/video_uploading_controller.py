@@ -1,6 +1,6 @@
 from bottle import Bottle, template, get, request
-from os import getcwd, listdir
-from os.path import isfile, join
+from os import getcwd, listdir, makedirs
+from os.path import isfile, join, exists
 from plupload import plupload
 from utils import database_utils
 
@@ -18,12 +18,17 @@ def create_new_album():
 
 @app.get('/upload')
 def view_upload_video_form():
-    return template('upload.html')
+    album_id = request.params['album_id']
+    view_data = {
+        'album_id' : album_id
+    }
+    return template('upload.html', view_data)
 
 @app.post('/upload')
 def upload_new_video(): 
-    print request.forms.get('album_id')
     path = getcwd() + '/static/videos/' + request.forms.get('album_id') + '/'
+    if not exists(path):
+        makedirs(path)
     return plupload.save(request.forms, request.files, path)
 
 def _extract_videos_from_request(request):
