@@ -8,7 +8,7 @@ def get_album_document(album_id):
 
 def get_all_album_documents():
     documents = db.view('_all_docs', include_docs=True)
-    return [row.doc for row in documents]
+    return [{'album_name' : row.doc['album_name'], 'id' : row.doc.id, 'videos': row.doc['videos']} for row in documents]
 
 def save_album_document(album_name):
     album_document = {

@@ -22,9 +22,8 @@ def view_video_page():
 @app.get('/albums')
 def view_album_list():
     album_documents = database_utils.get_all_album_documents()
-    
     view_data = {
-        'albums' : map(lambda x: x['album_name'], album_documents)
+        'albums' : map(lambda x: {'name' : x['album_name'], 'id' : x['id']}, album_documents)
     }
 
     return template('albums.html', view_data)

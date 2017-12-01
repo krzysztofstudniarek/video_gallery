@@ -3,6 +3,7 @@ import mock
 import sys, os
 from bottle import template
 from boddle import boddle
+from couchdb.client import Document
 
 sys.path.insert(0,
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -15,18 +16,19 @@ test_album_name = 'ala ma kota'
 test_album_name_2 = 'ala ma kota 2'
 test_video_file_path = 'sampleVideo.mp4'
 
-test_album_list = [
-        {
-            '_id' : test_album_id,
+test_album_documet = {
+            'id' : test_album_id,
             'album_name' : test_album_name,
             'videos' : [test_video_file_path]
-        },
-        {
-            'album_id' : test_album_id_2,
+        }
+
+test_album_documet_2 = {
+            'id' : test_album_id_2,
             'album_name' : test_album_name_2,
             'videos' : [test_video_file_path]
         }
-    ]
+
+test_album_list = [test_album_documet, test_album_documet_2]
 
 def test_view_index():
     with boddle():
@@ -46,10 +48,22 @@ def test_video_serivng(mocked_database_utils):
 
 @mock.patch('src.utils.database_utils.get_all_album_documents')
 def test_get_list_of_albums(mocked_database_utils):
+    
     mocked_database_utils.return_value = test_album_list
 
     with boddle(method='get'):
-        assert video_serving_controller.view_album_list() == template('albums.html', {'albums' : [test_album_name, test_album_name_2]})
+        assert video_serving_controller.view_album_list() == template('albums.html', {
+            'albums' : [
+                {
+                    'name': test_album_name,
+                    'id': test_album_id
+                },
+                { 
+                    'name': test_album_name_2,
+                    'id' : test_album_id_2
+                }
+            ]
+        })
 
 @mock.patch('src.utils.database_utils.get_album_document')
 def test_get_list_of_videos(mocked_database_utils):

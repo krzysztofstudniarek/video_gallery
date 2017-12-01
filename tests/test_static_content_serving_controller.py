@@ -12,10 +12,10 @@ def test_style_files_serving():
     assert static_content_serving_controller.serve_style_files('style.css').status_code == 200
 
 def test_image_files_serving():
-    assert static_content_serving_controller.serve_image_files('img.css').status_code == 404
+    assert static_content_serving_controller.serve_image_files('img.jpg').status_code == 404
 
 def test_video_serving():
-    assert static_content_serving_controller.serve_videos('03906417f65665185d96ef53c40012c1','sampleVideo.mp4').status_code == 200
+    assert static_content_serving_controller.serve_videos('03906417f65665185d96ef53c40012c1','sampleVideo.mp4').status_code == 404
 
 def test_script_serving():
     assert static_content_serving_controller.serve_scripts('uploader.js').status_code == 200
