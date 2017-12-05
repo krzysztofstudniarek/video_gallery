@@ -17,5 +17,8 @@ def test_image_files_serving():
 def test_video_serving():
     assert static_content_serving_controller.serve_videos('03906417f65665185d96ef53c40012c1','sampleVideo.mp4').status_code == 404
 
+def test_qr_serving():
+    assert static_content_serving_controller.serve_qrs('03906417f65665185d96ef53c40012c1','sampleVideo.jpg').status_code == 404
+
 def test_script_serving():
     assert static_content_serving_controller.serve_scripts('uploader.js').status_code == 200

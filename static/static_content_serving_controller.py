@@ -15,7 +15,7 @@ def serve_videos(album_id,filename):
     return static_file(filename, root='static/videos/'+album_id+'/')
 
 @app.route('/qr/<album_id>/<filename>')
-def serve_videos(album_id,filename):
+def serve_qrs(album_id,filename):
     return static_file(filename, root='static/qr_images/'+album_id+'/')
 
 @app.route('/scripts/<filename>')
