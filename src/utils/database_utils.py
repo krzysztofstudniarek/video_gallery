@@ -15,3 +15,6 @@ def save_album_document(album_name):
         'album_name' : album_name
     }
     return db.save(album_document)
+
+
+#http://localhost:8080/show/video?album_id=03906417f65665185d96ef53c4005555&video_name=SampleVideo.mp4

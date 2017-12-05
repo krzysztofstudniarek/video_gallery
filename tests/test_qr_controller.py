@@ -1,5 +1,6 @@
 import mock
 import sys, os
+import shutil
 from os import makedirs, rmdir
 from os.path import exists, dirname, abspath
 from bottle import template
@@ -36,6 +37,5 @@ def setup_module(module):
     open('static/videos/'+test_album_id+'/vid3.mp4', 'a').close()
 
 def teardown_module(module):
-    rmdir('static/videos/' + test_album_id + '/')
-    rmdir('static/qr_images/' + test_album_id + '/')
-    rmdir('static/videos/'+test_album_id+'/')
+    shutil.rmtree('static/videos/' + test_album_id + '/')
+    shutil.rmtree('static/qr_images/' + test_album_id + '/')
