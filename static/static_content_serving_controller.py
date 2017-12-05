@@ -14,6 +14,10 @@ def serve_image_files(filename):
 def serve_videos(album_id,filename):
     return static_file(filename, root='static/videos/'+album_id+'/')
 
+@app.route('/qr/<album_id>/<filename>')
+def serve_videos(album_id,filename):
+    return static_file(filename, root='static/qr_images/'+album_id+'/')
+
 @app.route('/scripts/<filename>')
 def serve_scripts(filename):
     return static_file(filename, root='static/scripts/')

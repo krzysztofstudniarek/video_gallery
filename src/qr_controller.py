@@ -12,7 +12,7 @@ def generate_qr_codes():
     videos_names = _get_videos_names(album_id)
     print videos_names
     qr_images = map(lambda name: _prepare_qr_code(album_id, name), videos_names)
-    return template('qr.html', {'qr_images' : qr_images})
+    return template('qr.html', {'album_id' : album_id, 'qr_images' : qr_images})
 
 def _get_videos_names(album_id):
     path = 'static/videos/'+album_id+'/'
@@ -37,5 +37,3 @@ def _initailize_directory(path):
 
 def _get_url_to_video(album_id, video_name):
     return 'http://localhost:8080/show/video?album_id='+album_id+'&video_name='+video_name
-
-#http://localhost:8080/show/video?album_id=03906417f65665185d96ef53c4005555&video_name=SampleVideo.mp4
