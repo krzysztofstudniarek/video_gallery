@@ -38,3 +38,4 @@ def setup_module(module):
 def teardown_module(module):
     rmdir('static/videos/' + test_album_id + '/')
     rmdir('static/qr_images/' + test_album_id + '/')
+    rmdir('static/videos/'+test_album_id+'/')
