@@ -3,6 +3,7 @@ from os import getcwd, listdir, makedirs
 from os.path import isfile, join, exists
 from plupload import plupload
 from utils import database_utils
+from utils import filesystem_utils
 
 app = Bottle()
 
@@ -27,8 +28,7 @@ def view_upload_video_form():
 @app.post('/upload')
 def upload_new_video(): 
     path = getcwd() + '/static/videos/' + request.forms.get('album_id') + '/'
-    if not exists(path):
-        makedirs(path)
+    filesystem_utils.initailize_directory(path)
     return plupload.save(request.forms, request.files, path)
 
 def _extract_videos_from_request(request):

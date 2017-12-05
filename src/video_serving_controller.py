@@ -1,8 +1,5 @@
 from bottle import Bottle, template, get, request
-from utils import database_utils
-from os import listdir
-from os.path import isfile, join
-
+from utils import database_utils, filesystem_utils
 
 app = Bottle()
 
@@ -38,11 +35,7 @@ def view_videos_list():
     view_data = {
         'album_name' : album_document['album_name'],
         'album_id' : album_id,
-        'videos' : _get_videos_names(album_id)
+        'videos' : filesystem_utils.get_videos_names(album_id)
     }
 
     return template('videos.html', view_data)
-
-def _get_videos_names(album_id):
-    path = 'static/videos/'+album_id+'/'
-    return [f for f in listdir(path) if isfile(join(path, f))]
