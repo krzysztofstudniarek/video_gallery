@@ -15,8 +15,7 @@ def view_new_album_form():
 def create_new_album():
     album_name = _extract_album_name_from_request(request)
     album_id, album_doc_rev = database_utils.save_album_document(album_name)
-    path = _get_videos_directory(album_id)
-    filesystem_utils.initailize_directory(path)
+
 
     view_data = {
         'album_name' : album_name,
@@ -38,6 +37,10 @@ def view_upload_video_form():
 def upload_new_video(): 
     path = _get_videos_directory(request.forms.get('album_id'))
     return plupload.save(request.forms, request.files, path)
+
+def _initailize_videos_directory(album_id):
+    path = _get_videos_directory(album_id)
+    filesystem_utils.initailize_directory(path)
 
 def _get_videos_directory(album_id):
     return getcwd() + '/static/videos/' + album_id + '/'
