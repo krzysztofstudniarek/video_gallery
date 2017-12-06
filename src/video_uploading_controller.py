@@ -9,12 +9,12 @@ app = Bottle()
 
 @app.get('/new_album')
 def view_new_album_form():
-    return template('newAlbum.html')
+    return template('add_views/newAlbum.html')
 
 @app.post('/new_album')
 def create_new_album():
     album_name = _extract_album_name_from_request(request)
-    print database_utils.save_album_document(album_name)
+    database_utils.save_album_document(album_name)
     return template('index.html')
 
 @app.get('/upload')
@@ -23,7 +23,7 @@ def view_upload_video_form():
     view_data = {
         'album_id' : album_id
     }
-    return template('upload.html', view_data)
+    return template('add_views/upload.html', view_data)
 
 @app.post('/upload')
 def upload_new_video(): 

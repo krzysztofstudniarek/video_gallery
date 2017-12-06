@@ -16,7 +16,7 @@ def view_video_page():
         'video_file_path' : album_id+'/'+video_name
     }
 
-    return template('video.html', view_data)
+    return template('show_views/video.html', view_data)
 
 @app.get('/albums')
 def view_album_list():
@@ -25,7 +25,7 @@ def view_album_list():
         'albums' : album_documents
     }
 
-    return template('albums.html', view_data)
+    return template('show_views/albums.html', view_data)
 
 @app.get('/videos')
 def view_videos_list():
@@ -38,4 +38,4 @@ def view_videos_list():
         'videos' : filesystem_utils.get_videos_names(album_id)
     }
 
-    return template('videos.html', view_data)
+    return template('show_views/videos.html', view_data)

@@ -18,11 +18,11 @@ def test_new_album_form_page():
         view_data = {
             'videos' : ['SampleVideo.mp4']
         }
-        assert video_uploading_controller.view_new_album_form() == template('newAlbum.html', view_data)
+        assert video_uploading_controller.view_new_album_form() == template('add_views/newAlbum.html', view_data)
 
 def test_video_upload_view():
     with boddle(method='get', params={'album_id':test_ablum_id}):
-        assert video_uploading_controller.view_upload_video_form() == template('upload.html', {'album_id' : test_ablum_id})
+        assert video_uploading_controller.view_upload_video_form() == template('add_views/upload.html', {'album_id' : test_ablum_id})
 
 
 @mock.patch('src.utils.database_utils.save_album_document')

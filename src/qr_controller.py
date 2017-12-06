@@ -16,7 +16,7 @@ def generate_qr_codes():
     videos_names = filesystem_utils.get_videos_names(album_id)
     print videos_names
     qr_images = map(lambda name: _prepare_qr_code(album_id, name), videos_names)
-    return template('qr.html', {'album_id' : album_id, 'qr_images' : qr_images})
+    return template('qr_views/qr.html', {'album_id' : album_id, 'qr_images' : qr_images})
 
 def _prepare_qr_code(album_id, video_name):
     url = _get_show_video_url(album_id, video_name)
