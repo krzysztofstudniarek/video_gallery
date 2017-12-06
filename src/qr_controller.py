@@ -1,10 +1,14 @@
 import qrcode
+import yaml
+
 from bottle import Bottle, template, request
 from utils import filesystem_utils
 from os import getcwd
 from os.path import splitext
 
 app = Bottle()
+with open('configuration/config.yaml', 'r') as ymlfile:
+    config = yaml.load(ymlfile)
 
 @app.get('/generate')
 def generate_qr_codes():
@@ -28,4 +32,4 @@ def _generate_qr_image(url, qr_path):
     img.close()
 
 def _get_show_video_url(album_id, video_name):
-    return 'http://localhost:8080/show/video?album_id='+album_id+'&video_name='+video_name
+    return 'http://'+str(config['general']['hostname'])+':'+str(config['general']['port'])+'/show/video?album_id='+album_id+'&video_name='+video_name

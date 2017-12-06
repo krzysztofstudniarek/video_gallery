@@ -7,7 +7,9 @@
 # exclude everything
 static/videos/*
 static/qr_images/*
+configuration/*
 
 # exception to the rule
 !static/videos/.gitkeep
 !static/qr_images/.gitkeep
+!configuration/.gitkeep

@@ -1,7 +1,11 @@
+import yaml
 from couchdb import Server
 
-couch = Server('http://0.0.0.0:5984/')
-db = couch['albums']
+with open('configuration/config.yaml', 'r') as ymlfile:
+    config = yaml.load(ymlfile)
+
+couch = Server(config['couchdb']['server'])
+db = couch[config['couchdb']['database']]
 
 def get_album_document(album_id):
     return db.get(album_id, include_docs=True)
