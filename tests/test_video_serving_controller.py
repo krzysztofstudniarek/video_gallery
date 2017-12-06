@@ -1,6 +1,7 @@
 import pytest
 import mock
 import sys
+import shutil
 from os import makedirs, rmdir
 from os.path import exists, dirname, abspath
 from bottle import template
@@ -62,4 +63,4 @@ def setup_module(module):
         makedirs('static/videos/'+test_album_id+'/')
 
 def teardown_module(module):
-    rmdir('static/videos/'+test_album_id+'/')
+    shutil.rmtree('static/videos/'+test_album_id+'/')
