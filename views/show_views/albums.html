@@ -1,11 +1,12 @@
-<head>
-
-</head>
+%include('head.html')
 <body>
-    <h1>Albums</h1>
-    <ul>
-    % for album in albums:
-        <li><a href="/show/videos?album_id={{album['id']}}">{{album['album_name']}}</a></li>
-    % end
-    </ul>
+    % include('navbar.html')
+    <div class="container">
+        <h1>List of all Albums: </h1>
+        <div class="list-group">
+        % for album in albums:
+            <a href="/show/videos?album_id={{album['id']}}" class="list-group-item list-group-item-action">{{album['album_name']}}</a>
+        % end
+        </div>
+    </div>
 </body>

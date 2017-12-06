@@ -1,14 +1,16 @@
-<head>
-    <script src="https://cdn.rawgit.com/JonathanHuot/bottlepy-plupload/fe5ffa11/js/plupload.full.min.js"></script>
-</head>
+%include('head.html')
 <body>
-    <h1>Upload Videos</h1>
-    <h3>Album ID: </h3><h4 id="album_id">{{album_id}}</h4>
-    <ul id="filelist"></ul>
+    % include('navbar.html')
+    <script src="https://cdn.rawgit.com/JonathanHuot/bottlepy-plupload/fe5ffa11/js/plupload.full.min.js"></script>
+    <div class="container">
+        <h1>Upload Videos</h1>
+        <h4>Album ID: </h4><h4 id="album_id">{{album_id}}</h4>
+        <ul class="list-group" id="filelist"></ul>
 
-    <div id="container">
-        <a id="browse" href="javascript:;">[Browse...]</a>
-        <a id="start-upload" href="javascript:;">[Start Upload]</a>
+        <div id="container">
+            <a id="browse" class="btn btn-default" href="javascript:;">[Browse...]</a>
+            <a id="start-upload" class="btn btn-default" href="javascript:;">[Start Upload]</a>
+        </div>
     </div>
     <script src="/static/scripts/uploader.js"></script>
 </body>
