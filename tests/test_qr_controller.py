@@ -19,10 +19,14 @@ test_album_documet = {
             'album_name' : test_album_name
         }
 
+def test_qr_code_generation_form():
+    with boddle(method='get', params={'album_id':test_album_id}):
+        assert qr_controller.show_qr_generation_form() == template('qr_views/qr_form.html', { 'album_id' : test_album_id})
+
 @mock.patch('src.utils.database_utils.get_album_document')
 def test_qr_code_generationw(mocked_database_utils):
     mocked_database_utils.return_value = test_album_documet
-    with boddle(method='get', params={'album_id':test_album_id}):
+    with boddle(method='post', params={'album_id':test_album_id, 'palettes' : 'plain_black'}):
         assert qr_controller.generate_qr_codes() == template('qr_views/qr.html', { 'album_id' : test_album_id, 'qr_images' : qr_codes_list})
         assert exists('static/qr_images/'+test_album_id+'/vid1.jpg')
         assert exists('static/qr_images/'+test_album_id+'/vid2.jpg')

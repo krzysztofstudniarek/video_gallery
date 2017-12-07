@@ -56,7 +56,7 @@ def test_get_list_of_albums(mocked_database_utils):
 def test_get_list_of_videos(mocked_database_utils):
     mocked_database_utils.return_value = test_album_documet
     with boddle(method='get', params={'album_id':test_album_id}):
-        assert video_serving_controller.view_videos_list() == template('show_views/videos.html', {'album_id': test_album_id, 'album_name' : test_album_name, 'videos' : []})
+        assert video_serving_controller.view_videos_list() == template('show_views/album_details.html', {'album_id': test_album_id, 'album_name' : test_album_name, 'videos' : []})
 
 def setup_module(module):
     if not exists('static/videos/'+test_album_id+'/'):

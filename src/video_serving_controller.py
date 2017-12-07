@@ -27,7 +27,7 @@ def view_album_list():
 
     return template('show_views/albums.html', view_data)
 
-@app.get('/videos')
+@app.get('/details')
 def view_videos_list():
     album_id = request.params['album_id']
     album_document = database_utils.get_album_document(album_id)
@@ -38,4 +38,4 @@ def view_videos_list():
         'videos' : filesystem_utils.get_videos_names(album_id)
     }
 
-    return template('show_views/videos.html', view_data)
+    return template('show_views/album_details.html', view_data)

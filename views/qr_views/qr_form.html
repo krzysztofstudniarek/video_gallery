@@ -1,0 +1,15 @@
+%include('head.html')
+<body>
+    % include('navbar.html')
+    <div class="container">
+        <h3>Select color pallete: </h3>
+        <form action="generate" method="POST">
+            <input type="hidden" class="form-control" name="album_id" value="{{album_id}}"></input>
+            <div class="radio">
+                <label><input type="radio" name="palettes" value="plain_black"><img height="20px" src="/static/images/plain_black.png"></img>&emsp; Plain Black</label></br>
+                <label><input type="radio" name="palettes" value="thought_provoking"><img height="20px" src="/static/images/thought_provoking.png"></img>&emsp; Thought Provoking</label>
+            </div>
+            <button type="submit" class="btn btn-default">Generate QR codes</button>
+        </form>
+    </div>
+</body>

@@ -36,7 +36,7 @@ def test_video_upload_view():
 def test_album_creation(mocked_database_utils):
     mocked_database_utils.return_value = test_album_id, test_album_doc_rev
     with boddle(method='post', params={'album_name':test_album_name}):
-        assert video_uploading_controller.create_new_album() == template('show_views/videos.html', test_videos_view_data)
+        assert video_uploading_controller.create_new_album() == template('show_views/album_details.html', test_videos_view_data)
         assert _was_folder_created(test_album_id)
         mocked_database_utils.assert_called_once()
 

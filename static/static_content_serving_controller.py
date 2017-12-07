@@ -8,6 +8,7 @@ def serve_style_files(filename):
 
 @app.route('/images/<filename>')
 def serve_image_files(filename):
+    print(filename)
     return static_file(filename, root='static/images')
 
 @app.route('/videos/<album_id>/<filename>')

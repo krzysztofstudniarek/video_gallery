@@ -23,7 +23,7 @@ def create_new_album():
         'videos' : filesystem_utils.get_videos_names(album_id)
     }
 
-    return template('show_views/videos.html', view_data)
+    return template('show_views/album_details.html', view_data)
 
 @app.get('/upload')
 def view_upload_video_form():
