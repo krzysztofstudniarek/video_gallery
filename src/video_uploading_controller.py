@@ -15,7 +15,7 @@ def view_new_album_form():
 def create_new_album():
     album_name = _extract_album_name_from_request(request)
     album_id, album_doc_rev = database_utils.save_album_document(album_name)
-
+    _initailize_videos_directory(album_id)
 
     view_data = {
         'album_name' : album_name,
