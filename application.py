@@ -16,7 +16,7 @@ def main():
     app.mount('add', video_uploading_controller.app)
     app.mount('qr', qr_controller.app)
     app.mount('static/', static_content_serving_controller.app)
-    app.run(host=config['general']['hostname'], port=config['general']['port'], debug=True)
+    app.run(host=config['general']['host'], port=config['general']['port'], debug=True)
 
 if __name__ == "__main__":
     main()

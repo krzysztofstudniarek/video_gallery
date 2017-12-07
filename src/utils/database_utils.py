@@ -5,17 +5,25 @@ with open('configuration/config.yaml', 'r') as ymlfile:
     config = yaml.load(ymlfile)
 
 couch = Server(config['couchdb']['server'])
-db = couch[config['couchdb']['database']]
+
 
 def get_album_document(album_id):
-    return db.get(album_id, include_docs=True)
+    return _get_doc_database().get(album_id, include_docs=True)
 
 def get_all_album_documents():
-    documents = db.view('_all_docs', include_docs=True)
+    documents = _get_doc_database().view('_all_docs', include_docs=True)
     return [{'album_name' : row.doc['album_name'], 'id' : row.doc.id} for row in documents]
 
 def save_album_document(album_name):
     album_document = {
         'album_name' : album_name
     }
-    return db.save(album_document)
+    return _get_doc_database().save(album_document)
+
+def _get_doc_database():
+    try:
+        db = couch[config['couchdb']['database']]
+    except:
+        db = couch.create(config['couchdb']['database'])
+
+    return db
