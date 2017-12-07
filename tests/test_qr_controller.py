@@ -1,6 +1,8 @@
 import mock
 import sys, os
 import shutil
+import yaml
+
 from os import makedirs, rmdir
 from os.path import exists, dirname, abspath
 from bottle import template
@@ -8,6 +10,9 @@ from boddle import boddle
 
 sys.path.insert(0,
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+with open('configuration/config.yaml', 'r') as ymlfile:
+    config = yaml.load(ymlfile)
 
 from src import qr_controller
 
@@ -21,7 +26,11 @@ test_album_documet = {
 
 def test_qr_code_generation_form():
     with boddle(method='get', params={'album_id':test_album_id}):
-        assert qr_controller.show_qr_generation_form() == template('qr_views/qr_form.html', { 'album_id' : test_album_id})
+        view_data =  { 
+            'album_id' : test_album_id,
+            'palettes' : config['palettes']
+        }
+        assert qr_controller.show_qr_generation_form() == template('qr_views/qr_form.html',view_data)
 
 @mock.patch('src.utils.database_utils.get_album_document')
 def test_qr_code_generationw(mocked_database_utils):

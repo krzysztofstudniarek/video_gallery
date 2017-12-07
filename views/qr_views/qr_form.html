@@ -6,8 +6,14 @@
         <form action="generate" method="POST">
             <input type="hidden" class="form-control" name="album_id" value="{{album_id}}"></input>
             <div class="radio">
-                <label><input type="radio" name="palettes" value="plain_black"><img height="20px" src="/static/images/plain_black.png"></img>&emsp; Plain Black</label></br>
-                <label><input type="radio" name="palettes" value="thought_provoking"><img height="20px" src="/static/images/thought_provoking.png"></img>&emsp; Thought Provoking</label>
+                % for palette in palettes:
+                    <label>
+                        <input type="radio" name="palettes" value="{{palette}}">
+                        <img height="20px" widht="100px" src="/static/images/{{palettes[palette]['img']}}"></img>
+                        &emsp; {{palettes[palette]['name']}}
+                    </label>
+                    <br>
+                % end
             </div>
             <button type="submit" class="btn btn-default">Generate QR codes</button>
         </form>
