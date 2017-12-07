@@ -26,7 +26,7 @@ uploader.bind('UploadProgress', function(up, file) {
 
 uploader.bind('FileUploaded', function(Up, File, Response) {
     if( uploader.total.uploaded == uploader.files.length){
-        window.location.href = '/show/videos?album_id='.concat(document.getElementById("album_id").innerText);
+        window.location.href = '/show/details?album_id='.concat(document.getElementById("album_id").innerText);
     }
 });
 
