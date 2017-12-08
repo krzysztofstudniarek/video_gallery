@@ -1,0 +1,16 @@
+% include('head.html')
+<body>
+    % include('navbar.html')
+    <div class="container">
+        % if defined('success'):
+            <div class="alert alert-success">
+                <strong>Success!</strong> {{success}}
+            </div>
+        % end
+        % if defined('error'):
+            <div class="alert alert-danger">
+                <strong>Error!</strong> {{error}}
+            </div>
+        % end
+    </div>
+</body>

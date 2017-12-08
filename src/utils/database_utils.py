@@ -17,15 +17,28 @@ def save_album_document(album_name):
     album_document = {
         'album_name' : album_name
     }
-    return _get_doc_database().save(album_document)
+    return _get_doc_database(config['couchdb']['database']).save(album_document)
 
 def get_user(username):
     db = _get_doc_database(config['couchdb']['auth_database'])
     docs =  db.view('_all_docs', include_docs=True)
     users = [ _get_credentials_from_doc(document) for document in docs if (document.doc['username'] == username)]
     if len(users) == 0 :
-        raise Exception(format('no user with username {}', username))
+        raise Exception('no user with username' + username)
     return users[0]
+
+def get_all_usernames():
+    db = _get_doc_database(config['couchdb']['auth_database'])
+    docs = db.view('_all_docs', include_docs=True)
+    return [ document.doc['username'] for document in docs ]
+
+def save_user_to_database(username, password):
+    db = _get_doc_database(config['couchdb']['auth_database'])
+    user_document = {
+        'username' : username,
+        'password' : password
+    }
+    return db.save(user_document)
 
 def _get_credentials_from_doc(document):
     return {

@@ -8,6 +8,6 @@ sys.path.insert(0,
 
 from src import index_controller
 
-def test_style_files_serving():
+def test_index_page_serving():
     with boddle(method='get'):
         assert index_controller.serve_index_page() == template('index.html')

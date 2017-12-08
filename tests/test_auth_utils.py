@@ -17,7 +17,6 @@ def test_user_with_correct_password_is_authenticated(mocked_database_utils):
     mocked_database_utils.return_value = test_user
     assert auth_utils.authenticate('test', 'stud') == True
 
-
 @mock.patch('src.utils.database_utils.get_user')
 def test_user_with_incorect_password_is_not_authenticated(mocked_database_utils):
     mocked_database_utils.return_value = test_user
