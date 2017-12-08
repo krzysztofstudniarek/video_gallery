@@ -1,4 +1,5 @@
 import pytest
+import base64
 import mock
 import sys
 import shutil
@@ -31,6 +32,11 @@ test_album_documet_2 = {
 
 test_album_list = [test_album_documet, test_album_documet_2]
 
+auth_header = {
+                'Authorization': 'Basic ' + base64.b64encode('stud' + \
+                ":" + 'stud')
+}
+
 def test_view_index():
     with boddle():
         assert video_serving_controller.view_index_page() == template('index.html')
@@ -38,7 +44,7 @@ def test_view_index():
 @mock.patch('src.utils.database_utils.get_album_document')
 def test_video_serivng(mocked_database_utils):
     mocked_database_utils.return_value = test_album_documet
-    with boddle(method='get', params={'album_id':test_album_id, 'video_name':test_video_file_path}):
+    with boddle(method='get', headers=auth_header, params={'album_id':test_album_id, 'video_name':test_video_file_path}):
         assert video_serving_controller.view_video_page() == template('show_views/video.html', {'video_file_path':test_album_id + '/'+ test_video_file_path})
 
 
@@ -47,7 +53,7 @@ def test_get_list_of_albums(mocked_database_utils):
     
     mocked_database_utils.return_value = test_album_list
 
-    with boddle(method='get'):
+    with boddle(method='get', headers=auth_header):
         assert video_serving_controller.view_album_list() == template('show_views/albums.html', {
             'albums' : [test_album_documet, test_album_documet_2]
         })
@@ -55,7 +61,7 @@ def test_get_list_of_albums(mocked_database_utils):
 @mock.patch('src.utils.database_utils.get_album_document')
 def test_get_list_of_videos(mocked_database_utils):
     mocked_database_utils.return_value = test_album_documet
-    with boddle(method='get', params={'album_id':test_album_id}):
+    with boddle(method='get', headers=auth_header, params={'album_id':test_album_id}):
         assert video_serving_controller.view_videos_list() == template('show_views/album_details.html', {'album_id': test_album_id, 'album_name' : test_album_name, 'videos' : []})
 
 def setup_module(module):

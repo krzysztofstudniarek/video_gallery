@@ -2,6 +2,7 @@ import pytest
 import mock
 import shutil
 import sys, os
+import base64
 from bottle import template
 from boddle import boddle
 
@@ -18,24 +19,31 @@ test_videos_view_data = {
             'album_name' : test_album_name,
             'album_id' : test_album_id,
             'videos' : []
-        }
+}
 
-def test_new_album_form_page():
-    with boddle():
+auth_header = {
+                'Authorization': 'Basic ' + base64.b64encode('stud' + \
+                ":" + 'stud')
+}
+
+@mock.patch('src.utils.auth_utils.authenticate')
+def test_new_album_form_page(mocked_auth_utils):
+    
+    with boddle(headers=auth_header):
         view_data = {
             'videos' : ['SampleVideo.mp4']
         }
         assert video_uploading_controller.view_new_album_form() == template('add_views/newAlbum.html', view_data)
 
 def test_video_upload_view():
-    with boddle(method='get', params={'album_id':test_album_id}):
+    with boddle(method='get',headers=auth_header, params={'album_id':test_album_id}):
         assert video_uploading_controller.view_upload_video_form() == template('add_views/upload.html', {'album_id' : test_album_id})
 
 
 @mock.patch('src.utils.database_utils.save_album_document')
-def test_album_creation(mocked_database_utils):
+def test_album_creation(mocked_database_utils,):
     mocked_database_utils.return_value = test_album_id, test_album_doc_rev
-    with boddle(method='post', params={'album_name':test_album_name}):
+    with boddle(method='post', headers=auth_header, params={'album_name':test_album_name}):
         assert video_uploading_controller.create_new_album() == template('show_views/album_details.html', test_videos_view_data)
         assert _was_folder_created(test_album_id)
         mocked_database_utils.assert_called_once()

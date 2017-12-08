@@ -2,6 +2,7 @@ import mock
 import sys, os
 import shutil
 import yaml
+import base64
 
 from os import makedirs, rmdir
 from os.path import exists, dirname, abspath
@@ -23,9 +24,13 @@ test_album_documet = {
             'id' : test_album_id,
             'album_name' : test_album_name
         }
+auth_header = {
+                'Authorization': 'Basic ' + base64.b64encode('stud' + \
+                ":" + 'stud')
+}
 
 def test_qr_code_generation_form():
-    with boddle(method='get', params={'album_id':test_album_id}):
+    with boddle(method='get', headers=auth_header, params={'album_id':test_album_id}):
         view_data =  { 
             'album_id' : test_album_id,
             'palettes' : config['palettes']
@@ -35,7 +40,7 @@ def test_qr_code_generation_form():
 @mock.patch('src.utils.database_utils.get_album_document')
 def test_qr_code_generationw(mocked_database_utils):
     mocked_database_utils.return_value = test_album_documet
-    with boddle(method='post', params={'album_id':test_album_id, 'palettes' : 'plain_black'}):
+    with boddle(method='post',headers=auth_header, params={'album_id':test_album_id, 'palettes' : 'plain_black'}):
         assert qr_controller.generate_qr_codes() == template('qr_views/qr.html', { 'album_id' : test_album_id, 'qr_images' : qr_codes_list})
         assert exists('static/qr_images/'+test_album_id+'/vid1.jpg')
         assert exists('static/qr_images/'+test_album_id+'/vid2.jpg')
