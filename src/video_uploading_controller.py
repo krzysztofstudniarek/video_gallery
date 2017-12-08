@@ -1,17 +1,20 @@
-from bottle import Bottle, template, get, request
+from bottle import Bottle, template, get, request, auth_basic
 from os import getcwd, listdir, makedirs
 from os.path import isfile, join, exists
 from plupload import plupload
 from utils import database_utils
 from utils import filesystem_utils
+from utils import auth_utils
 
 app = Bottle()
 
 @app.get('/new_album')
+@auth_basic(auth_utils.authenticate)
 def view_new_album_form():
     return template('add_views/newAlbum.html')
 
 @app.post('/new_album')
+@auth_basic(auth_utils.authenticate)
 def create_new_album():
     album_name = _extract_album_name_from_request(request)
     album_id, album_doc_rev = database_utils.save_album_document(album_name)
@@ -26,6 +29,7 @@ def create_new_album():
     return template('show_views/album_details.html', view_data)
 
 @app.get('/upload')
+@auth_basic(auth_utils.authenticate)
 def view_upload_video_form():
     album_id = request.params['album_id']
     view_data = {
@@ -34,6 +38,7 @@ def view_upload_video_form():
     return template('add_views/upload.html', view_data)
 
 @app.post('/upload')
+@auth_basic(auth_utils.authenticate)
 def upload_new_video(): 
     path = _get_videos_directory(request.forms.get('album_id'))
     return plupload.save(request.forms, request.files, path)

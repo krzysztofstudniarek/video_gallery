@@ -1,5 +1,5 @@
-from bottle import Bottle, template, get, request
-from utils import database_utils, filesystem_utils
+from bottle import Bottle, template, get, request, auth_basic
+from utils import database_utils, filesystem_utils, auth_utils
 
 app = Bottle()
 
@@ -19,6 +19,7 @@ def view_video_page():
     return template('show_views/video.html', view_data)
 
 @app.get('/albums')
+@auth_basic(auth_utils.authenticate)
 def view_album_list():
     album_documents = database_utils.get_all_album_documents()
     view_data = {
@@ -28,6 +29,7 @@ def view_album_list():
     return template('show_views/albums.html', view_data)
 
 @app.get('/details')
+@auth_basic(auth_utils.authenticate)
 def view_videos_list():
     album_id = request.params['album_id']
     album_document = database_utils.get_album_document(album_id)

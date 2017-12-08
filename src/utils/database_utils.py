@@ -6,12 +6,11 @@ with open('configuration/config.yaml', 'r') as ymlfile:
 
 couch = Server(config['couchdb']['server'])
 
-
 def get_album_document(album_id):
-    return _get_doc_database().get(album_id, include_docs=True)
+    return _get_doc_database(config['couchdb']['database']).get(album_id, include_docs=True)
 
 def get_all_album_documents():
-    documents = _get_doc_database().view('_all_docs', include_docs=True)
+    documents = _get_doc_database(config['couchdb']['database']).view('_all_docs', include_docs=True)
     return [{'album_name' : row.doc['album_name'], 'id' : row.doc.id} for row in documents]
 
 def save_album_document(album_name):
@@ -20,10 +19,24 @@ def save_album_document(album_name):
     }
     return _get_doc_database().save(album_document)
 
-def _get_doc_database():
+def get_user(username):
+    db = _get_doc_database(config['couchdb']['auth_database'])
+    docs =  db.view('_all_docs', include_docs=True)
+    users = [ _get_credentials_from_doc(document) for document in docs if (document.doc['username'] == username)]
+    if len(users) == 0 :
+        raise Exception(format('no user with username {}', username))
+    return users[0]
+
+def _get_credentials_from_doc(document):
+    return {
+        'username' : document.doc['username'],
+        'password' : document.doc['password']
+    }
+
+def _get_doc_database(database_name):
     try:
-        db = couch[config['couchdb']['database']]
+        db = couch[database_name]
     except:
-        db = couch.create(config['couchdb']['database'])
+        db = couch.create(database_name)
 
     return db

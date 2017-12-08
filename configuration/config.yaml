@@ -1,6 +1,7 @@
 couchdb :
   server    : http://0.0.0.0:5984/
   database  : albums
+  auth_database : users
 
 general:
   hostname  : 'ec2-35-158-214-100.eu-central-1.compute.amazonaws.com'

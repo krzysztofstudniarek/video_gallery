@@ -2,8 +2,8 @@ import pyqrcode
 import yaml
 import random
 
-from bottle import Bottle, template, request
-from utils import filesystem_utils
+from bottle import Bottle, template, request, auth_basic
+from utils import filesystem_utils, auth_utils
 from os import getcwd
 from os.path import splitext
 
@@ -12,6 +12,7 @@ with open('configuration/config.yaml', 'r') as ymlfile:
     config = yaml.load(ymlfile)
 
 @app.get('/generate')
+@auth_basic(auth_utils.authenticate)
 def show_qr_generation_form():
     view_data = {
         'album_id' : request.params['album_id'],
@@ -20,6 +21,7 @@ def show_qr_generation_form():
     return template('qr_views/qr_form.html', view_data)
 
 @app.post('/generate')
+@auth_basic(auth_utils.authenticate)
 def generate_qr_codes():
     palette = _get_palette(request.forms.get('palettes'))
     album_id = request.forms.get('album_id')
