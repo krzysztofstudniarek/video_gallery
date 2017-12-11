@@ -25,6 +25,7 @@ def authorize():
         redirect('/auth/login')
     if not _validate_token(session['auth_token']): 
         redirect('/auth/login')
+    return True
 
 def _validate_token(token):
     header, claims = jwt.verify_jwt(token, key, ['PS256'])
