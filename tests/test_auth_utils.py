@@ -47,7 +47,8 @@ def test_authorize_without_token(mocked_database_utils):
 @mock.patch('src.utils.database_utils.get_user')
 def test_authorize_with_wrong_token(mocked_database_utils):
     mocked_database_utils.return_value = test_user
-    request.environ = {'beaker.session' : {'auth_token' : 'wrong_test_token', 'current_user' : 'test'}}
+    wrong_token = auth_utils.get_autorization_token('test', 'wrong_test_passowrd')
+    request.environ = {'beaker.session' : {'auth_token' : wrong_token, 'current_user' : 'test'}}
     _assert_redirect('/auth/login', 'http://127.0.0.1/auth/login')
 
 def test_correct_token_is_generated():
