@@ -24,24 +24,31 @@ test_album_documet = {
             'id' : test_album_id,
             'album_name' : test_album_name
         }
-auth_header = {
-                'Authorization': 'Basic ' + base64.b64encode('stud' + \
-                ":" + 'stud')
-}
 
-def test_qr_code_generation_form():
-    with boddle(method='get', headers=auth_header, params={'album_id':test_album_id}):
+def _side_effect(value):
+    value['user'] = 'stud'
+    return value
+
+@mock.patch('src.utils.common_utils.attach_user')
+@mock.patch('src.utils.auth_utils.authorize')
+def test_qr_code_generation_form(mocked_auth_utils, mocked_common_utils):
+    with boddle(method='get', params={'album_id':test_album_id}):
+        mocked_common_utils.side_effect = _side_effect
         view_data =  { 
             'album_id' : test_album_id,
-            'palettes' : config['palettes']
+            'palettes' : config['palettes'],
+            'user' : 'stud'
         }
         assert qr_controller.show_qr_generation_form() == template('qr_views/qr_form.html',view_data)
 
+@mock.patch('src.utils.common_utils.attach_user')
+@mock.patch('src.utils.auth_utils.authorize')
 @mock.patch('src.utils.database_utils.get_album_document')
-def test_qr_code_generationw(mocked_database_utils):
+def test_qr_code_generationw(mocked_database_utils, mocked_auth_utils, mocked_common_utils):
     mocked_database_utils.return_value = test_album_documet
-    with boddle(method='post',headers=auth_header, params={'album_id':test_album_id, 'palettes' : 'plain_black'}):
-        assert qr_controller.generate_qr_codes() == template('qr_views/qr.html', { 'album_id' : test_album_id, 'qr_images' : qr_codes_list})
+    mocked_common_utils.side_effect = _side_effect
+    with boddle(method='post', params={'album_id':test_album_id, 'palettes' : 'plain_black'}):
+        assert qr_controller.generate_qr_codes() == template('qr_views/qr.html', { 'album_id' : test_album_id, 'qr_images' : qr_codes_list, 'user' : 'stud'})
         assert exists('static/qr_images/'+test_album_id+'/vid1.jpg')
         assert exists('static/qr_images/'+test_album_id+'/vid2.jpg')
         assert exists('static/qr_images/'+test_album_id+'/vid3.jpg')

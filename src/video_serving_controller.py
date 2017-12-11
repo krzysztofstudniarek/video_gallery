@@ -1,5 +1,5 @@
-from bottle import Bottle, template, get, request, auth_basic
-from utils import database_utils, filesystem_utils, auth_utils
+from bottle import Bottle, template, get, request, redirect
+from utils import database_utils, filesystem_utils, auth_utils, common_utils
 
 app = Bottle()
 
@@ -13,24 +13,25 @@ def view_video_page():
     video_name = request.params['video_name']
     
     view_data = {
-        'video_file_path' : album_id+'/'+video_name
+        'video_file_path' : album_id+'/'+video_name,
     }
-
-    return template('show_views/video.html', view_data)
+    return template('show_views/video.html', common_utils.attach_user(view_data))
 
 @app.get('/albums')
-@auth_basic(auth_utils.authenticate)
 def view_album_list():
+    auth_utils.authorize()
+
     album_documents = database_utils.get_all_album_documents()
     view_data = {
-        'albums' : album_documents
+        'albums' : album_documents,
     }
 
-    return template('show_views/albums.html', view_data)
+    return template('show_views/albums.html', common_utils.attach_user(view_data))
 
 @app.get('/details')
-@auth_basic(auth_utils.authenticate)
 def view_videos_list():
+    auth_utils.authorize()
+
     album_id = request.params['album_id']
     album_document = database_utils.get_album_document(album_id)
 
@@ -40,4 +41,4 @@ def view_videos_list():
         'videos' : filesystem_utils.get_videos_names(album_id)
     }
 
-    return template('show_views/album_details.html', view_data)
+    return template('show_views/album_details.html', common_utils.attach_user(view_data))

@@ -53,3 +53,4 @@ def _get_doc_database(database_name):
         db = couch.create(database_name)
 
     return db
+

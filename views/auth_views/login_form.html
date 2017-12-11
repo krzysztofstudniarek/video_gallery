@@ -1,11 +1,10 @@
 <html>
     %include('head.html')
-    <script src="/static/scripts/validator.js"></script>
     <body>
         % include('navbar.html')
         <div class="container">
-        <h1>Register</h1>
-        <form action="register" method="POST" id="registration_form" class="form-horizontal">
+        <h1>Login</h1>
+        <form action="login" method="POST" id="login_form" class="form-horizontal">
             <div class="form-group">
                 <div class="form-group">
                     <label for="username">Username:</label>
@@ -15,11 +14,12 @@
                     <label for="password">Password:</label>
                     <input type="password" class="form-control" name="password" required>
                 </div>
-                <div class="form-group">
-                    <label for="password">Confirm Password:</label>
-                    <input type="password" class="form-control" name="confirmPassword" required>
-                </div>
-                <input type="submit" value="Register">
+                % if defined('error'):
+                    <div class="alert alert-danger">
+                        <strong>Error!</strong> {{error}}
+                    </div>
+                % end
+                <input type="submit" value="Login">
             </div>
         </form>
         </div>

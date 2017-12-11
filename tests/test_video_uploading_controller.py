@@ -18,32 +18,39 @@ test_album_doc_rev = 'sdas12312'
 test_videos_view_data = {
             'album_name' : test_album_name,
             'album_id' : test_album_id,
-            'videos' : []
+            'videos' : [],
+            'user' : 'stud'
 }
 
-auth_header = {
-                'Authorization': 'Basic ' + base64.b64encode('stud' + \
-                ":" + 'stud')
-}
+def _side_effect(value):
+    value['user'] = 'stud'
+    return value
 
-@mock.patch('src.utils.auth_utils.authenticate')
-def test_new_album_form_page(mocked_auth_utils):
-    
-    with boddle(headers=auth_header):
+@mock.patch('src.utils.common_utils.attach_user')
+@mock.patch('src.utils.auth_utils.authorize')
+def test_new_album_form_page(mocked_auth_utils, mocked_common_utils):
+    mocked_common_utils.side_effect = _side_effect
+    with boddle():
         view_data = {
-            'videos' : ['SampleVideo.mp4']
+            'videos' : ['SampleVideo.mp4'],
+            'user' : 'stud'
         }
         assert video_uploading_controller.view_new_album_form() == template('add_views/newAlbum.html', view_data)
 
-def test_video_upload_view():
-    with boddle(method='get',headers=auth_header, params={'album_id':test_album_id}):
-        assert video_uploading_controller.view_upload_video_form() == template('add_views/upload.html', {'album_id' : test_album_id})
+@mock.patch('src.utils.common_utils.attach_user')
+@mock.patch('src.utils.auth_utils.authorize')
+def test_video_upload_view(mocked_auth_utils, mocked_common_utils):
+    mocked_common_utils.side_effect = _side_effect
+    with boddle(method='get', params={'album_id':test_album_id}):
+        assert video_uploading_controller.view_upload_video_form() == template('add_views/upload.html', {'album_id' : test_album_id, 'user' : 'stud'})
 
-
+@mock.patch('src.utils.common_utils.attach_user')
+@mock.patch('src.utils.auth_utils.authorize')
 @mock.patch('src.utils.database_utils.save_album_document')
-def test_album_creation(mocked_database_utils,):
+def test_album_creation(mocked_database_utils,mocked_auth_utils, mocked_common_utils):
     mocked_database_utils.return_value = test_album_id, test_album_doc_rev
-    with boddle(method='post', headers=auth_header, params={'album_name':test_album_name}):
+    mocked_common_utils.side_effect = _side_effect
+    with boddle(method='post', params={'album_name':test_album_name}):
         assert video_uploading_controller.create_new_album() == template('show_views/album_details.html', test_videos_view_data)
         assert _was_folder_created(test_album_id)
         mocked_database_utils.assert_called_once()
