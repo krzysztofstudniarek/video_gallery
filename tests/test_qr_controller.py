@@ -1,4 +1,5 @@
 import mock
+import pytest
 import sys, os
 import shutil
 import yaml
@@ -6,8 +7,8 @@ import base64
 
 from os import makedirs, rmdir
 from os.path import exists, dirname, abspath
-from bottle import template
-from boddle import boddle
+from bottle import template, request, BottleException
+from boddle import boddle 
 
 sys.path.insert(0,
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -41,6 +42,12 @@ def test_qr_code_generation_form(mocked_auth_utils, mocked_common_utils):
         }
         assert qr_controller.show_qr_generation_form() == template('qr_views/qr_form.html',view_data)
 
+def test_qr_code_generation_form_not_authorized():
+    with boddle(method='get', params={'album_id':test_album_id}):
+        request.environ['beaker.session'] = {}
+        with pytest.raises(BottleException) as resp:
+            qr_controller.show_qr_generation_form()
+
 @mock.patch('src.utils.common_utils.attach_user')
 @mock.patch('src.utils.auth_utils.authorize')
 @mock.patch('src.utils.database_utils.get_album_document')
@@ -53,6 +60,18 @@ def test_qr_code_generationw(mocked_database_utils, mocked_auth_utils, mocked_co
         assert exists('static/qr_images/'+test_album_id+'/vid2.jpg')
         assert exists('static/qr_images/'+test_album_id+'/vid3.jpg')
 
+    shutil.rmtree('static/videos/' + test_album_id + '/')
+    shutil.rmtree('static/qr_images/' + test_album_id + '/')
+
+def test_qr_code_generation_not_authorized():
+    with boddle(method='get', params={'album_id':test_album_id}):
+        request.environ['beaker.session'] = {}
+        with pytest.raises(BottleException) as resp:
+            qr_controller.generate_qr_codes()
+        assert not exists('static/qr_images/'+test_album_id+'/vid1.jpg')
+        assert not exists('static/qr_images/'+test_album_id+'/vid2.jpg')
+        assert not exists('static/qr_images/'+test_album_id+'/vid3.jpg')
+
 def setup_module(module):
     if not exists('static/videos/'+test_album_id+'/'):
         makedirs('static/videos/'+test_album_id+'/')
@@ -60,7 +79,3 @@ def setup_module(module):
     open('static/videos/'+test_album_id+'/vid1.mp4', 'a').close()
     open('static/videos/'+test_album_id+'/vid2.mp4', 'a').close()
     open('static/videos/'+test_album_id+'/vid3.mp4', 'a').close()
-
-def teardown_module(module):
-    shutil.rmtree('static/videos/' + test_album_id + '/')
-    shutil.rmtree('static/qr_images/' + test_album_id + '/')

@@ -5,7 +5,7 @@ import sys
 import shutil
 from os import makedirs, rmdir
 from os.path import exists, dirname, abspath
-from bottle import template
+from bottle import template, BottleException, request
 from boddle import boddle
 from couchdb.client import Document
 
@@ -50,7 +50,6 @@ def test_video_serivng(mocked_database_utils):
 @mock.patch('src.utils.auth_utils.authorize')
 @mock.patch('src.utils.database_utils.get_all_album_documents')
 def test_get_list_of_albums(mocked_database_utils, mocked_auth_utils, mocked_common_utils):
-    
     mocked_database_utils.return_value = test_album_list
     mocked_common_utils.side_effect = _side_effect
     with boddle(method='get'):
@@ -60,6 +59,16 @@ def test_get_list_of_albums(mocked_database_utils, mocked_auth_utils, mocked_com
         })
 
 @mock.patch('src.utils.common_utils.attach_user')
+@mock.patch('src.utils.database_utils.get_all_album_documents')
+def test_get_list_of_albums_not_authorized(mocked_database_utils, mocked_common_utils):
+    mocked_database_utils.return_value = test_album_list
+    mocked_common_utils.side_effect = _side_effect
+    with boddle(method='get'):
+        request.environ['beaker.session'] = {}
+        with pytest.raises(BottleException) as resp:
+            video_serving_controller.view_album_list()
+
+@mock.patch('src.utils.common_utils.attach_user')
 @mock.patch('src.utils.auth_utils.authorize')
 @mock.patch('src.utils.database_utils.get_album_document')
 def test_get_list_of_videos(mocked_database_utils, mocked_auth_utils, mocked_common_utils):
@@ -67,6 +76,16 @@ def test_get_list_of_videos(mocked_database_utils, mocked_auth_utils, mocked_com
     mocked_common_utils.side_effect = _side_effect
     with boddle(method='get', params={'album_id':test_album_id}):
         assert video_serving_controller.view_videos_list() == template('show_views/album_details.html', {'album_id': test_album_id, 'album_name' : test_album_name, 'videos' : [], 'user' : 'stud'})
+
+@mock.patch('src.utils.common_utils.attach_user')
+@mock.patch('src.utils.database_utils.get_all_album_documents')
+def test_get_list_of_videos_not_authorized(mocked_database_utils, mocked_common_utils):
+    mocked_database_utils.return_value = test_album_list
+    mocked_common_utils.side_effect = _side_effect
+    with boddle(method='get'):
+        request.environ['beaker.session'] = {}
+        with pytest.raises(BottleException) as resp:
+            video_serving_controller.view_videos_list()
 
 def setup_module(module):
     if not exists('static/videos/'+test_album_id+'/'):
