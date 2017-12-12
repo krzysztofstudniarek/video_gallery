@@ -24,7 +24,7 @@ def get_all_album_documents(owner):
     documents = album_db.view('_all_docs', include_docs=True)
     return [{'album_name' : row.doc['album_name'], 'id' : row.doc.id} for row in documents if (row.doc['owner'] == owner)]
 
-def save_album_document(album_name):
+def save_album_document(album_name, owner):
     album_document = {
         'album_name' : album_name,
         'owner' : owner
