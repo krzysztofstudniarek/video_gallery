@@ -1,5 +1,6 @@
 # exclude all .pyc files
 *.pyc 
+.coverage
 
 #folders
 .cache/*
