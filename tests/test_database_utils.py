@@ -11,15 +11,16 @@ test_username_1 = 'test_user'
 test_password_1 = 'test_password'
 test_user_doc_1 = {'username' : test_username_1, 'password' : test_password_1}
 
-test_username_2 = 'test_user'
-test_password_2 = 'test_password'
+test_username_2 = 'test_user_1'
+test_password_2 = 'test_password_1'
 test_user_doc_2 = {'username' : test_username_2, 'password' : test_password_2}
 
 test_album_name = 'test_album'
 test_album_id = '12345678'
 test_album_document = {
     'id' : test_album_id,
-    'album_name' : test_album_name
+    'album_name' : test_album_name,
+    'owner' : test_username_1
 }
 
 class DocStub(dict) : 
@@ -52,7 +53,13 @@ def test_get_all_usernames(mocked_couch_db):
 @mock.patch('src.utils.database_utils.album_db.view')
 def test_get_all_album_documents(mocked_couch_db):
     mocked_couch_db.side_effect = _albums_db_side_effect
-    documents = database_utils.get_all_album_documents() 
+    documents = database_utils.get_all_album_documents(test_username_1) 
     assert len(documents) == 1
     assert documents[0]['album_name'] == test_album_name
     assert documents[0]['id'] == test_album_id
+
+@mock.patch('src.utils.database_utils.album_db.view')
+def test_get_all_album_documents_for_wrong_user(mocked_couch_db):
+    mocked_couch_db.side_effect = _albums_db_side_effect
+    documents = database_utils.get_all_album_documents(test_username_2) 
+    assert len(documents) == 0

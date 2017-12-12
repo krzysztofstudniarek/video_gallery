@@ -18,7 +18,8 @@ def view_new_album_form():
 def create_new_album():
     auth_utils.authorize()
     album_name = _extract_album_name_from_request(request)
-    album_id, album_doc_rev = database_utils.save_album_document(album_name)
+    owner = common_utils.get_user_form_session()
+    album_id, album_doc_rev = database_utils.save_album_document(album_name, owner)
     _initailize_videos_directory(album_id)
 
     view_data = {

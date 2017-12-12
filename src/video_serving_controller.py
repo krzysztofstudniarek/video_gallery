@@ -20,8 +20,8 @@ def view_video_page():
 @app.get('/albums')
 def view_album_list():
     auth_utils.authorize()
-
-    album_documents = database_utils.get_all_album_documents()
+    owner = common_utils.get_user_form_session()
+    album_documents = database_utils.get_all_album_documents(owner)
     view_data = {
         'albums' : album_documents,
     }

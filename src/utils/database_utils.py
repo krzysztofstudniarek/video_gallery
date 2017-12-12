@@ -20,13 +20,14 @@ album_db = _get_doc_database(config['couchdb']['database'])
 def get_album_document(album_id):
     return album_db.get(album_id, include_docs=True)
 
-def get_all_album_documents():
+def get_all_album_documents(owner):
     documents = album_db.view('_all_docs', include_docs=True)
-    return [{'album_name' : row.doc['album_name'], 'id' : row.doc.id} for row in documents]
+    return [{'album_name' : row.doc['album_name'], 'id' : row.doc.id} for row in documents if (row.doc['owner'] == owner)]
 
 def save_album_document(album_name):
     album_document = {
-        'album_name' : album_name
+        'album_name' : album_name,
+        'owner' : owner
     }
     return album_db.save(album_document)
 
