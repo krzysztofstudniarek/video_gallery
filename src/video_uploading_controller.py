@@ -41,7 +41,6 @@ def view_upload_video_form():
 
 @app.post('/upload')
 def upload_new_video():
-    auth_utils.authorize()
     path = _get_videos_directory(request.forms.get('album_id'))
     return plupload.save(request.forms, request.files, path)
 
