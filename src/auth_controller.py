@@ -2,7 +2,7 @@ import hashlib
 import httplib
 from datetime import date, timedelta
 from bottle import Bottle, template, get, request, redirect, response
-from utils import database_utils, auth_utils, session_utils
+from utils import database_utils, auth_utils
 
 app = Bottle()
 
