@@ -20,6 +20,8 @@ test_album_name = 'ala ma kota'
 test_album_name_2 = 'ala ma kota 2'
 test_video_file_path = 'sampleVideo.mp4'
 
+album_to_delete_id = '12321312'
+
 test_album_documet = {
             'id' : test_album_id,
             'album_name' : test_album_name
@@ -117,8 +119,22 @@ def test_get_list_of_videos_not_authorized(mocked_database_utils, mocked_common_
         with pytest.raises(BottleException) as resp:
             album_management_controller.view_videos_list()
 
+@mock.patch('src.utils.common_utils.attach_user')
+@mock.patch('src.utils.auth_utils.authorize')
+@mock.patch('src.utils.database_utils.delete_album_document')
+def test_album_deletion(mocked_database_utils, mocked_auth_utils, mocked_common_utils):
+    mocked_common_utils.side_effect = _side_effect
+    with boddle(method='post', params={'album_id':album_to_delete_id}):
+        with pytest.raises(BottleException) as resp:
+            album_management_controller.delete_album()
+            assert not os.path.exists('static/videos/'+album_to_delete_id+'/')
+
 def _was_folder_created(album_id):
     return os.path.exists('static/videos/'+album_id+'/')
 
 def teardown_module(module):
     shutil.rmtree('static/videos/'+test_album_id+'/')
+
+def setup_module(module):
+    if not exists('static/videos/'+album_to_delete_id+'/'):
+        makedirs('static/videos/'+album_to_delete_id+'/')

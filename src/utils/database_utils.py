@@ -20,6 +20,10 @@ album_db = _get_doc_database(config['couchdb']['database'])
 def get_album_document(album_id):
     return album_db.get(album_id, include_docs=True)
 
+def delete_album_document(album_id):
+    doc = album_db.get(album_id)
+    return album_db.delete(doc)
+
 def get_all_album_documents(owner):
     documents = album_db.view('_all_docs', include_docs=True)
     return [{'album_name' : row.doc['album_name'], 'id' : row.doc.id} for row in documents if (row.doc['owner'] == owner)]
@@ -54,5 +58,3 @@ def _get_credentials_from_doc(document):
         'username' : document.doc['username'],
         'password' : document.doc['password']
     }
-
-

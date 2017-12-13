@@ -1,3 +1,4 @@
+import shutil
 from bottle import Bottle, template, get, request, redirect
 from utils import database_utils, auth_utils, common_utils, filesystem_utils
 
@@ -55,3 +56,12 @@ def view_videos_list():
     }
 
     return template('manage_views/album_details.html', common_utils.attach_user(view_data))
+
+@app.post('/delete')
+def delete_album():
+    auth_utils.authorize()
+    album_id = request.forms.get('album_id')
+    database_utils.delete_album_document(album_id)
+    shutil.rmtree('static/videos/'+album_id+'/')
+
+    return redirect('/manage_album/albums')
