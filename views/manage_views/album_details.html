@@ -3,17 +3,19 @@
     % include('navbar.html')
     <div class="container">
         <h1>{{album_name}}</h1>
-        <form action = "/manage_album/delete" method = "post">
-                <input type="hidden" class="form-control" name="album_id" value="{{album_id}}"></input>
-                <input type="submit"  class="btn btn-danger" name="Delete" value="Delete Album" />
-        </form>
         <a class="btn btn-default" href="/manage_video/upload?album_id={{album_id}}">Upload new Video</a>
         <a class="btn btn-default" href="/qr/generate?album_id={{album_id}}">Get QR Codes</a>
         <h3>Videos in this Album</h3>
-        <div class="list-group">
+        <div class="list-group" style=" max-height: 250px; overflow-y: scroll;">
         % for video in videos:
             <a href='/manage_video/video?album_id={{album_id}}&video_name={{video}}' class="list-group-item">{{video}}</a>
         % end
-        </ul>
+        </div>
+        </br>
+        <form action = "/manage_album/delete" method = "post">
+            <input type="hidden" class="form-control" name="album_id" value="{{album_id}}"></input>
+            <input type="submit"  class="btn btn-danger" name="Delete" value="Delete Album" />
+        </form>
     </div>
+    % include('footer.html')
 </body>

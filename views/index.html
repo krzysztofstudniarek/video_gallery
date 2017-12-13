@@ -2,7 +2,30 @@
 <body>
     % include('navbar.html')
     <div class="container">
-        <h3>Welcome!</h3>
-        <p>Fell free to play around.</p>
+        <div class="jumbotron">
+            <h3><b>Fotoplastikon</b> makes photo albums great again!</h3>
+            <p>If you are here it means that you want to revive your traditional photo album. <b>Fitoplastikon</b> changes the expirience 
+                of famili photos watching by allowing you to add videos to your photo album. Isn't it great? To start follow few simple steps listed below</p>
+        </div>
+        <div class="col-xs-6">
+            <h3>To create new album: </h3>
+            <ul>
+                <li><a href="/auth/login"></span><b>Login</b></a> or if you don't have an account already <a href="/auth/register"></span><b>Register</b></a></li>
+                <li>Go to <a href="/manage_album/new_album"><b>Create Album</b></a> overlap and create new album</li>
+                <li>Go to your album details and upload some videos</li>
+                <li>Generate QR codes (click the <b>Get QR Codes</b> button in album details)</li>
+                <li>Print and paste QR codes to your album</li>
+            </ul>
+        </div>
+        <div class="col-xs-6">
+            <h3>To view video from QR code:</h3>
+            <ul>
+                <li>You will need the smartphone and one of the QR code reader apps</li>
+                <li>Scan QR code</li>
+                <li>Go to the link</li>
+                <li><b>Watch the video!</b></li>
+            </ul>
+        </div>
     </div>
+    % include('footer.html')
 </body>

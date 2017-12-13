@@ -17,7 +17,7 @@ def authenticate(username, password):
 
 def get_autorization_token(username, password):
     payload = { 'user': username, 'password': hashlib.sha512(password).hexdigest() }
-    return jwt.generate_jwt(payload, key, 'PS256', datetime.timedelta(minutes=5))
+    return jwt.generate_jwt(payload, key, 'PS256', datetime.timedelta(hours=1))
 
 def authorize():
     session = request.environ.get('beaker.session')

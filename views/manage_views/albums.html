@@ -2,11 +2,18 @@
 <body>
     % include('navbar.html')
     <div class="container">
-        <h1>List of all Albums: </h1>
-        <div class="list-group">
-        % for album in albums:
-            <a href="/manage_album/details?album_id={{album['id']}}" class="list-group-item list-group-item-action">{{album['album_name']}}</a>
+        % if len(albums) == 0:
+            <h3>Currently you have no albums</h3>
+        % else :
+            <h3>Your albums: </h3>
+            <p>Click on one of the albums on the list to go to the detail page</p>
+            <div class="list-group">
+            % for album in albums:
+                <a href="/manage_album/details?album_id={{album['id']}}" class="list-group-item list-group-item-action">{{album['album_name']}}</a>
+            % end
+            </div>
         % end
-        </div>
+        <a class="btn btn-success" href="/manage_album/new_album">Create new album</a>
     </div>
+    % include('footer.html')
 </body>
