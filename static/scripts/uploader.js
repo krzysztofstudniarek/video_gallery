@@ -1,7 +1,7 @@
 var uploader = new plupload.Uploader({
     browse_button: 'browse', // this can be an id of a DOM element or the DOM element itself
     container: document.getElementById('container'), 
-    url: '/add/upload',
+    url: '/manage_video/upload',
     filters : [
         {title : "Videos", extensions : "mp4, ogg"}
     ],
@@ -26,7 +26,7 @@ uploader.bind('UploadProgress', function(up, file) {
 
 uploader.bind('FileUploaded', function(Up, File, Response) {
     if( uploader.total.uploaded == uploader.files.length){
-        window.location.href = '/show/details?album_id='.concat(document.getElementById("album_id").innerText);
+        window.location.href = '/manage_album/details?album_id='.concat(document.getElementById("album_id").innerText);
     }
 });
 

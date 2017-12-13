@@ -2,11 +2,11 @@ import yaml
 import bottle
 from beaker.middleware import SessionMiddleware
 
-from src import video_serving_controller
-from src import video_uploading_controller
 from src import qr_controller
 from src import index_controller
 from src import auth_controller
+from src import video_management_controller
+from src import album_management_controller
 
 from static import static_content_serving_controller
 
@@ -16,10 +16,10 @@ def main():
 
 
     app = index_controller.app
-    app.mount('show', video_serving_controller.app)
-    app.mount('add', video_uploading_controller.app)
+    app.mount('manage_video', video_management_controller.app)
     app.mount('qr', qr_controller.app)
     app.mount('auth', auth_controller.app)
+    app.mount('manage_album', album_management_controller.app)
     app.mount('static/', static_content_serving_controller.app)
 
     session_opts = {

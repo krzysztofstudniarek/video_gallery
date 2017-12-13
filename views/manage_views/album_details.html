@@ -3,12 +3,12 @@
     % include('navbar.html')
     <div class="container">
         <h1>{{album_name}}</h1>
-        <a class="btn btn-default" href="/add/upload?album_id={{album_id}}">Upload new Video</a>
+        <a class="btn btn-default" href="/manage_video/upload?album_id={{album_id}}">Upload new Video</a>
         <a class="btn btn-default" href="/qr/generate?album_id={{album_id}}">Get QR Codes</a>
         <h3>Videos in this Album</h3>
         <div class="list-group">
         % for video in videos:
-            <a href='/show/video?album_id={{album_id}}&video_name={{video}}' class="list-group-item">{{video}}</a>
+            <a href='/manage_video/video?album_id={{album_id}}&video_name={{video}}' class="list-group-item">{{video}}</a>
         % end
         </ul>
     </div>
