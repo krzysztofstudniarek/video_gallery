@@ -55,4 +55,4 @@ def _get_available_palettes():
     return config['palettes']
 
 def _get_show_video_url(album_id, video_name):
-    return 'http://'+str(config['general']['hostname'])+':'+str(config['general']['port'])+'/show/video?album_id='+album_id+'&video_name='+video_name
+    return 'http://'+str(config['general']['hostname'])+':'+str(config['general']['port'])+'/manage_video/video?album_id='+album_id+'&video_name='+video_name
