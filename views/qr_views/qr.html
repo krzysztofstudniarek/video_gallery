@@ -3,9 +3,15 @@
     % include('navbar.html')
     <div class="container">
     <h1>QR Codes: </h1>
+    <button class="btn btn-success" onclick="printCodes()">Print all codes</button></br>
         % for img in qr_images:
             <img src='/static/qr/{{album_id}}/{{img}}'></img>
         % end
     </div>
+    <script>
+        function printCodes() {
+            window.print();
+        }
+    </script>                  
     % include('footer.html')
 </body>
