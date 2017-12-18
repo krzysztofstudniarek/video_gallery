@@ -20,7 +20,7 @@ palettes:
     name : 'Thought Provoking'
     img : 'thought_provoking.png'
     colors :
-      - [236,208,120]
+      - [186,158,70]
       - [217,91,67]
       - [192,41,66]
       - [84,36,55]
