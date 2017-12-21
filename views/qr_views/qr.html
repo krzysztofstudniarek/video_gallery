@@ -5,7 +5,7 @@
     <h1>QR Codes: </h1>
     <button class="btn btn-success" onclick="printCodes()">Print all codes</button></br>
         % for img in qr_images:
-            <div class="col-xs-3">
+            <div class="col-xs-4">
                 <h3>{{img}}</h3>
                 <img src='/static/qr/{{album_id}}/{{img}}'></img>
             </div>
