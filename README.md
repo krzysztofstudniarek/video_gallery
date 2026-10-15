@@ -8,14 +8,14 @@ This repository currently contains the original 2017 Python 2/Bottle prototype. 
 
 ## Free MVP
 
-Sign in with Google, create an album, paste YouTube or Vimeo video links, add captions and order, print QR sheets, and scan to watch. The service stores metadata and links, not video files. Users manage video uploads and viewing permissions on the provider themselves.
+Sign in with Google, connect your YouTube channel, create an album, upload videos through the app, add captions and order, choose a predefined QR style, print QR sheets, and scan to watch. Every upload explicitly uses YouTube Unlisted visibility: anyone with the link can view and share it. YouTube Private instead restricts viewing to selected accounts. The service stores metadata and encrypted authorization credentials, not video files.
 
 - [MVP scope and architecture](docs/MVP.md)
 - [Free MVP milestone](https://github.com/krzysztofstudniarek/video_gallery/milestone/1)
 - [Implementation backlog](docs/MVP.md#implementation-order)
 - [Contributing](CONTRIBUTING.md)
 
-Automatic uploads to YouTube and other providers are deferred until pilot feedback justifies them. No payments, AI features or service-owned video hosting are planned for this release.
+YouTube uploads are required for the MVP. Other platforms, payments, AI features and service-owned video hosting are deferred. Applicable Google/YouTube approvals and quotas must be verified before public launch.
 
 ## Planned stack
 

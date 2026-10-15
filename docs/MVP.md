@@ -2,51 +2,66 @@
 
 ## Goal
 
-Let a small group make physical albums with video QR codes for free and collect evidence about whether the workflow is useful.
+Let 5–10 pilot users create physical albums with uploaded YouTube videos and styled QR codes for free. Aim for at least 3 completed printed albums and actionable private feedback.
 
-Working assumption: the first release uses pasted external links. Users upload videos themselves through YouTube or Vimeo. This removes upload API approval from the launch path. Automatic uploads remain a future feature, not a forgotten requirement.
+## Required scope
+
+YouTube is the only video platform. In-app uploads to the user's own YouTube channel are required; a pasted-link-only release does not satisfy this MVP.
+
+Every upload explicitly sets status.privacyStatus=unlisted. YouTube Unlisted means anyone with the link can view and share it; Private means selected accounts only. Never publish Public or silently change privacy. Explain this distinction before upload.
 
 ## User journey
 
-1. Sign in with Google (identity only; no YouTube permissions).
-2. Create an album.
-3. Paste supported HTTPS YouTube/Vimeo watch links.
-4. Add titles/captions and arrange videos.
-5. Print individual QR codes or an A4 sheet.
-6. Scan without signing into this app; the provider controls actual viewing access.
-7. Export the album, delete data or send private feedback.
+1. Sign in with Google.
+2. Separately authorize YouTube uploads and confirm the destination channel.
+3. Create an album and select videos to upload.
+4. See upload progress and processing; failures have actionable retry/cancel options.
+5. Wait for successful processing and verified Unlisted visibility.
+6. Add captions/order, choose a predefined QR style and preview the sheet.
+7. Check anonymous viewing, then print individual codes or an A4 sheet.
+8. Scan without an app account; export, delete data or submit private feedback.
 
-Optional album sharing is explicitly enabled; individual video codes and album-cover codes have separate sharing semantics.
+Album-cover sharing is optional and explicitly enabled; individual video codes have separate sharing semantics.
 
 ## Architecture
 
-- One Python/FastAPI Worker API and static React frontend.
-- D1 metadata with indexed ownership queries and versioned migrations.
-- Persistent app sessions; secure cookies and server-side authorization.
-- Stable /v/<token> links use temporary redirects to validated destinations.
-- Optional /a/<token> page shows an explicitly shared album.
-- Browser-generated SVG QR codes; browser print / Save as PDF.
-- No stored video bytes, automatic thumbnail fetching, provider upload jobs or provider refresh tokens in this release.
-- No application-wide authentication layer in front of public QR routes.
-- No per-request provider availability checks; users verify sharing and playback before printing.
-- Direct provider URLs may also be exported, but stable app links depend on domain renewal and service continuity.
+- Python/FastAPI Worker API and static React/TypeScript frontend.
+- D1 metadata, indexed ownership queries and versioned migrations.
+- Persistent secure sessions and owner-only management.
+- Encrypted YouTube credentials with key-version and revocation handling.
+- Owner-scoped resumable upload jobs, idempotency keys, bounded polling and processing/visibility verification.
+- Validate direct browser-to-YouTube transfers before implementation; no persistent video storage or transcoding in Cloudflare.
+- Stable /v/<unpredictable-token> links redirect temporarily to validated YouTube watch URLs.
+- Optional /a/<token> route displays an explicitly shared album.
+- Public QR routes do not require app login; credentials never appear in them.
+- Browser-generated SVG codes and browser Print / Save as PDF.
+- No YouTube call on every public scan; provider visibility can subsequently change outside the app.
+- Disabling an app link cannot revoke an already-shared YouTube URL.
+- Runtime/dependency versions are pinned after #1 validates current Python Workers compatibility.
 
-Use a supported modern Python runtime and maintained dependencies after issue #1 validates compatibility. A normal Linux process, persistent local filesystem and in-memory sessions cannot be assumed. Consult current Cloudflare documentation during implementation.
+## QR styles
 
-## Initial limits and lifecycle
+Provide at least four predefined presets: Classic Black, Warm Sepia, Botanical Green and Navy Minimal. Preview and save a default per album; apply it to individual SVGs, print sheets and cover codes.
 
-Proposed pilot defaults: 10 albums per account and 50 video links per album. Make limits configurable and enforce them on the backend. Tune from evidence.
+Use dark modules on light backgrounds, sufficient quiet zones, physical millimetre dimensions and predictable page breaks. Frames and captions stay outside the quiet zone. Changing style must not change the token/destination. Verify every preset on actual paper with representative iPhone and Android cameras. Freeform design editing is deferred.
 
-Account/album deletion disables affected app links and removes associated app data; it never deletes videos from YouTube or Vimeo. Explain backup retention and deletion timelines in the pilot privacy information. Public bearer links must be treated as shareable access credentials.
+## Limits and data lifecycle
+
+Proposed configurable defaults: 10 albums/account and 50 videos/album. Define upload size/duration/concurrency limits after the upload prototype, enforce them server-side and explain them before selection.
+
+Account/album deletion removes app data and disables affected app links without implicitly deleting YouTube videos. Account deletion removes encrypted credentials and revokes authorization where supported. Explain in-progress uploads, backup retention and deletion timelines.
+
+Export album captions, ordering and YouTube destinations as versioned JSON. Treat public tokens, upload URLs and unlisted URLs as sensitive. Keep pilot feedback private and avoid automatic media/URL collection.
 
 ## Out of scope
 
-- Automatic uploads and integrations with provider accounts.
-- Service-owned video storage, video transcoding, native mobile apps.
-- Billing, paid tiers, mailed stickers, AI tools and advanced analytics.
-- Additional providers beyond supported pasted YouTube/Vimeo links.
-- Automated migration of old CouchDB data/local videos or preservation of historical EC2-hostname links.
-- Guaranteed permanent hosting or provider availability.
+- Vimeo and every other video platform.
+- Pasted-link-only delivery as a substitute for uploads.
+- Service-owned video storage/transcoding.
+- Billing, paid tiers, mailed stickers, native apps, AI and advanced analytics.
+- Freeform QR design tools.
+- Automated legacy data migration or preservation of old EC2-hostname QR links.
+- Guaranteed permanent hosting, provider availability or link confidentiality.
 
 ## Implementation order
 
@@ -54,33 +69,34 @@ Account/album deletion disables affected app links and removes associated app da
 - [ ] [#2 — Set up MVP workspace and continuous integration](https://github.com/krzysztofstudniarek/video_gallery/issues/2)
 - [ ] [#3 — Implement D1 schema and migrations for accounts, albums, and links](https://github.com/krzysztofstudniarek/video_gallery/issues/3)
 - [ ] [#4 — Add Google sign-in and secure owner-only management](https://github.com/krzysztofstudniarek/video_gallery/issues/4)
-- [ ] [#5 — Build album and external video-link management](https://github.com/krzysztofstudniarek/video_gallery/issues/5)
+- [ ] [#5 — Build albums and YouTube video management](https://github.com/krzysztofstudniarek/video_gallery/issues/5)
 - [ ] [#6 — Implement stable public video links and optional album sharing](https://github.com/krzysztofstudniarek/video_gallery/issues/6)
-- [ ] [#7 — Create printable QR sheets with captions](https://github.com/krzysztofstudniarek/video_gallery/issues/7)
+- [ ] [#7 — Create styled QR presets and printable sheets](https://github.com/krzysztofstudniarek/video_gallery/issues/7)
 - [ ] [#8 — Add album export, account deletion, and pilot privacy information](https://github.com/krzysztofstudniarek/video_gallery/issues/8)
 - [ ] [#9 — Collect private pilot feedback](https://github.com/krzysztofstudniarek/video_gallery/issues/9)
 - [ ] [#10 — Prepare Cloudflare staging, production, backups and cost controls](https://github.com/krzysztofstudniarek/video_gallery/issues/10)
 - [ ] [#11 — Run end-to-end checks and launch the free pilot](https://github.com/krzysztofstudniarek/video_gallery/issues/11)
+- [ ] [#14 — YouTube authorization and approval requirements](https://github.com/krzysztofstudniarek/video_gallery/issues/14)
+- [ ] [#15 — Resumable uploads and Unlisted verification](https://github.com/krzysztofstudniarek/video_gallery/issues/15)
 
-Each GitHub issue contains acceptance criteria and prerequisites. Start with #1, then #2/#3. Auth and core album management precede public sharing and printing. Operational setup can progress after the foundation; #11 is the release gate.
+Execution order: #1–#4 establish the foundation; #5 and #14 prepare album/upload integration; #15 completes uploads; #6–#10 finish sharing/printing/operations; #11 gates launch. Numbers reflect creation order. The tracker is #12.
 
 ## Pilot release gate
 
-- Critical owner isolation, session, URL-validation and sharing tests pass.
-- End-to-end sign-in → album → links → print → anonymous scan works.
-- At least one real print is checked on representative iPhone and Android cameras.
-- Production domain/OAuth settings, usage alerts and redacted logging are configured.
-- A metadata backup is restored into an isolated database.
-- Feedback, export and deletion work; beta limitations and retention are published.
-- Maintainer signs off and invites 5–10 pilot users; no invitations are sent automatically.
-
-## Learning goals
-
-Aim for at least 3 completed printed albums. Review feedback weekly for task completion, scanning failures, unclear permissions and setup effort. Use opt-in conversations and private feedback, not tracking-heavy analytics. These are learning targets, not a claim of market validation.
+- Sign-in → channel connection → album → upload → verified Unlisted → preset → print → anonymous scan works.
+- Applicable Google OAuth verification, YouTube audit requirements and production quotas are checked and resolved. If the project is restricted to Private uploads, launch is blocked until resolved; never fall back to Public.
+- Interrupted/retried uploads do not duplicate videos; revocation, quota failures and incorrect privacy produce clear errors.
+- All style presets scan from paper on representative devices.
+- Cross-account isolation, CSRF/session, URL and token checks pass.
+- Permanent domain/OAuth setup, redacted logging, usage alerts and upload guardrails are configured.
+- Restore an independent metadata backup into an isolated database.
+- Feedback, export, deletion and privacy/beta information are ready.
+- Maintainer signs off and invites users; this planning change does not deploy an app or provision paid resources.
 
 ## References
 
-- Cloudflare Python: https://developers.cloudflare.com/workers/languages/python/
-- Python framework support: https://developers.cloudflare.com/changelog/post/2026-09-02-python-workers-web-framework-support/
-- D1: https://developers.cloudflare.com/d1/
-- Workers static assets: https://developers.cloudflare.com/workers/static-assets/
+- https://developers.cloudflare.com/workers/languages/python/
+- https://developers.cloudflare.com/d1/
+- https://developers.cloudflare.com/workers/static-assets/
+- https://support.google.com/youtube/answer/157177?hl=en
+- https://developers.google.com/youtube/v3/docs/videos/insert
