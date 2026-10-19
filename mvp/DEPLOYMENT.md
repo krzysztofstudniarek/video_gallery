@@ -21,6 +21,7 @@ the workflow is manual and nothing deploys on push.
    | Kind | Name | Value |
    | --- | --- | --- |
    | Variable | `SUPABASE_PROJECT_REF` | Staging project ref |
+   | Variable | `SUPABASE_DB_POOLER_HOST` | Session pooler hostname from Supabase Connect (host only) |
    | Variable | `SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_…`, safe for the frontend |
    | Variable | `FRONTEND_ORIGIN` | `https://krzysztofstudniarek.github.io` (no trailing slash/path) |
    | Variable | `FRONTEND_BASE_PATH` | `/video_gallery/` (`/` for a root custom domain) |
@@ -84,3 +85,15 @@ paused. This setup does not purchase a plan or claim a completed hosted deployme
 References: [Supabase deployments](https://supabase.com/docs/guides/functions/deploy),
 [environment migrations](https://supabase.com/docs/guides/deployment/managing-environments),
 [Edge HTTP routing limitations](https://supabase.com/docs/guides/functions/http-methods).
+
+## GitHub runner IPv4 connectivity
+
+In the Supabase project click **Connect**, select **Session pooler**, and copy only
+the hostname (for example `aws-0-eu-central-1.pooler.supabase.com`) into the
+GitHub staging environment variable `SUPABASE_DB_POOLER_HOST`. Use the exact host
+shown for your project; do not infer the region/index or paste the full URL.
+Migrations use session mode on port 5432 with TLS. The database password is read
+from the existing secret into PGPASSWORD; it is never placed in URL arguments.
+This avoids direct database IPv6 connectivity on GitHub-hosted runners and does
+not require a paid IPv4 add-on. After merging this fix, start a new workflow run
+on master; rerunning the old run uses the old deployment script.
