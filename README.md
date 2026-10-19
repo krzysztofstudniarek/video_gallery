@@ -4,7 +4,7 @@ Turn videos hosted in your own accounts into QR codes for a physical photo album
 
 ## Project status
 
-This repository currently contains the original 2017 Python 2/Bottle prototype. The Cloudflare MVP is planned, not implemented or deployed. Do not deploy the legacy application for public use: its authentication, ownership checks, dependencies and filesystem storage require replacement.
+This repository currently contains the original 2017 Python 2/Bottle prototype. The Supabase MVP is planned, not implemented or deployed. Do not deploy the legacy application for public use: its authentication, ownership checks, dependencies and filesystem storage require replacement.
 
 ## Free MVP
 
@@ -19,7 +19,9 @@ YouTube uploads are required for the MVP. Other platforms, payments, AI features
 
 ## Planned stack
 
-Modern Python + FastAPI on Cloudflare Workers, D1 for metadata, React/TypeScript/Vite for the frontend, and browser-generated QR SVGs and print sheets. Python runtime and dependency versions will be pinned after the compatibility spike in issue #1.
+Supabase Auth for Google sign-in, Supabase PostgreSQL with row-level security for metadata, and TypeScript/Deno Edge Functions for YouTube OAuth, upload coordination and sharing. React/TypeScript/Vite supplies the frontend and browser-generated styled QR sheets. Supabase is the backend; static frontend hosting is selected and validated in #10.
+
+This supersedes the Python/FastAPI/Cloudflare architecture: Supabase Edge Functions do not host Python. The original Python code and any local spike work remain reference; no new Python service is planned. Issue #1 validates the Supabase stack.
 
 ## Legacy source
 
@@ -31,4 +33,6 @@ Public GitHub issues are suitable for general suggestions and sanitised bug repo
 
 ## Hosting
 
-Production hosting, a permanent domain and Google OAuth credentials are not configured by this planning change. Cloud accounts, usage limits, backups and release checks are covered by issue #10.
+Production hosting, a permanent domain and Google OAuth credentials are not configured by this planning change. Supabase projects, static frontend hosting, usage limits, backups and release checks are covered by issue #10.
+
+Supabase Free can pause after low activity. Evaluate a non-pausing production plan before users rely on printed links; do not promise permanent availability. See [architecture decision](docs/ADR-001-supabase.md).
