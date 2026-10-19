@@ -1,0 +1,39 @@
+project_id = "videoalbum-compatibility"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:5173"
+additional_redirect_urls = ["http://127.0.0.1:5173"]
+enable_signup = true
+
+[auth.external.google]
+enabled = false
+client_id = "env(GOOGLE_CLIENT_ID)"
+secret = "env(GOOGLE_CLIENT_SECRET)"
+skip_nonce_check = false
+
+# Authentication is explicitly enforced inside compatibility, allowing current
+# publishable keys instead of relying on the legacy gateway JWT-key check.
+[functions.compatibility]
+verify_jwt = false
+
+[functions.share]
+verify_jwt = false
+
+[functions.health]
+verify_jwt = false

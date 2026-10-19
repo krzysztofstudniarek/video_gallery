@@ -1,0 +1,21 @@
+{
+  "name": "videoalbum-supabase-spike",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=22.12"},
+  "scripts": {
+    "start": "supabase start",
+    "reset": "supabase db reset --local",
+    "serve": "supabase functions serve",
+    "test:db": "supabase test db",
+    "test:local": "node tests/local.mjs",
+    "test": "node --test scripts/deployment.test.mjs && deno test --allow-env tests",
+    "check": "deno check supabase/functions/compatibility/index.ts supabase/functions/share/index.ts supabase/functions/health/index.ts && tsc --noEmit",
+    "deploy:backend": "node scripts/deploy.mjs",
+    "smoke:staging": "node scripts/smoke.mjs",
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build"
+  },
+  "dependencies": {"@supabase/supabase-js": "2.118.0"},
+  "devDependencies": {"supabase": "2.121.0", "deno": "2.9.6", "vite": "8.3.4", "typescript": "7.0.2"}
+}

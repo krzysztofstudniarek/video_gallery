@@ -1,0 +1,15 @@
+const ref = process.env.SUPABASE_PROJECT_REF;
+const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+if (!/^[a-z]{20}$/.test(ref ?? '') || !key?.startsWith('sb_publishable_')) throw new Error('Configure staging project ref and publishable key');
+const base = `https://${ref}.supabase.co`;
+const send = (path, options = {}) => fetch(base + path, { ...options, signal: AbortSignal.timeout(15000) });
+const health = await send('/functions/v1/health');
+const body = await health.json();
+if (!health.ok || body.application !== 'videoalbum' || body.status !== 'ok') throw new Error('Health smoke failed');
+const unauthorized = await send('/functions/v1/compatibility', { method: 'POST', headers: { apikey: key } });
+if (unauthorized.status !== 401) throw new Error('Unauthenticated request was not rejected');
+const share = await send('/functions/v1/share?token=invalid', { redirect: 'manual' });
+if (share.status !== 404) throw new Error('Invalid share was not rejected');
+const table = await send('/rest/v1/spike_items?select=id&limit=1', { headers: { apikey: key } });
+if (![401, 403].includes(table.status)) throw new Error('Anonymous table permissions smoke failed');
+console.log('Staging smoke passed: health, JWT boundary, invalid share and anonymous table denial');

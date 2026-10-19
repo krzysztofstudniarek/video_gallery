@@ -106,3 +106,7 @@ Execution order: #1–#4 establish the foundation; #5 and #14 prepare album/uplo
 ## Repository structure and learning path
 
 Use supabase/config.toml, supabase/migrations/, supabase/functions/ and SQL/RLS tests alongside frontend/. Learn local CLI/reset, Auth, relational modelling/RLS, then Edge Functions and YouTube integration. No Supabase Storage video bucket is needed. See ADR-001-supabase.md for the decision and hosting boundary.
+
+## Compatibility workspace
+
+The isolated mvp/ workspace contains supabase/config.toml, migrations, Edge Functions, SQL/RLS tests and a minimal TypeScript/Vite frontend. See [local evidence](../mvp/README.md) and [staging deployment](../mvp/DEPLOYMENT.md). This spike does not complete the live Google/YouTube gate. Before printed codes are relied upon, use a Supabase Pro organization without inactivity pausing; no paid provisioning is authorized by this decision.
