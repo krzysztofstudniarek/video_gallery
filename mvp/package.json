@@ -6,7 +6,7 @@
   "scripts": {
     "start": "supabase start",
     "reset": "supabase db reset --local",
-    "serve": "supabase functions serve",
+    "serve": "supabase functions serve --env-file supabase/.env.local",
     "test:db": "supabase test db",
     "test:local": "node tests/local.mjs",
     "test": "node --test scripts/deployment.test.mjs && deno test --allow-env tests",

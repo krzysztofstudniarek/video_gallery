@@ -24,6 +24,7 @@ npm ci
 npm start
 npm run reset
 npm run test:db
+cp supabase/.env.example supabase/.env.local
 npm run serve
 # In another terminal:
 npm run test:local

@@ -136,7 +136,7 @@ Deno.test("pause prevents a chunk after status query; unexpected host sends no b
 
 const owner = "00000000-0000-4000-8000-000000000001";
 const other = "00000000-0000-4000-8000-000000000002";
-function syntheticBackend() {
+function syntheticBackend(overrides: Record<string, string | undefined> = {}) {
   const states = new Map<string, { owner: string; verifier: string }>();
   let credential: { refresh_cipher: string; channel_id: string; channel_title: string } | null =
     null;
@@ -150,7 +150,8 @@ function syntheticBackend() {
   let marker = "";
   let visibility = "unlisted";
   let initiations = 0;
-  const values: Record<string, string> = {
+  let rejectRevocation = false;
+  const values: Record<string, string | undefined> = {
     SUPABASE_URL: "https://project.supabase.co",
     SUPABASE_ANON_KEY: "synthetic-anon",
     SUPABASE_SERVICE_ROLE_KEY: "synthetic-admin",
@@ -159,6 +160,7 @@ function syntheticBackend() {
     YOUTUBE_CLIENT_SECRET: "synthetic-secret",
     YOUTUBE_TOKEN_KEY_B64: encodedKey,
     YOUTUBE_REDIRECT_URI: "https://example.test/?youtube_callback=1",
+    ...overrides,
   };
   const send: typeof fetch = async (input, init) => {
     const url = new URL(String(input));
@@ -194,6 +196,13 @@ function syntheticBackend() {
         return Response.json(null);
       }
       if (name === "yt_probe_job") return Response.json(body.p_owner === owner && job ? [job] : []);
+      if (name === "yt_probe_forget") {
+        assert(body.p_owner === owner);
+        credential = null;
+        job = null;
+        states.clear();
+        return Response.json(null);
+      }
       if (name === "yt_probe_reserve") {
         assert(body.p_owner === owner && !job);
         job = {
@@ -227,6 +236,10 @@ function syntheticBackend() {
       return Response.json({
         items: [{ id: "UC" + "x".repeat(22), snippet: { title: "Synthetic channel" } }],
       });
+    }
+    if (url.href === "https://oauth2.googleapis.com/revoke") {
+      assert(new URLSearchParams(String(init?.body)).get("token") === "synthetic-refresh");
+      return new Response(null, { status: rejectRevocation ? 503 : 200 });
     }
     if (url.pathname === "/upload/youtube/v3/videos") {
       initiations++;
@@ -264,6 +277,9 @@ function syntheticBackend() {
     handler,
     exchanges: () => exchanges,
     initiations: () => initiations,
+    rejectRevocation: (value: boolean) => {
+      rejectRevocation = value;
+    },
     privateVideo: () => {
       visibility = "private";
     },
@@ -289,6 +305,26 @@ Deno.test("consent is owner-bound and one-use; tokens remain server-side and enc
   assert((await backend.call({ action: "refresh" })).ok);
   const status = await backend.call({ action: "status" });
   assert(!(await status.text()).includes("refresh_cipher"));
+});
+Deno.test("unconfigured consent reports status but does not start a provider flow", async () => {
+  const backend = syntheticBackend({ YOUTUBE_CLIENT_ID: undefined });
+  const status = await backend.call({ action: "status" });
+  assert(status.ok && (await status.json()).configured === false);
+  assert((await backend.call({ action: "start" })).status === 503);
+  assert(backend.exchanges() === 0);
+});
+Deno.test("disconnect retains credentials on revoke failure and removes them only after success", async () => {
+  const backend = syntheticBackend();
+  const state = new URL((await (await backend.call({ action: "start" })).json()).authorization_url)
+    .searchParams.get("state");
+  assert((await backend.call({ action: "complete", state, code: "synthetic" })).ok);
+  backend.rejectRevocation(true);
+  const failure = await backend.call({ action: "disconnect" });
+  assert(failure.status === 502 && (await failure.json()).error === "revocation_failed");
+  assert((await (await backend.call({ action: "status" })).json()).connected === true);
+  backend.rejectRevocation(false);
+  assert((await backend.call({ action: "disconnect" })).ok);
+  assert((await (await backend.call({ action: "status" })).json()).connected === false);
 });
 Deno.test("anonymous and foreign-origin requests cannot start YouTube consent", async () => {
   const backend = syntheticBackend();

@@ -98,6 +98,42 @@ isolation. Use a separate Google Cloud project if that isolation is required.
 Account deletion cascades local records; complete provider-revocation/account
 deletion workflows remain separate MVP work.
 
+## Internal pipeline and module boundaries
+
+One deployed `youtube` Edge Function retains the existing action API. Its HTTP
+adapter validates startup configuration, checks CORS/method/JWT, reads bounded
+JSON, validates an action and dispatches with the verified owner. Only metadata
+is accepted: `MAX_REQUEST_BYTES` is 8 KiB, measured as bytes while streaming;
+oversized bodies are cancelled without reading the remainder. Video bytes use
+the separate browser-to-Google transfer path.
+
+The `functions/_shared/youtube/` modules have these responsibilities:
+
+| Module | Responsibility |
+| --- | --- |
+| `config.ts`, `http.ts`, `inputs.ts`, `errors.ts` | Configuration, transport, validated inputs, sanitised responses |
+| `actions.ts` | Dispatch validated actions with an explicit owner context |
+| `consent.ts` | Start and complete one-use owner-bound consent |
+| `connection.ts` | Connection status, refresh and disconnect |
+| `upload.ts` | Reserve/initiate, resume and verify the existing probe |
+| `repository.ts` | Private RPC access bound to the verified owner |
+| `google-client.ts`, `google.ts` | Google requests and protocol helpers |
+| `context.ts`, `crypto.ts` | Owner/purpose-bound token encryption and service context |
+
+The pipeline is signed-in → consent pending → channel connected → upload
+reserved → browser transfer → processing → verified Unlisted. Declined/expired
+consent requires a fresh attempt; rejected refresh requires reconsent; interrupted
+transfer resumes the existing reservation; processing failure and visibility
+mismatch stop verification. These are probe transitions, not a new production
+job-state schema. No schema or frontend action API changes are needed for the
+module refactor.
+
+`FRONTEND_ORIGIN` is required at startup and must be a valid HTTPS origin, or an
+explicit local HTTP origin. Local setup copies `supabase/.env.example` to ignored
+`supabase/.env.local`; `npm run serve` passes that file to the CLI. YouTube-specific
+credentials can remain unset until the real probe is configured: status reports
+unconfigured and consent/upload actions return 503.
+
 ## Security and limitations
 
 - Backend verifies the Supabase JWT for every action. Owner IDs come solely from
@@ -137,3 +173,9 @@ References:
 - [YouTube authorization](https://developers.google.com/youtube/data/guides/auth/server-side-web-apps)
 - [Resumable protocol](https://developers.google.com/youtube/data/guides/using_resumable_upload_protocol)
 - [Channel confirmation](https://developers.google.com/youtube/data/reference/rest/v3/channels/list)
+
+Review refactor validation (2026-10-20): 5 deployment tests and 23 Deno tests
+passed, including streaming byte limits, startup origin validation, consent,
+refresh and disconnect behavior. Local two-user Auth/Edge integration, type
+checks and the Pages build passed. The refactor adds no database migration and
+does not change the frontend action contract.
