@@ -29,6 +29,11 @@ try {
   assert(spoof.error, 'Forged ownership accepted');
   const anon = createClient(url, config.ANON_KEY, { auth: { persistSession: false } });
   assert((await anon.from('spike_items').select('id')).error, 'Anonymous table read allowed');
+  assert((await clients[0].rpc('yt_probe_credentials', { p_owner: users[1] })).error, 'User could invoke privileged token RPC');
+  const ytStatus = await clients[0].functions.invoke('youtube', { body: { action: 'status' } });
+  assert(!ytStatus.error && ytStatus.data.connected === false, 'YouTube status requires working JWT/private RPC path');
+  const ytAnonymous = await fetch(`${url}/functions/v1/youtube`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'start' }) });
+  assert(ytAnonymous.status === 401, 'Anonymous YouTube consent accepted');
   const session = (await clients[0].auth.getSession()).data.session;
   const call = (token) => fetch(`${url}/functions/v1/compatibility`, { method: 'POST', headers: { apikey: config.ANON_KEY, Authorization: `Bearer ${token}` } });
   assert((await call('invalid')).status === 401, 'Invalid JWT accepted');

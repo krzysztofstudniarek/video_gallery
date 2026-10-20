@@ -88,6 +88,12 @@ The spike does not yet implement public resolver rate limits or a stable domain.
 
 ## Encryption and upload feasibility
 
+The [YouTube consent/upload probe guide](YOUTUBE.md) covers the real separate
+consent flow, backend secrets, and a bounded direct-browser upload test. The
+original compatibility endpoint remains synthetic; live YouTube results must be
+recorded separately. Google sign-in, the staging authenticated probe and sign-out
+rejection were confirmed by the owner on 2026-10-19.
+
 Deno Web Crypto exercises AES-256-GCM with a random 96-bit nonce and authenticated
 owner/version context. The synthetic probe uses an ephemeral key: persistent
 encryption keys, versioned envelopes, rotation and revocation are feature work.

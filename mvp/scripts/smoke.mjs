@@ -8,6 +8,8 @@ const body = await health.json();
 if (!health.ok || body.application !== 'videoalbum' || body.status !== 'ok') throw new Error('Health smoke failed');
 const unauthorized = await send('/functions/v1/compatibility', { method: 'POST', headers: { apikey: key } });
 if (unauthorized.status !== 401) throw new Error('Unauthenticated request was not rejected');
+const youtube = await send('/functions/v1/youtube', { method: 'POST', headers: { apikey: key, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'start' }) });
+if (youtube.status !== 401) throw new Error('Anonymous YouTube consent was not rejected');
 const share = await send('/functions/v1/share?token=invalid', { redirect: 'manual' });
 if (share.status !== 404) throw new Error('Invalid share was not rejected');
 const table = await send('/rest/v1/spike_items?select=id&limit=1', { headers: { apikey: key } });

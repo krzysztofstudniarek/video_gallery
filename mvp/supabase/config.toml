@@ -37,3 +37,7 @@ verify_jwt = false
 
 [functions.health]
 verify_jwt = false
+
+# The handler verifies each user JWT through Supabase Auth before any private RPC.
+[functions.youtube]
+verify_jwt = false

@@ -1,10 +1,30 @@
 <!doctype html>
-<html lang="en"><meta charset="utf-8"><title>VideoAlbum Supabase spike</title>
+<html lang="en"><meta charset="utf-8"><meta name="referrer" content="no-referrer"><title>VideoAlbum Supabase spike</title>
 <h1>VideoAlbum compatibility spike</h1>
 <p id="connection" aria-live="polite">Checking backend connection…</p>
 <p>Use a dedicated test account. YouTube uploads will explicitly use Unlisted: anyone with the link can watch and share.</p>
 <button id="signin">Sign in with Google</button>
 <button id="probe">Run authenticated probe</button>
 <button id="signout">Sign out</button>
+<section>
+<h2>YouTube upload validation</h2>
+<p>This separate consent lets VideoAlbum upload and read video/channel status. Use a test channel and a synthetic MP4, up to 10 MiB. No automatic uploads occur.</p>
+<p id="youtube-status" aria-live="polite">Sign in to connect YouTube.</p>
+<button id="youtube-connect">Connect YouTube</button>
+<button id="youtube-status-refresh">Check connection</button>
+<button id="youtube-refresh">Test server-side token refresh</button>
+<button id="youtube-disconnect">Disconnect and revoke YouTube access</button>
+<p>Disconnecting revokes this Google app's grant. Use a separate OAuth client for YouTube; existing YouTube videos are not deleted.</p>
+<label>Small test MP4 <input id="youtube-file" type="file" accept="video/mp4"></label>
+<label><input id="youtube-unlisted" type="checkbox"> I confirm the displayed destination channel and understand this test video will be Unlisted: anyone with its link can watch and share.</label>
+<label>Is this test video made for kids? <select id="youtube-kids"><option value="">Choose</option><option value="no">No</option><option value="yes">Yes</option></select></label>
+<p><button id="youtube-upload">Start one Unlisted test upload</button>
+<button id="youtube-pause">Pause after current chunk</button>
+<button id="youtube-resume">Resume / check existing upload</button>
+<button id="youtube-verify">Check processing and Unlisted status</button>
+<button id="youtube-clear">Clear probe record</button></p>
+<p>Clearing forgets the resume record; it does not delete or cancel a YouTube video. Never clear an uncertain upload just to retry it. Completed test videos can be removed in YouTube Studio.</p>
+<progress id="youtube-progress" max="100" value="0"></progress>
+</section>
 <output id="result" aria-live="polite"></output>
 <script type="module" src="/web/main.ts"></script></html>
