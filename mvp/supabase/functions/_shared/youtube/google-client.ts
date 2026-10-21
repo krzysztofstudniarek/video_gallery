@@ -1,3 +1,4 @@
+import { inspectSession } from "./upload-session.ts";
 import { googleJson, sessionUrl, tokenRequest, uploadBody } from "./google.ts";
 import type { ConsentConfig } from "./config.ts";
 
@@ -50,6 +51,8 @@ export class GoogleClient {
         signal: AbortSignal.timeout(15000),
         headers: {
           ...this.auth(accessToken).headers,
+          // Initiation runs server-side; preserve the browser origin for CORS-aware sessions.
+          Origin: new URL(this.config.redirect).origin,
           "Content-Type": "application/json",
           "X-Upload-Content-Type": "video/mp4",
           "X-Upload-Content-Length": String(size),
@@ -67,6 +70,9 @@ export class GoogleClient {
       this.auth(accessToken),
     );
     return result.items?.[0];
+  }
+  inspectSession(session: string, size: number) {
+    return inspectSession(this.send, this.config.redirect, session, size);
   }
   private auth(accessToken: string) {
     return { headers: { Authorization: `Bearer ${accessToken}` } };

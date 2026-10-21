@@ -5,7 +5,13 @@ import { completeConsent, startConsent } from "./consent.ts";
 import { GoogleClient } from "./google-client.ts";
 import type { ActionInput } from "./inputs.ts";
 import type { YoutubeRepository } from "./repository.ts";
-import { clearUpload, initiateUpload, resumeUpload, verifyUpload } from "./upload.ts";
+import {
+  clearUpload,
+  initiateUpload,
+  inspectUpload,
+  resumeUpload,
+  verifyUpload,
+} from "./upload.ts";
 
 export async function dispatchAction(
   input: ActionInput,
@@ -42,5 +48,7 @@ export async function dispatchAction(
       return verifyUpload(context, input);
     case "clear_job":
       return clearUpload(context);
+    case "inspect":
+      return inspectUpload(context);
   }
 }

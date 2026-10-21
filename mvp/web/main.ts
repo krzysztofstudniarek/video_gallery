@@ -157,13 +157,18 @@ async function fileData() {
 }
 async function transfer(session: string, file: File) {
   paused = false;
+  output.textContent =
+    "Transferring to YouTube. Sent bytes are not yet confirmation that YouTube accepted the upload.";
   video = await directUpload(session, file, (bytes) => {
-    document.querySelector<HTMLProgressElement>("#youtube-progress")!.value = bytes * 100 /
-      file.size;
+    document.querySelector<HTMLProgressElement>("#youtube-progress")!.value = Math.min(
+      99,
+      bytes * 100 / file.size,
+    );
   }, () => paused);
   output.textContent = video
     ? "Transfer completed. Check processing and Unlisted status next."
     : "Paused. Resume this existing probe with the same file.";
+  if (video) document.querySelector<HTMLProgressElement>("#youtube-progress")!.value = 100;
 }
 button("youtube-upload", async () => {
   if (!channel || !document.querySelector<HTMLInputElement>("#youtube-unlisted")!.checked) {
@@ -196,6 +201,20 @@ button("youtube-verify", async () => {
   output.textContent = result.ready
     ? "Verified: processing completed and visibility is Unlisted. Get the watch link from YouTube Studio and check playback in a signed-out browser."
     : `Unlisted verified; processing status: ${result.processing}. Check again shortly.`;
+});
+button("youtube-inspect", async () => {
+  output.textContent = "Checking the existing session without transferring video…";
+  const result = await youtube("inspect");
+  if (result.complete) {
+    video = result.video_id;
+    document.querySelector<HTMLProgressElement>("#youtube-progress")!.value = 100;
+    output.textContent =
+      "YouTube reports the upload completed. Check processing and Unlisted status next.";
+  } else {
+    output.textContent = `Existing session check: ${
+      JSON.stringify(result)
+    }. No video bytes were sent. Keep this result for diagnosis; do not start a duplicate upload.`;
+  }
 });
 button("youtube-clear", async () => {
   if (

@@ -13,7 +13,7 @@ export type InitiateInput = {
 export type ResumeInput = { action: "resume"; size: number; sha256: string };
 export type VerifyInput = { action: "verify"; video_id: string };
 export type ActionInput = CompleteInput | InitiateInput | ResumeInput | VerifyInput | {
-  action: "status" | "start" | "refresh" | "disconnect" | "clear_job";
+  action: "status" | "start" | "refresh" | "disconnect" | "clear_job" | "inspect";
 };
 export function parseAction(value: unknown): ActionInput {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -26,6 +26,7 @@ export function parseAction(value: unknown): ActionInput {
     case "refresh":
     case "disconnect":
     case "clear_job":
+    case "inspect":
       return { action: body.action };
     case "complete":
       if (

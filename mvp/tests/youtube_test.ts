@@ -242,6 +242,11 @@ function syntheticBackend(overrides: Record<string, string | undefined> = {}) {
       return new Response(null, { status: rejectRevocation ? 503 : 200 });
     }
     if (url.pathname === "/upload/youtube/v3/videos") {
+      if (init?.method === "OPTIONS") return new Response(null, { status: 204 });
+      if (init?.method === "PUT") {
+        assert(!init.body);
+        return Response.json({ id: "synthetic01" });
+      }
       initiations++;
       const metadata = JSON.parse(String(init?.body));
       assert(metadata.status.privacyStatus === "unlisted");
@@ -362,6 +367,10 @@ Deno.test("upload requires explicit Unlisted/channel confirmation, saves encrypt
   const result = await backend.call(input);
   assert(result.ok && (await result.json()).session_url.includes("upload_id=synthetic"));
   assert((await backend.call(input)).status === 409);
+  assert(backend.initiations() === 1);
+  assert((await backend.call({ action: "inspect" }, "other")).status === 409);
+  const inspected = await backend.call({ action: "inspect" });
+  assert(inspected.ok && (await inspected.json()).complete === true);
   assert(backend.initiations() === 1);
   assert(
     (await backend.call({ action: "resume", size: 1, sha256: "b".repeat(64) })).status === 400,
