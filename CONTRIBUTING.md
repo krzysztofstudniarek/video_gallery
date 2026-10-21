@@ -1,6 +1,6 @@
 # Contributing
 
-The current work is planning a free MVP; the 2017 application remains as reference.
+The free MVP uses the Supabase workspace in `mvp/`; the 2017 application remains as reference.
 
 1. Choose an open issue in the Free MVP milestone and read its prerequisites.
 2. Use a focused branch and pull request linked to the issue.
@@ -10,7 +10,7 @@ The current work is planning a free MVP; the 2017 application remains as referen
 6. Never commit credentials, cookies, OAuth codes, private video links, personal media or local databases.
 7. Record implementation commands in the README when the new workspace exists.
 
-See mvp/README.md for current compatibility test/build commands. Issue #2 establishes lint, type, test and build commands and CI. Documentation-only changes should be checked for consistent links and scope; they do not require running the legacy service.
+See [mvp/README.md](mvp/README.md) for formatting, lint, type, test, build and local database commands. Run the PR workflow's checks before review. After schema changes, reset the local database, run SQL/RLS tests and regenerate the checked-in database types. Documentation-only changes should be checked for consistent links and scope; they do not require running the legacy service.
 
 Public issues should contain sanitised information. Suspected security vulnerabilities should be reported using GitHub private vulnerability reporting if enabled; otherwise request a private reporting channel without posting exploit details or sensitive data publicly.
 

@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "./database.types";
 import { directUpload } from "./direct-upload";
 
 // Capture and remove Google's one-time callback values before any API request.
@@ -22,7 +23,7 @@ fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/health`)
     connection.textContent = "Backend unavailable; check deployment configuration.";
   });
 
-const client = createClient(
+const client = createClient<Database>(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
   {

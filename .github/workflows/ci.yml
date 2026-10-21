@@ -1,0 +1,69 @@
+name: Supabase workspace CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workspace-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  workspace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mvp
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22.19.0'
+          cache: npm
+          cache-dependency-path: mvp/package-lock.json
+      - run: npm ci
+      - run: npm run fmt:check
+      - run: npm run lint
+      - run: npm run check
+      - run: npm test
+      - name: Build frontend using synthetic public configuration
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: http://127.0.0.1:54321
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_synthetic
+      # CLI startup/status may include local keys. Keep raw output off public logs.
+      - name: Start disposable local Supabase
+        run: |
+          if ! npm start > "$RUNNER_TEMP/supabase-start.log" 2>&1; then
+            echo "Local Supabase startup failed; reproduce with npm start."
+            exit 1
+          fi
+      - name: Reapply migrations from an empty local database
+        run: npm run reset
+      - run: npm run test:db
+      - name: Detect generated database type drift
+        run: npm run types:db:check
+      - name: Serve local Edge Functions with example configuration
+        run: |
+          ./node_modules/.bin/supabase functions serve --env-file supabase/.env.example > "$RUNNER_TEMP/supabase-functions.log" 2>&1 &
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:54321/functions/v1/health > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Local Edge Functions did not become ready."
+          exit 1
+      - name: Check Auth, direct API isolation and Edge authorization
+        run: npm run test:local
+      - name: Stop disposable containers
+        if: always()
+        run: npm run stop -- --no-backup > /dev/null 2>&1

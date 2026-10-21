@@ -4,7 +4,7 @@ Turn videos hosted in your own accounts into QR codes for a physical photo album
 
 ## Project status
 
-This repository currently contains the original 2017 Python 2/Bottle prototype. The Supabase base app is implemented locally and has not been deployed. Do not deploy the legacy application for public use: its authentication, ownership checks, dependencies and filesystem storage require replacement.
+The active Supabase MVP workspace is in [mvp/](mvp/README.md), with a React/TypeScript/Vite frontend, SQL/RLS tests, generated database types and pull request CI. The compatibility app has been validated on staging. The original 2017 Python 2/Bottle prototype remains as reference. Do not deploy the legacy application for public use: its authentication, ownership checks, dependencies and filesystem storage require replacement.
 
 ## Free MVP
 
@@ -17,7 +17,7 @@ Sign in with Google, connect your YouTube channel, create an album, upload video
 
 YouTube uploads are required for the MVP. Other platforms, payments, AI features and service-owned video hosting are deferred. Applicable Google/YouTube approvals and quotas must be verified before public launch.
 
-## Planned stack
+## MVP stack
 
 Supabase Auth for Google sign-in, Supabase PostgreSQL with row-level security for metadata, and TypeScript/Deno Edge Functions for YouTube OAuth, upload coordination and sharing. React/TypeScript/Vite supplies the frontend and browser-generated styled QR sheets. Supabase is the backend; static frontend hosting is selected and validated in #10.
 
@@ -33,10 +33,10 @@ Public GitHub issues are suitable for general suggestions and sanitised bug repo
 
 ## Hosting
 
-Production hosting, a permanent domain and Google OAuth credentials are not configured by this planning change. Supabase projects, static frontend hosting, usage limits, backups and release checks are covered by issue #10.
+Production hosting and a permanent domain are not configured by the workspace change. Supabase projects, static frontend hosting, usage limits, backups and release checks are covered by issue #10.
 
 Supabase Free can pause after low activity. Evaluate a non-pausing production plan before users rely on printed links; do not promise permanent availability. See [architecture decision](docs/ADR-001-supabase.md).
 
 ## Staging deployment
 
-The [deployment guide](mvp/DEPLOYMENT.md) documents the manually triggered Supabase backend and GitHub Pages frontend workflow. Nothing deploys on push. Live Google sign-in and browser-to-YouTube upload validation remain open in issue #1.
+The [deployment guide](mvp/DEPLOYMENT.md) documents the manually triggered Supabase backend and GitHub Pages frontend workflow. Nothing deploys on push. Live Google sign-in and browser-to-YouTube validation evidence is recorded in the [workspace README](mvp/README.md).
