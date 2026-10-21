@@ -7,8 +7,6 @@ export async function inspectSession(
   size: number,
 ) {
   const url = sessionUrl(session), origin = new URL(redirect).origin;
-  // YouTube uses 308 for Resume Incomplete. Deno rejects that status with
-  // redirect="error", even without Location. Read it without following redirects.
   const options = { redirect: "manual" as const, signal: AbortSignal.timeout(15000) };
   const preflight = await send(url, {
     ...options,
