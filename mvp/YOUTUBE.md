@@ -239,5 +239,29 @@ reservation remains present. No explicit pause or successful resume is establish
 A local real-HTTP reproduction with the pinned Deno CLI showed fetch with
 redirect=error throws on 308, with or without Location; redirect=manual returns
 308 and its Range header without following Location. Inspection now uses manual
-redirect handling. Hosted confirmation is pending deployment and re-inspection
-of the same reservation; do not mark browser resume passed from this fix alone.
+redirect handling. At this point hosted confirmation was pending; the subsequent results below
+record inspection and resume of the same reservation.
+
+2026-10-21 live partial-session inspection: owner screenshot shows
+`session_status=308`, `complete=false`, `accepted_bytes=262144` (256 KiB).
+Preflight status was 200; origin, PUT, request-header, response-origin and
+Range-exposure diagnostic booleans were all true. This confirms live inspection
+of the existing incomplete session now succeeds. These server observations do
+not independently prove browser CORS behavior. At this point total file size, explicit pause confirmation and successful
+browser resume were not yet established.
+
+2026-10-21 live resume follow-up: after the partial-session inspection above,
+the owner reported **Resume / check existing upload** returned “Transfer
+completed.” A subsequent inspection confirmed completion, and verification
+confirmed completed processing and Unlisted visibility (including the handler's
+expected channel/job checks). This establishes browser recovery of the existing
+partially uploaded session. At this point signed-out playback and the Studio duplicate check for this second
+video were pending, as were file size/browser version and explicit pause confirmation. The earlier video's signed-out playback passed separately.
+
+2026-10-21 owner closeout: the owner confirmed only one video for the resumed
+upload test, then confirmed everything works in response to the signed-out
+playback check. Record this as owner-confirmed playback and no duplicate for
+that test. Browser resume, completion inspection, processing, Unlisted visibility
+and signed-out playback have now passed. Explicit pause confirmation, exact
+file size/browser version remain unrecorded. Authenticated staging timings are
+recorded in README.md from the subsequent six-request owner screenshot.

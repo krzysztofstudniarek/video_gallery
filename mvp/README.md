@@ -137,7 +137,7 @@ see the dated evidence below.
 | Final local integration including health | Passed; first measured request 107 ms; subsequent five: 47, 24, 23, 22, 22 ms. Public health=200. |
 | Google sign-in | Owner confirmed live staging Google sign-in, authenticated compatibility probe and signed-out rejection; reconfirmed during October 2026 validation |
 | Staging and real YouTube upload | 2026-10-21: owner confirmed consent, server-side refresh, completed upload recovered through inspection, expected channel/processing/Unlisted verification, and signed-out playback |
-| Browser CORS/resume | Direct transfer reached YouTube, but browser reported a generic failure. Backend inspection recovered completion. Exact browser failure and interrupted browser resume remain unverified |
+| Browser CORS/resume | 2026-10-21: existing partial session inspected at 262144 accepted bytes; owner then reported browser Resume completed, inspection confirmed completion, and processing/Unlisted verification passed. Original browser error cause and explicit pause confirmation remain unverified; owner confirmed second-video signed-out playback and no duplicate |
 
 Local integration/SQL results and runtime version are recorded above.
 The local integration reports first request and five subsequent wall-time samples;
@@ -175,10 +175,41 @@ All returned HTTP 200 and status=ok. Wall times: 203, 122, 121, 127, 111, 122 ms
 For samples 2–6, p50=122 ms and nearest-rank p95=127 ms (n=5). These
 include client/network/TLS time; reuse or isolate warmth was not controlled. The
 first sample is not a measured cold start or the first request after deployment.
-Region has not been recorded; authenticated latency, hosted runtime version and
-platform CPU measurements remain unrecorded. Do not substitute these lightweight
+Region, hosted runtime version and platform CPU measurements remain unrecorded. Do not substitute these lightweight
 health results for the authenticated compatibility function's latency.
 
 Live upload results are owner-reported from staging, not automated assertions.
-See YOUTUBE.md for the remaining interrupted-resume procedure. No watch link,
+See YOUTUBE.md for the successful partial-session resume evidence and test procedure. No watch link,
 media name, OAuth credential or upload session capability is included here.
+
+Authenticated compatibility timings from the owner's Chrome Network screenshot
+at 16:46 local time (Europe/Warsaw), with No throttling selected:
+
+| Sample | POST duration | HTTP status |
+| --- | --- | --- |
+| 1 | 1360 ms | 200 |
+| 2 | 1240 ms | 200 |
+| 3 | 484 ms | 200 |
+| 4 | 406 ms | 200 |
+| 5 | 420 ms | 200 |
+| 6 | 428 ms | 200 |
+
+The screenshot's separate 1110 ms preflight is excluded. Durations use the
+Network Time column (sample 5 displays 420 ms; its secondary row shows 419 ms).
+For samples 2–6: n=5, p50=428 ms, nearest-rank p95=1240 ms. First observed
+request=1360 ms; isolate warmth was not established, so no cold-start claim.
+All six POSTs returned 200; the owner confirmed probe success and the screenshot
+shows JWT, Postgres, HTTPS, AES-GCM and synthetic OAuth checks passing. These
+are browser wall times including backend work and network/external HTTPS calls,
+not function CPU measurements or a production performance guarantee.
+
+Staging deployment [39618253328](https://github.com/krzysztofstudniarek/video_gallery/actions/runs/39618253328)
+succeeded for revision `5e02891b132b542178ce17e120b1f9fdcab36ba4` (PR #22).
+An existing session was inspected at 262144 accepted bytes, then resumed in the
+browser to completion; processing/Unlisted checks passed. The owner confirmed
+signed-out playback and no duplicate. This satisfies the interrupted-upload
+recovery feasibility check, without claiming the explicit pause button was
+verified. Exact file size and browser version were not captured. The original
+browser error remains unexplained; automatic completion recovery is follow-up
+product work. The Supabase feasibility gate is validated; this is not a
+production-readiness or durable printed-link availability claim.
