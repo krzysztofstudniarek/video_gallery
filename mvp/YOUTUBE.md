@@ -74,6 +74,14 @@ The workflow does not copy YouTube secrets from GitHub or overwrite them.
    If CORS/preflight or exposed Range headers fail, record the browser and the
    sanitised error and stop. This is an unresolved feasibility result, not a
    reason to fall back to proxying/storage or start duplicate videos.
+   On a browser transfer error, first use **Inspect existing upload (no video
+   transfer)**. This sends only a preflight and an empty session-status request
+   from the backend; it neither uploads bytes nor creates a new session. If the
+   session is complete, the app recovers its video ID for normal verification.
+   Otherwise it reports provider status, accepted byte count, and CORS header
+   booleans without exposing the session URL or provider body. Those server-side
+   observations are diagnostic hints, not proof of the browser's exact failure.
+   The progress bar stays below 100% until a completed-upload response is known.
 7. After transfer completes, click **Check processing and Unlisted status**.
    Repeat manually at reasonable intervals if processing is still in progress.
    The backend checks the connected channel and per-job description marker.
@@ -153,6 +161,12 @@ unconfigured and consent/upload actions return 503.
   not interpret reconsent in Testing as proven durable production access.
 
 ## Evidence
+
+A staging browser transfer failed on 2026-10-21 after successful consent/refresh.
+The generic XHR error does not distinguish CORS, connectivity or a failed final
+response. Preserve that reservation and inspect it before resuming or clearing.
+New sessions now send the configured browser Origin during backend initiation;
+real-browser validation is still required. Existing sessions are not recreated.
 
 The prior staging Google sign-in and authenticated compatibility probe were
 confirmed by the owner on 2026-10-19; sign-out rejection was also confirmed.

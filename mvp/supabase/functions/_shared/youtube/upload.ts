@@ -66,3 +66,9 @@ export async function clearUpload(context: Context) {
   await context.repository.clearJob();
   return { cleared: true };
 }
+export async function inspectUpload(context: Context) {
+  const job = await requireJob(context);
+  const session = await context.cipher.unseal(`upload:${job.job_id}`, job.session_cipher);
+  // Only OPTIONS and an empty status PUT; never send/retry media or create a session.
+  return context.google.inspectSession(session, Number(job.size_bytes));
+}
