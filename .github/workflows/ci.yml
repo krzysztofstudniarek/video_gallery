@@ -55,7 +55,10 @@ jobs:
         run: |
           ./node_modules/.bin/supabase functions serve --env-file supabase/.env.example > "$RUNNER_TEMP/supabase-functions.log" 2>&1 &
           for attempt in {1..30}; do
-            if curl --fail --silent http://127.0.0.1:54321/functions/v1/health > /dev/null; then
+            status=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 2 \
+              --request POST http://127.0.0.1:54321/functions/v1/youtube || true)
+            if [[ "$status" == "401" ]] && curl --fail --silent --max-time 2 \
+              http://127.0.0.1:54321/functions/v1/health > /dev/null; then
               exit 0
             fi
             sleep 2
