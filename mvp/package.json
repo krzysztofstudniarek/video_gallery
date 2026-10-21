@@ -6,11 +6,11 @@
   "scripts": {
     "start": "supabase start",
     "reset": "supabase db reset --local",
-    "serve": "supabase functions serve",
+    "serve": "supabase functions serve --env-file supabase/.env.local",
     "test:db": "supabase test db",
     "test:local": "node tests/local.mjs",
     "test": "node --test scripts/deployment.test.mjs && deno test --allow-env tests",
-    "check": "deno check supabase/functions/compatibility/index.ts supabase/functions/share/index.ts supabase/functions/health/index.ts && tsc --noEmit",
+    "check": "deno check supabase/functions/compatibility/index.ts supabase/functions/share/index.ts supabase/functions/health/index.ts supabase/functions/youtube/index.ts && tsc --noEmit",
     "deploy:backend": "node scripts/deploy.mjs",
     "smoke:staging": "node scripts/smoke.mjs",
     "dev": "vite --host 127.0.0.1",
