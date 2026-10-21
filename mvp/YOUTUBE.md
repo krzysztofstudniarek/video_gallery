@@ -162,17 +162,55 @@ unconfigured and consent/upload actions return 503.
 
 ## Evidence
 
-A staging browser transfer failed on 2026-10-21 after successful consent/refresh.
-The generic XHR error does not distinguish CORS, connectivity or a failed final
-response. Preserve that reservation and inspect it before resuming or clearing.
-New sessions now send the configured browser Origin during backend initiation;
-real-browser validation is still required. Existing sessions are not recreated.
+On 2026-10-21 the owner confirmed live staging Google sign-in, YouTube consent
+and server-side refresh. A direct browser transfer showed a generic XHR failure.
+After PR #21 was deployed, **Inspect existing upload (no video transfer)**
+reported completion and recovered the video ID. **Check processing and Unlisted
+status** verified the expected channel/job, completed processing and Unlisted
+visibility. The owner then confirmed playback in a signed-out browser. No watch
+link or session capability is recorded in this public document.
 
-The prior staging Google sign-in and authenticated compatibility probe were
-confirmed by the owner on 2026-10-19; sign-out rejection was also confirmed.
-Real YouTube consent, refresh, CORS/range handling, resume, processing and Unlisted
-playback for this new code are **not yet verified**. Synthetic tests are the
-precondition for those owner-authorized live checks, not a substitute for them.
+The upload reached YouTube despite the browser error. Its precise cause remains
+unconfirmed; server inspection does not prove browser CORS correctness. New
+sessions send the configured browser Origin during initiation. Interrupted
+browser resume and recovery without manual inspection remain unverified.
+
+### Remaining owner-run interrupted-resume test
+
+1. Check that the previous video is complete in Studio and retain it if desired.
+   Only then clear its completed local probe record to allow a separate test.
+   Clearing does not remove the video from YouTube.
+2. Choose a synthetic MP4 near, but no larger than, 10 MiB. In browser developer
+   tools, open Network and select a slow network preset to allow time to pause.
+   Keep developer tools open while throttling. Do not export HAR files or upload
+   request URLs: they can contain credentials or session capabilities.
+3. Confirm the intended channel, Unlisted visibility and accurate made-for-kids
+   answer. Start one upload, then click **Pause after current chunk** once some
+   data has transferred. Wait for the explicit Paused message. A generic browser
+   error is not evidence that the pause succeeded.
+4. Click **Inspect existing upload (no video transfer)**. Record the sanitized
+   result. A valid partial-transfer observation has complete=false and
+   0 < accepted_bytes < the selected file size. If already complete, this did not
+   test interruption. If uncertain or failed, preserve the reservation and stop.
+5. Reload the app, check the connection, reselect the exact same file, and click
+   **Resume / check existing upload**. Do not click Start again. Keep throttling
+   enabled until progress beyond the saved offset can be observed, then restore
+   normal network speed. Record the displayed result; inspect again if needed.
+6. Verify processing and Unlisted status, and check signed-out playback. Confirm
+   Studio contains one new video for this test. An inspection-only recovery
+   establishes completion, but cannot establish that browser resume succeeded
+   if its offset query or chunk transfer failed.
+
+Record browser/version, file size, partial accepted byte count, whether the
+explicit Paused message appeared, resume result and final verification. Avoid
+media names, watch links, request URLs and credentials in public evidence.
+
+For authenticated staging latency, use the Network panel to record the Duration
+of six sequential **Run authenticated probe** requests after sign-in. Record the
+first separately and report samples 2–6 with n=5, median and nearest-rank p95
+(the maximum of five). These include network time and external API calls; they
+are not CPU time or guaranteed cold starts. Record project region from Supabase
+settings and hosted runtime/CPU only if available from platform evidence.
 
 2026-10-20 local validation: 5 deployment configuration tests and 14 Deno tests
 passed, including synthetic consent/refresh/initiation and browser-transport
@@ -193,3 +231,13 @@ passed, including streaming byte limits, startup origin validation, consent,
 refresh and disconnect behavior. Local two-user Auth/Edge integration, type
 checks and the Pages build passed. The refactor adds no database migration and
 does not change the frontend action contract.
+
+2026-10-21 interrupted-upload attempt: owner screenshots show browser 308
+responses, followed by repeated backend inspection 502 responses with sanitized
+`youtube_probe_failed`, including after disabling network throttling. The existing
+reservation remains present. No explicit pause or successful resume is established.
+A local real-HTTP reproduction with the pinned Deno CLI showed fetch with
+redirect=error throws on 308, with or without Location; redirect=manual returns
+308 and its Range header without following Location. Inspection now uses manual
+redirect handling. Hosted confirmation is pending deployment and re-inspection
+of the same reservation; do not mark browser resume passed from this fix alone.

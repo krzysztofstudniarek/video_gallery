@@ -121,8 +121,8 @@ Select an explicitly authorized staging Supabase project before linking the CLI.
 Apply reviewed migrations, configure the Google provider and redirect allowlist,
 deploy `health`, `compatibility` and `share`, and set FRONTEND_ORIGIN to the exact staging
 frontend origin. Configure backend secrets privately. Exercise missing/invalid
-JWTs, two signed-in users and anonymous resolution as in the local suite. No
-hosted project has been selected or deployed by this change.
+JWTs, two signed-in users and anonymous resolution as in the local suite. Staging project `djuvcxgoqaahgxyuldlp` is deployed with the GitHub Pages frontend;
+see the dated evidence below.
 
 | Check | Evidence |
 | --- | --- |
@@ -135,9 +135,9 @@ hosted project has been selected or deployed by this change.
 | Actual local Edge runtime | supabase-edge-runtime 1.77.4, compatible with Deno 2.1.4 |
 | Local wall latency | First measured authenticated request 88 ms; subsequent five: 26, 18, 20, 19, 26 ms (p50 20 ms; nearest-rank p95 26 ms). No CPU or hosted cold-start claim. |
 | Final local integration including health | Passed; first measured request 107 ms; subsequent five: 47, 24, 23, 22, 22 ms. Public health=200. |
-| Google sign-in | Scaffolding provided; live provider configuration/consent not exercised |
-| Staging and real YouTube upload | Not exercised; requires selected project and authorized test account |
-| Browser CORS/resume | Unverified; blocks committing to the direct-upload architecture |
+| Google sign-in | Owner confirmed live staging Google sign-in, authenticated compatibility probe and signed-out rejection; reconfirmed during October 2026 validation |
+| Staging and real YouTube upload | 2026-10-21: owner confirmed consent, server-side refresh, completed upload recovered through inspection, expected channel/processing/Unlisted verification, and signed-out playback |
+| Browser CORS/resume | Direct transfer reached YouTube, but browser reported a generic failure. Backend inspection recovered completion. Exact browser failure and interrupted browser resume remain unverified |
 
 Local integration/SQL results and runtime version are recorded above.
 The local integration reports first request and five subsequent wall-time samples;
@@ -166,3 +166,19 @@ guarantee permanent links or uninterrupted service. The user-facing MVP stays fr
 - [Key migration](https://supabase.com/docs/guides/getting-started/migrating-to-new-api-keys)
 - [Free project pausing](https://supabase.com/docs/guides/platform/free-project-pausing)
 - [YouTube resumable uploads](https://developers.google.com/youtube/data/guides/using_resumable_upload_protocol)
+
+## Staging validation closeout — 2026-10-21
+
+Six sequential public `health` GET requests at 10:03 UTC from the development
+machine used Python urllib, with a fresh request per sample and no authentication.
+All returned HTTP 200 and status=ok. Wall times: 203, 122, 121, 127, 111, 122 ms.
+For samples 2–6, p50=122 ms and nearest-rank p95=127 ms (n=5). These
+include client/network/TLS time; reuse or isolate warmth was not controlled. The
+first sample is not a measured cold start or the first request after deployment.
+Region has not been recorded; authenticated latency, hosted runtime version and
+platform CPU measurements remain unrecorded. Do not substitute these lightweight
+health results for the authenticated compatibility function's latency.
+
+Live upload results are owner-reported from staging, not automated assertions.
+See YOUTUBE.md for the remaining interrupted-resume procedure. No watch link,
+media name, OAuth credential or upload session capability is included here.

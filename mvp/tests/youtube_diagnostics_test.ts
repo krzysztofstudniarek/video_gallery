@@ -14,6 +14,7 @@ Deno.test("session diagnostics use only preflight and empty PUT with the configu
   const methods: string[] = [];
   const send: typeof fetch = async (url, options) => {
     assert(url === session && !options?.body);
+    assert(options?.redirect === "manual");
     methods.push(options!.method!);
     const headers = new Headers(options?.headers);
     assert(headers.get("Origin") === "https://example.test");
@@ -76,4 +77,25 @@ Deno.test("new upload initiation includes trusted origin and explicit Unlisted m
     await new GoogleClient(config, send).initiate("synthetic-token", "synthetic-job", 12, false) ===
       session,
   );
+});
+
+Deno.test("inspection reads a 308 without following a provider Location", async () => {
+  let calls = 0;
+  const send: typeof fetch = async (url, options) => {
+    calls++;
+    assert(url === session);
+    // Model Deno's redirect policy: error rejects 308 before returning headers.
+    if (options?.redirect !== "manual") throw new TypeError("redirect rejected");
+    return new Response(null, {
+      status: options.method === "OPTIONS" ? 204 : 308,
+      headers: options.method === "OPTIONS" ? {} : {
+        Range: "bytes=0-262143",
+        Location: "https://untrusted.example.test/do-not-follow",
+      },
+    });
+  };
+  const result = await new GoogleClient(config, send).inspectSession(session, 1048576);
+  assert(calls === 2 && result.session_status === 308);
+  assert(!result.complete && result.accepted_bytes === 262144);
+  assert(!JSON.stringify(result).includes("untrusted"));
 });
