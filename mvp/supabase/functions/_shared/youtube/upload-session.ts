@@ -7,7 +7,7 @@ export async function inspectSession(
   size: number,
 ) {
   const url = sessionUrl(session), origin = new URL(redirect).origin;
-  const options = { redirect: "error" as const, signal: AbortSignal.timeout(15000) };
+  const options = { redirect: "manual" as const, signal: AbortSignal.timeout(15000) };
   const preflight = await send(url, {
     ...options,
     method: "OPTIONS",
