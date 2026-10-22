@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "profile": "balanced-pilot",
+  "decidedOn": "2026-10-22",
+  "implementationStatus": "contract-only",
+  "product": {
+    "albumsPerAccount": 5,
+    "videosPerAlbum": 50,
+    "videosPerAccount": 200,
+    "fileSizeBytes": 1073741824,
+    "durationSeconds": 600,
+    "filesPerBatch": 10
+  },
+  "admission": {
+    "resetTimeZone": "America/Los_Angeles",
+    "uploadInitiationAttemptsPerAccountPerDay": 20,
+    "uploadInitiationAttemptsPerProjectPerDay": 60,
+    "minimumProviderHeadroomPercent": 20,
+    "allocation": "round-robin-among-queued-accounts",
+    "activeTransfersPerAccount": 1,
+    "activeTransferAdmissionsPerProject": 3
+  }
+}
