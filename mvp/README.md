@@ -5,6 +5,21 @@ compatibility spike. The React frontend retains the probe UI while product featu
 Earlier `backend/` Python Workers files and the 2017 app remain reference only. Python, FastAPI and
 Workers are not dependencies of the new MVP or its CI.
 
+## Selected pilot limits
+
+The owner selected the balanced profile on 2026-10-22: 5 albums/account, 50 videos/album,
+200 videos/account; 20 upload initiation attempts/account/Pacific day and 60/project/Pacific day;
+1 GiB/10 minutes/file, 10 files/batch, one active transfer/account and three/project admissions.
+Use round-robin admission among waiting accounts. [pilot-limits.json](pilot-limits.json) records
+these values as a contract; the staging probe does not consume it. Production schema/atomic
+enforcement remain #3/#8/#14/#15 work. [The decision](../docs/PILOT-LIMITS.md) includes staging quota
+evidence, calculations, proposed operating defaults and remaining lifecycle/hosting decisions.
+Client size/duration metadata is untrusted; direct uploads require trusted provider verification
+before app acceptance/QR readiness. [ADR 002](../docs/ADR-002-direct-youtube-qr.md) supersedes the separate 24/48-hour sharing freshness
+proposal: codes point directly to YouTube, finished files are downloaded for reprinting, and temporary
+provider data is removed at workflow end or within seven days of workflow creation. No ongoing
+metadata refresh or permanent provider/QR archive. The spending envelope remains open. No live configuration is changed by adding this contract.
+
 The [minimal app deployment guide](DEPLOYMENT.md) describes the manual staging workflow: Supabase
 migrations/functions plus GitHub Pages frontend, with a public health indicator and backend smoke
 checks. Staging validation evidence is recorded below; production provisioning is separate work.
@@ -107,7 +122,11 @@ JWTs must yield 401. The RLS client carries the verified user's JWT and never us
 backend key. Auth availability is a dependency of this verification strategy; no unverified-claims
 fallback.
 
-## Anonymous sharing and keys
+## Historical anonymous sharing probe and keys
+
+The resolver below is historical feasibility evidence. [ADR 002](../docs/ADR-002-direct-youtube-qr.md)
+supersedes it for production: QR codes contain direct YouTube URLs and need no app sharing token
+or public resolver. The current probe has not yet implemented the accepted lifecycle.
 
 `spike_items` has owner-only RLS, WITH CHECK for writes, and no anon table grants. `share` accepts a
 single UUID token and can only redirect to a validated YouTube video ID when sharing is enabled. Its
@@ -179,13 +198,16 @@ metrics; do not equate wall time with CPU. Never claim measured staging results 
 
 ## Printed-code availability decision
 
-**Launch plan: Supabase Pro organization, without inactivity pausing, before printed QR codes are
-relied upon.** Free is acceptable for disposable staging, not this launch guarantee: Free projects
-with low activity over seven days may pause. Synthetic keep-alives are not the availability plan.
-This is an architecture decision, not authorization to purchase a plan. Confirm budget, activation,
-stable domain, monitoring, backups and operational ownership before the pilot; printing remains
-blocked until those conditions are met. Paid hosting does not guarantee permanent links or
-uninterrupted service. The user-facing MVP stays free.
+On 22 October 2026 the owner accepted [direct YouTube QR codes](../docs/ADR-002-direct-youtube-qr.md).
+They continue to point at YouTube independently of app hosting, disconnect or app account deletion.
+This supersedes the earlier requirement to choose Supabase Pro/a permanent app domain before
+printed-link reliance. Provider deletion and visibility changes still affect playback.
+
+Production hosting must support uploads and expiry cleanup, including inactive accounts. A paused
+backend cannot justify retaining temporary provider data past its seven-day maximum. Validate the
+hosting/backup budget and cleanup behavior in #10; no purchase is authorized here. The user-facing
+MVP stays free. Existing staging resolver/upload code remains a historical probe pending feature
+implementation.
 
 ## Sources checked 2026-10-19
 

@@ -12,7 +12,7 @@ The production upload flow defaults to YouTube Unlisted and lets the user choose
 
 Selecting Public opens an accessible warning modal explaining that anyone can find and watch the video. The user must explicitly confirm “Use Public” before the selection is applied; Cancel or Escape preserves the previous selection. Choosing or confirming visibility does not start an upload. The backend requires Public confirmation for the specific upload, and a new upload resets that confirmation. The selector and modal are delivered in #15; the existing staging probe remains an Unlisted-only feasibility tool.
 
-QR generation and public app links require successful processing and verified effective Public or Unlisted visibility; Public uploads must have been explicitly confirmed. A Private upload can complete successfully while remaining ineligible for printing/public app sharing. A provider visibility mismatch produces an actionable error and cannot silently change the user's choice.
+QR generation requires successful processing and verified effective Public or Unlisted visibility; Public uploads must have been explicitly confirmed. A Private upload can complete successfully while remaining ineligible for printing. A provider visibility mismatch produces an actionable error and cannot silently change the user's choice.
 
 ## User journey
 
@@ -20,52 +20,51 @@ QR generation and public app links require successful processing and verified ef
 2. Separately authorize YouTube uploads and confirm the destination channel.
 3. Create an album, select videos and set the YouTube title/description and visibility; Unlisted is initially selected. Confirm the warning if choosing Public.
 4. Explicitly start the upload and see progress/processing; failures have actionable retry/cancel options.
-5. Wait for successful processing and verified effective Public or Unlisted visibility before printing. Private remains available as an upload choice but is not eligible for QR/public app links.
+5. Wait for successful processing and verified effective Public or Unlisted visibility before printing. Private remains available as an upload choice but is not eligible for QR generation.
 6. Add captions/order, choose a predefined QR style and preview the sheet.
-7. Check anonymous viewing, then print individual codes or an A4 sheet.
-8. Scan without an app account; export, delete data or submit private feedback.
+7. Check anonymous viewing, then download and print individual codes or an A4 sheet. Every code links directly to YouTube.
+8. Download the captions-and-links export before finishing. Keep the files for reprinting; scan directly on YouTube without an app account. Delete app data or submit private feedback as needed.
 
-Album-cover sharing is optional and explicitly enabled; individual video codes have separate sharing semantics.
+App-hosted public album/cover links and later in-app regeneration of old video codes are deferred. Finished workflows remove temporary YouTube data; the downloaded files are the reprinting source. See [the accepted direct-QR and retention decision](ADR-002-direct-youtube-qr.md).
 
 ## Architecture
 
-- Supabase-native backend: managed Auth, PostgreSQL/RLS, generated Data API and TypeScript/Deno Edge Functions. Static React/TypeScript hosting and permanent-route proof are selected early in #26; production activation and operations remain in #10. No separate Python server.
+- Supabase-native backend: managed Auth, PostgreSQL/RLS, generated Data API and TypeScript/Deno Edge Functions. Static React/TypeScript hosting, SPA routing and OAuth callbacks are validated in #26; production activation and operations remain in #10. No separate Python server.
 - Postgres metadata with versioned Supabase SQL migrations, ownership indexes, constraints and tested RLS policies on every exposed table.
 - Supabase Auth manages identities/sessions; user-scoped Data API access enforces RLS. Protected Edge Functions validate JWTs. Backend-only privileged keys never enter the frontend.
-- Encrypted YouTube credentials in a private non-exposed schema with key-version/revocation handling; Edge Functions handle refresh separately from Supabase Auth.
+- Temporary encrypted YouTube credentials in a private non-exposed schema with key IDs/revocation handling; Edge Functions refresh only for the active workflow, separately from Supabase Auth.
 - Owner-scoped resumable upload jobs, idempotency keys, bounded polling and processing/visibility verification.
 - Keep requested visibility, per-upload Public confirmation, trusted effective visibility and QR eligibility distinct. Browser clients cannot forge verified provider state.
 - Validate direct browser-to-YouTube transfers before implementation; no persistent video storage or transcoding in Supabase.
-- Stable /v/<unpredictable-token> links redirect temporarily to validated YouTube watch URLs.
-- Optional /a/<token> route displays an explicitly shared album.
-- Public sharing uses a narrowly scoped anonymous Edge Function resolver behind validated frontend/domain routing; anonymous table reads remain denied. Credentials never appear in public output.
-- Browser-generated SVG codes and browser Print / Save as PDF.
-- No YouTube call on every public scan; provider visibility can subsequently change outside the app.
-- Apply the lifecycle contract from #25 to API-sourced data, authorization credentials, upload sessions, user-authored data, logs and backups. Define bounded refresh/cleanup and failure behavior for inactive accounts as well as active users.
-- Disabling an app link cannot revoke an already-shared YouTube URL.
+- QR payloads are validated final YouTube watch URLs; scans and playback go directly to YouTube, independently of app hosting or authorization. No production sharing tokens, public resolver or album/cover routes. Anonymous table reads remain denied.
+- Browser-generated SVG codes and browser Print / Save as PDF, plus a downloadable captions-and-links export. The user keeps the finished files; the app does not archive provider URLs or QR payloads.
+- No app or YouTube API call on scans. Later provider visibility/deletion changes are handled by YouTube; changing a printed destination requires a new code.
+- Apply [ADR 002](ADR-002-direct-youtube-qr.md): remove temporary provider data at workflow completion/cancellation, with an absolute seven-day cap for interrupted workflows. OAuth state is single-use/ten minutes. One bounded expiry sweep covers inactive owners too; no ongoing metadata refresh.
+- Disconnect/account deletion removes app data as applicable without changing YouTube videos or printed codes.
 - Supabase CLI, Deno and frontend dependencies are pinned by completed #2; CI checks formatting, lint, types, tests, builds, migrations/RLS and database type drift. Supabase replaces the earlier Python Workers plan.
 
 ## QR styles
 
-Provide at least four predefined presets: Classic Black, Warm Sepia, Botanical Green and Navy Minimal. Preview and save a default per album; apply it to individual SVGs, print sheets and cover codes.
+Provide at least four predefined presets: Classic Black, Warm Sepia, Botanical Green and Navy Minimal. Preview and save a default per album; apply it to individual SVGs and print sheets.
 
-Use dark modules on light backgrounds, sufficient quiet zones, physical millimetre dimensions and predictable page breaks. Frames and captions stay outside the quiet zone. Changing style must not change the token/destination. Verify every preset on actual paper with representative iPhone and Android cameras. Freeform design editing is deferred.
+Use dark modules on light backgrounds, sufficient quiet zones, physical millimetre dimensions and predictable page breaks. Frames and captions stay outside the quiet zone. Changing style must not change the YouTube destination. Verify every preset on actual paper with representative iPhone and Android cameras. Freeform design editing is deferred.
 
 ## Limits and data lifecycle
 
-Proposed configurable defaults: 10 albums/account and 50 videos/album. These are not finalized allocations. Use the [separate limits-planning prompt](LIMITS-AGENT-PROMPT.md) to agree account/project budgets, upload size/duration/concurrency, retries, polling and maintenance limits for #8/#10/#14/#15. The probe's 10 MiB limit is a test bound, not the product limit. Verify current official quota documentation and the actual project's allocations before choosing values; enforce agreed limits server-side and explain them before selection.
+The owner selected the **balanced pilot** on 22 October 2026: 5 albums/account, 50 videos/album, 200 videos/account, 20 upload initiation attempts/account/Pacific day and 60/project/Pacific day. Files are limited to 1 GiB and 10 minutes, with 10 files/selected batch, one active transfer/account and three active transfer admissions/project. Allocate starts round-robin among queued accounts. See the [limits decision, evidence and enforcement matrix](PILOT-LIMITS.md) and [machine-readable contract](../mvp/pilot-limits.json). These are selected product/admission values; production enforcement remains feature work. The probe's 10 MiB bound is historical. Production quotas/shared consumers, implementation of the accepted lifecycle/backup contract and monthly hosting spend remain release work. ADR 002 supersedes the 24/48-hour sharing freshness proposal; never infer production allocations from staging or published defaults.
 
-Account/album deletion removes app data and disables affected app links without implicitly deleting YouTube videos. Account deletion removes encrypted credentials and revokes authorization where supported. Explain in-progress uploads, backup retention and deletion timelines.
+The owner accepted [ADR 002: direct YouTube QR codes and temporary provider data](ADR-002-direct-youtube-qr.md) on 22 October 2026. Keep app-authored albums/captions/order/style until user deletion. Remove provider metadata, IDs/URLs, credentials and workflow inputs at completion/cancellation, or within seven days of workflow creation for interrupted work; refresh/retry never extends that deadline. Session capabilities clear promptly when terminal; OAuth state expires after ten minutes. Logs exclude sensitive payloads, and backups must not extend original deadlines.
 
-#25 defines the field-level retention/refresh/deletion matrix and the behavior of disconnect, external revocation, expiry and failed refresh. Its contract feeds #3, #6, #8, #9, #10, #14 and #15. Distinguish API-sourced metadata from user-authored captions/order and record applicable policy deadlines with dated sources; do not apply one retention rule to every data category.
+Disconnect stops app provider requests and requests Google revocation; app/account/album deletion clears the relevant data without deleting YouTube videos or changing printed codes. User-request/account deletion completes as soon as possible and within seven calendar days. Use the event matrix and acceptance scenarios in ADR 002 for #3/#6/#7/#8/#9/#10/#14/#15/#25/#26.
 
-Export album captions, ordering and YouTube destinations as versioned JSON. Treat public tokens, upload URLs and unlisted URLs as sensitive. Keep pilot feedback private and avoid automatic media/URL collection.
+Offer a versioned captions-and-links export and finished QR downloads before workflow completion. Once provider data is gone, app exports contain remaining user-authored fields only. Users keep downloaded files for reprinting; no permanent provider destination or QR archive is retained. Keep pilot feedback private and avoid automatic media/URL collection.
 
 ## Out of scope
 
 - Vimeo and every other video platform.
 - Pasted-link-only delivery as a substitute for uploads.
-- Service-owned video storage/transcoding.
+- Service-owned video storage/transcoding, app-hosted playback/QR redirects and public album/cover links.
+- Permanent provider metadata/QR archives and later in-app regeneration of expired workflows.
 - Billing, paid tiers, mailed stickers, native apps, AI and advanced analytics.
 - Freeform QR design tools.
 - Automated legacy data migration or preservation of old EC2-hostname QR links.
@@ -73,16 +72,18 @@ Export album captions, ordering and YouTube destinations as versioned JSON. Trea
 
 ## Implementation order
 
+[ADR 002](ADR-002-direct-youtube-qr.md#implementation-handoff) records the accepted lifecycle and revised implementation responsibilities reflected in the linked GitHub issues.
+
 - [x] [#1 — Validate Supabase Auth, Postgres, RLS and Edge Functions](https://github.com/krzysztofstudniarek/video_gallery/issues/1)
 - [x] [#2 — Set up MVP workspace and continuous integration](https://github.com/krzysztofstudniarek/video_gallery/issues/2)
 - [ ] [#25 — Define YouTube data retention, refresh, revocation and deletion lifecycle](https://github.com/krzysztofstudniarek/video_gallery/issues/25)
-- [ ] [#26 — Validate frontend hosting and permanent sharing routes before QR implementation](https://github.com/krzysztofstudniarek/video_gallery/issues/26)
+- [ ] [#26 — Validate frontend hosting and OAuth callback routing](https://github.com/krzysztofstudniarek/video_gallery/issues/26)
 - [ ] [#3 — Implement Supabase Postgres schema, migrations and RLS](https://github.com/krzysztofstudniarek/video_gallery/issues/3)
 - [ ] [#4 — Add Supabase Google sign-in and owner-only access](https://github.com/krzysztofstudniarek/video_gallery/issues/4)
 - [ ] [#5 — Build albums and YouTube video management](https://github.com/krzysztofstudniarek/video_gallery/issues/5)
 - [ ] [#14 — YouTube authorization and applicable approval requirements](https://github.com/krzysztofstudniarek/video_gallery/issues/14)
 - [ ] [#15 — Resumable uploads with explicit visibility verification](https://github.com/krzysztofstudniarek/video_gallery/issues/15)
-- [ ] [#6 — Implement stable public video links and optional album sharing](https://github.com/krzysztofstudniarek/video_gallery/issues/6)
+- [ ] [#6 — Validate direct YouTube QR destinations](https://github.com/krzysztofstudniarek/video_gallery/issues/6)
 - [ ] [#7 — Create styled QR presets and printable sheets](https://github.com/krzysztofstudniarek/video_gallery/issues/7)
 - [ ] [#8 — Add album export, account deletion, and pilot privacy information](https://github.com/krzysztofstudniarek/video_gallery/issues/8)
 - [ ] [#9 — Collect private pilot feedback](https://github.com/krzysztofstudniarek/video_gallery/issues/9)
@@ -90,26 +91,26 @@ Export album captions, ordering and YouTube destinations as versioned JSON. Trea
 - [ ] [#11 — Run end-to-end checks and launch the free pilot](https://github.com/krzysztofstudniarek/video_gallery/issues/11)
 Execution order and completion boundaries:
 
-1. #1/#2 are complete. Define the lifecycle contract in #25 before finalizing production schema #3; Auth #4 follows #3.
-2. Start #26 alongside this foundation using synthetic route/resolver fixtures. It depends only on #1/#2 and must finish before #6/#7. Host choice, deep links, callbacks, canonical QR URLs and project-change routing are its early deliverables; production activation stays in #10.
+1. #1/#2 are complete. Apply the accepted #25 contract in ADR 002 before finalizing production schema #3; Auth #4 follows #3.
+2. Start #26 alongside this foundation using synthetic frontend/callback fixtures. It depends only on #1/#2. Validate host choice, SPA deep links, callbacks and CORS; direct YouTube QR codes require no permanent app redirect route. Production activation stays in #10.
 3. After #4, album CRUD/entry management #5 and channel integration #14 can proceed independently. Approval/quota discovery for #14 and limits planning may start earlier without waiting for implementation.
 4. #5 closes with album/entry management and a documented integration contract, using synthetic fixtures where needed. #15 then consumes #5/#14 and owns the integrated upload entry points, visibility selector/modal, progress, retries, resume/cancel and recovery. #5 does not depend on #15.
-5. After #15 and the #26 routing proof, implement sharing #6 and printing #7. Lifecycle/export/deletion #8 and private feedback #9 consume #25; final operations #10 consumes #25/#26 and provider readiness.
+5. After #15, implement direct YouTube destination validation #6 and downloads/printing #7. ADR 002 supersedes #6's old redirect/album-sharing scope. Lifecycle/export/deletion #8 and private feedback #9 consume #25; final operations #10 consumes #25/#26 and provider readiness.
 6. #11 gates launch with all dependencies complete. Numbers reflect creation order; #12 remains the release tracker.
 
 ## Pilot release gate
 
-- Sign-in → channel connection → album → default-Unlisted upload → processing/visibility verification → preset → print → anonymous scan works. Repeat for explicitly confirmed Public; a completed Private upload cannot generate QR/public app links.
+- Sign-in → channel connection → album → default-Unlisted upload → processing/visibility verification → preset → print → anonymous scan works. Repeat for explicitly confirmed Public; a completed Private upload cannot generate QR codes.
 - Verify the Public warning, confirmation, cancellation/Escape, default selection and backend rejection of unconfirmed Public requests. Selecting visibility alone never uploads. Provider mismatches block QR readiness without changing the requested privacy.
 - Applicable Google OAuth publishing/scope verification, YouTube compliance/audit requirements and actual production quotas are checked and resolved separately in #14. Use current official sources and project evidence rather than assuming every unverified project is private-only or every project needs the same audit. Unsupported provider visibility cannot be used as a silent fallback.
 - Interrupted/retried uploads do not duplicate videos; revocation, quota failures and incorrect privacy produce clear errors.
 - All style presets scan from paper on representative devices.
-- Direct Data API RLS tests cover anonymous/user A/user B, including forged ownership, private-schema isolation and protected upload/visibility fields. Auth, Edge Function JWT and sharing-token checks pass.
-- Permanent domain/OAuth setup, redacted logging, usage alerts and upload guardrails are configured.
+- Direct Data API RLS tests cover anonymous/user A/user B, including forged ownership, private-schema isolation and protected upload/visibility fields. Auth and Edge Function JWT checks pass; expired temporary data is inaccessible.
+- Frontend hosting/OAuth callbacks, redacted logging, usage alerts and upload guardrails are configured.
 - Restore an independent Postgres backup into an isolated project; document Auth/config/secrets recovery separately.
-- Resolve Supabase Free inactivity pausing before durable printed-link use; production plan and separate static hosting are explicit.
+- Validate production upload/cleanup availability, hosting and budget. Printed playback is independent of Supabase/app uptime; expiry deadlines still apply during inactivity or outages.
 - Feedback, export, deletion and privacy/beta information are ready.
-- #25 lifecycle cases pass for stale provider data, revoked authorization, expired tokens/sessions, failed refresh, user deletion and restored backups; background work fits the agreed quota budget.
+- ADR 002 lifecycle cases pass for workflow expiry/completion, revoked authorization, expired tokens/sessions, failed refresh, user deletion and restored backups; active-workflow checks and cleanup fit the quota budget.
 - Maintainer signs off and invites users; this planning change does not deploy an app or provision paid resources.
 
 ## References
@@ -130,4 +131,4 @@ Use supabase/config.toml, supabase/migrations/, supabase/functions/ and SQL/RLS 
 
 ## Compatibility workspace
 
-The isolated mvp/ workspace contains supabase/config.toml, migrations, Edge Functions, SQL/RLS tests, generated database types and a React/TypeScript/Vite frontend. Its PR CI resets local Supabase and checks schema type drift without hosted credentials. See [local evidence](../mvp/README.md) and [staging deployment](../mvp/DEPLOYMENT.md). Live Google/YouTube consent, refresh, partial-session browser resume, Unlisted verification and signed-out playback passed on 2026-10-21; see the dated evidence and remaining product limitations in mvp/README.md and mvp/YOUTUBE.md. This historical Unlisted-only probe does not implement the revised production visibility selector or Public warning. Before printed codes are relied upon, use a Supabase Pro organization without inactivity pausing; no paid provisioning is authorized by this decision.
+The isolated mvp/ workspace contains supabase/config.toml, migrations, Edge Functions, SQL/RLS tests, generated database types and a React/TypeScript/Vite frontend. Its PR CI resets local Supabase and checks schema type drift without hosted credentials. See [local evidence](../mvp/README.md) and [staging deployment](../mvp/DEPLOYMENT.md). Live Google/YouTube consent, refresh, partial-session browser resume, Unlisted verification and signed-out playback passed on 2026-10-21; see the dated evidence and remaining product limitations in mvp/README.md and mvp/YOUTUBE.md. This historical Unlisted-only probe does not implement the revised production visibility selector or Public warning. ADR 002 supersedes the earlier app-uptime dependency for printed codes. Select hosting for upload/cleanup availability and budget; no paid provisioning is authorized by this decision.

@@ -6,7 +6,7 @@ The free MVP uses the Supabase workspace in `mvp/`; the 2017 application remains
 2. Use a focused branch and pull request linked to the issue.
 3. Keep legacy files intact unless the issue explicitly requires a change.
 4. Use Supabase SQL migrations/RLS and TypeScript/Deno Edge Functions for the new backend. Use managed Supabase Auth; do not introduce custom session tables or a separate Python service. Preserve legacy/local spike work.
-5. Add checks for meaningful behaviour, especially direct-API RLS isolation, Edge Function authorization, Auth, URL validation and stable QR links.
+5. Add checks for meaningful behaviour, especially direct-API RLS isolation, Edge Function authorization, Auth, URL validation, direct YouTube QR payloads and temporary data expiry. Read [ADR 002](docs/ADR-002-direct-youtube-qr.md) before implementing older issue descriptions about app sharing/redirects.
 6. Never commit credentials, cookies, OAuth codes, private video links, personal media or local databases.
 7. Record implementation commands in the README when the new workspace exists.
 
