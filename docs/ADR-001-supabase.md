@@ -1,6 +1,6 @@
 # ADR 001: Supabase-native MVP backend
 
-Status: proposed for review, requested by the owner on 19 October 2026.
+Status: accepted through the completed Supabase feasibility/workspace gates (#1/#2). Execution and visibility requirements updated with the owner's decisions on 22 October 2026.
 
 ## Decision
 
@@ -10,9 +10,11 @@ Use the Data API under user JWTs and RLS for ordinary album operations. Use Edge
 
 ## Boundaries
 
-YouTube remains the only video host: direct resumable uploads, verified Unlisted visibility and all four QR presets remain MVP requirements. No video storage bucket, billing or additional providers.
+YouTube remains the only video host, with direct resumable uploads and all four QR presets. Production uploads default to Unlisted; the user may choose Private or explicitly confirm Public after a visibility warning. Requests always send the user's chosen privacy. QR/public app links require successful processing and verified effective Public or Unlisted visibility, with Public confirmation recorded; Private uploads remain ineligible. The existing Unlisted-only staging probe is historical feasibility evidence. No video storage bucket, billing or additional providers.
 
-Supabase hosts the backend, not a general React static site. Issue #10 selects and tests a separate static frontend host and permanent-domain sharing routes. This can remain a thin static delivery service with all stateful backend features in Supabase. Do not assume Edge Functions serve arbitrary HTML or clean URL paths; validate redirects, SPA fallback, CORS and Auth callback routing.
+Supabase hosts the backend, not a general React static site. Issue #26 selects and proves a separate static frontend host and permanent-domain sharing routes early, alongside #3/#4 and before #6/#7. Use synthetic fixtures so the routing proof does not depend on product uploads. Issue #10 retains production activation, backups, monitoring and cost controls. Do not assume Edge Functions serve arbitrary HTML or clean URL paths; validate redirects, SPA fallback, CORS and both Auth and YouTube callback routing.
+
+Issue #25 defines the field-level data retention/refresh/deletion contract before production schema and integrations are finalized. The contract covers API-sourced metadata, user-authored album data, credentials, upload sessions, revocation, logs and backups without requiring a YouTube API call on every scan.
 
 ## Reliability and cost
 

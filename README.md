@@ -8,7 +8,7 @@ The active Supabase MVP workspace is in [mvp/](mvp/README.md), with a React/Type
 
 ## Free MVP
 
-Sign in with Google, connect your YouTube channel, create an album, upload videos through the app, add captions and order, choose a predefined QR style, print QR sheets, and scan to watch. Every upload explicitly uses YouTube Unlisted visibility: anyone with the link can view and share it. YouTube Private instead restricts viewing to selected accounts. The service stores metadata and encrypted authorization credentials, not video files.
+The planned product flow is: sign in with Google, connect your YouTube channel, create an album, upload videos, add captions/order, choose a QR style, print and scan. Uploads default to Unlisted (anyone with the link can view/share). Users may choose Private or Public; Public requires a warning and explicit confirmation that the video will be publicly visible. QR/public app links require successful processing and verified Public or Unlisted visibility; Private is ineligible. The current staging probe remains an Unlisted-only feasibility tool; the production selector/modal is tracked in #15. The service stores metadata and encrypted authorization credentials, not video files.
 
 - [MVP scope and architecture](docs/MVP.md)
 - [Free MVP milestone](https://github.com/krzysztofstudniarek/video_gallery/milestone/1)
@@ -19,7 +19,7 @@ YouTube uploads are required for the MVP. Other platforms, payments, AI features
 
 ## MVP stack
 
-Supabase Auth for Google sign-in, Supabase PostgreSQL with row-level security for metadata, and TypeScript/Deno Edge Functions for YouTube OAuth, upload coordination and sharing. React/TypeScript/Vite supplies the frontend and browser-generated styled QR sheets. Supabase is the backend; static frontend hosting is selected and validated in #10.
+Supabase Auth for Google sign-in, Supabase PostgreSQL with row-level security for metadata, and TypeScript/Deno Edge Functions for YouTube OAuth, upload coordination and sharing. React/TypeScript/Vite supplies the frontend and browser-generated styled QR sheets. Supabase is the backend; frontend hosting and permanent-route proof are selected early in #26, with production activation and operations in #10. #25 defines the data lifecycle used by the schema and integrations.
 
 This supersedes the Python/FastAPI/Cloudflare architecture: Supabase Edge Functions do not host Python. The original Python code and any local spike work remain reference; no new Python service is planned. Issue #1 validates the Supabase stack.
 
@@ -33,7 +33,7 @@ Public GitHub issues are suitable for general suggestions and sanitised bug repo
 
 ## Hosting
 
-Production hosting and a permanent domain are not configured by the workspace change. Supabase projects, static frontend hosting, usage limits, backups and release checks are covered by issue #10.
+Production hosting and a permanent domain are not configured by the workspace change. Early host selection and permanent-route validation are covered by #26; production Supabase environments, activation, usage limits, backups and release checks remain in #10.
 
 Supabase Free can pause after low activity. Evaluate a non-pausing production plan before users rely on printed links; do not promise permanent availability. See [architecture decision](docs/ADR-001-supabase.md).
 
