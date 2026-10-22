@@ -17,3 +17,23 @@ Public issues should contain sanitised information. Suspected security vulnerabi
 ## Pull requests
 
 Describe the problem, resulting behaviour, linked issue and validation. Do not include production deployment, paid provisioning, external invitations or unrelated features in an implementation PR without the relevant task authorization.
+
+## Formatting and lint
+
+Use the pinned Deno formatter and linter for the active `mvp/` workspace. `mvp/deno.json` defines
+two-space indentation, double quotes, semicolons, a 100-character line width and wrapped prose.
+`.editorconfig` supplies matching editor defaults for MVP files. These rules leave legacy Python
+and the preserved spike outside the formatting scope.
+
+After `npm --prefix mvp ci`, run `npm --prefix mvp run hooks:install` once per clone to enable the
+tracked pre-commit hook. This sets the clone's `core.hooksPath` to `.githooks`; if you already use a
+custom hook directory, integrate this check there instead. The hook checks the staged workspace
+snapshot, so partially staged files are checked exactly as they will be committed. It never formats
+or stages files automatically.
+
+Run `npm --prefix mvp run fmt` to apply formatting, `npm --prefix mvp run lint:fix` for available
+safe lint fixes, and `npm --prefix mvp run style:check` to verify both. Stage the resulting changes
+before committing. CI enforces the same rules for every PR even when local hooks are not installed.
+Lint uses Deno's recommended and React rules, strict equality and Error objects for thrown values.
+Generated database types are formatted but excluded from lint. `require-await` is disabled because
+the synthetic tests and provider adapters deliberately implement async interfaces without awaiting.

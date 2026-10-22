@@ -12,7 +12,7 @@
     "test:db": "supabase test db",
     "test:local": "node tests/local.mjs",
     "stop": "supabase stop",
-    "test": "node --test scripts/deployment.test.mjs && deno test --allow-env tests",
+    "test": "node --test scripts/*.test.mjs && deno test --allow-env tests",
     "check": "deno check supabase/functions/compatibility/index.ts supabase/functions/share/index.ts supabase/functions/health/index.ts supabase/functions/youtube/index.ts && tsc --noEmit",
     "deploy:backend": "node scripts/deploy.mjs",
     "smoke:staging": "node scripts/smoke.mjs",
@@ -21,6 +21,9 @@
     "fmt": "deno fmt",
     "fmt:check": "deno fmt --check",
     "lint": "deno lint",
+    "lint:fix": "deno lint --fix",
+    "style:check": "npm run fmt:check && npm run lint",
+    "hooks:install": "git config --local core.hooksPath .githooks",
     "types:db": "node scripts/database-types.mjs",
     "types:db:check": "node scripts/database-types.mjs --check"
   },

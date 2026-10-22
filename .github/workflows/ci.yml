@@ -30,8 +30,8 @@ jobs:
           cache: npm
           cache-dependency-path: mvp/package-lock.json
       - run: npm ci
-      - run: npm run fmt:check
-      - run: npm run lint
+      - name: Enforce shared formatting and lint rules
+        run: npm run style:check
       - run: npm run check
       - run: npm test
       - name: Build frontend using synthetic public configuration

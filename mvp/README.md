@@ -39,8 +39,8 @@ From `mvp/`:
 
 ```sh
 npm ci
-npm run fmt:check
-npm run lint
+npm run hooks:install
+npm run style:check
 npm run check
 npm test
 npm run build
@@ -53,6 +53,12 @@ npm run serve
 # In another terminal:
 npm run test:local
 ```
+
+`hooks:install` enables the tracked pre-commit hook once per clone. It checks formatting and lint
+against the staged snapshot without changing files or staging fixes. Run `npm run fmt` to format,
+`npm run lint:fix` for available lint fixes, and stage the changes before committing. CI always runs
+the same `style:check` command. See [the contribution guide](../CONTRIBUTING.md#formatting-and-lint)
+for the explicit style rules and integration with existing custom Git hooks.
 
 `reset` destroys data in this disposable local project and reapplies migrations. It explicitly uses
 `--local`; never reset a shared/staging database. `test:local` creates two synthetic email/password
