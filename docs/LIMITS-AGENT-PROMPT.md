@@ -1,5 +1,9 @@
 # Prompt for a separate quota and limits planning agent
 
+Historical planning prompt. The owner selected the balanced profile on 22 October 2026;
+[PILOT-LIMITS.md](PILOT-LIMITS.md) is the current decision. The copied prompt below predates that
+selection; remaining lifecycle, project verification and hosting questions are tracked there.
+
 Copy the following prompt into a separate agent/chat:
 
 ```text

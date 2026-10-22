@@ -5,6 +5,19 @@ compatibility spike. The React frontend retains the probe UI while product featu
 Earlier `backend/` Python Workers files and the 2017 app remain reference only. Python, FastAPI and
 Workers are not dependencies of the new MVP or its CI.
 
+## Selected pilot limits
+
+The owner selected the balanced profile on 2026-10-22: 5 albums/account, 50 videos/album,
+200 videos/account; 20 upload initiation attempts/account/Pacific day and 60/project/Pacific day;
+1 GiB/10 minutes/file, 10 files/batch, one active transfer/account and three/project admissions.
+Use round-robin admission among waiting accounts. [pilot-limits.json](pilot-limits.json) records
+these values as a contract; the staging probe does not consume it. Production schema/atomic
+enforcement remain #3/#8/#14/#15 work. [The decision](../docs/PILOT-LIMITS.md) includes staging quota
+evidence, calculations, proposed operating defaults and remaining lifecycle/hosting decisions.
+Client size/duration metadata is untrusted; direct uploads require trusted provider verification
+before app acceptance/QR readiness. The separate 24/48-hour freshness proposal and spending
+envelope remain open. No live configuration is changed by adding this contract.
+
 The [minimal app deployment guide](DEPLOYMENT.md) describes the manual staging workflow: Supabase
 migrations/functions plus GitHub Pages frontend, with a public health indicator and backend smoke
 checks. Staging validation evidence is recorded below; production provisioning is separate work.

@@ -1,6 +1,16 @@
 # YouTube consent and direct-upload compatibility probe
 
 This is a staging-only validation tool for issue #1, not the production upload workflow in #15.
+
+The owner selected the [balanced production pilot limits](../docs/PILOT-LIMITS.md) on 2026-10-22:
+20 initiation attempts/account/Pacific day, 60/project/Pacific day, 1 GiB/10 minutes/file,
+10 files/batch and one active transfer/account with three/project admissions. The machine-readable
+[contract](pilot-limits.json) is not wired into this probe; its 10 MiB bound and Unlisted-only
+verification remain historical feasibility behavior. Production permits Unlisted by default,
+Private and explicitly confirmed Public; trusted processing/visibility verification gates QR
+eligibility. Production admission, quota accounting and trusted post-upload size/duration checks
+remain #14/#15 work; browser declarations cannot establish verified provider state.
+
 Google sign-in remains unchanged. YouTube is connected separately by an already signed-in user, with
 upload and readonly scopes. Readonly is needed to confirm the selected channel and the uploaded
 video's processing/privacy.

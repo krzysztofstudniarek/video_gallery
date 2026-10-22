@@ -18,6 +18,8 @@ Issue #25 defines the field-level data retention/refresh/deletion contract befor
 
 ## Reliability and cost
 
+The [balanced pilot decision](PILOT-LIMITS.md), selected on 22 October 2026, separates product capacity, upload admission, provider/channel constraints and cost targets. Its [configuration contract](../mvp/pilot-limits.json) is not yet production enforcement. Enforce counts and quota reservations atomically in Postgres/Edge; browser size/duration declarations are untrusted and require provider verification for app acceptance. The monthly hosting envelope, separate 24/48-hour freshness proposal and backup deletion semantics remain open.
+
 Local Supabase supports development. Free hosted projects may pause after low activity; choose a non-pausing plan before asking users to rely on printed codes. Record current quotas/prices during deployment work. Do not create artificial keep-alives or provision paid resources in this planning change. Verify SQL backup restoration and separately document Auth identity/config and secret recovery.
 
 ## Validation
