@@ -9,7 +9,7 @@ import {
   uploadBody,
 } from "../supabase/functions/_shared/youtube.ts";
 import { youtubeHandler } from "../supabase/functions/_shared/youtube-handler.ts";
-import { directUpload, type Transport } from "../web/direct-upload.ts";
+import { directUpload, type Transport } from "../frontend/direct-upload.ts";
 
 function assert(value: unknown): asserts value {
   if (!value) throw new Error("Assertion failed");

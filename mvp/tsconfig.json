@@ -1,4 +1,21 @@
 {
-  "compilerOptions": {"target": "ES2022", "lib": ["ES2022", "DOM"], "module": "ESNext", "moduleResolution": "bundler", "strict": true, "skipLibCheck": true, "noEmit": true, "types": ["vite/client"]},
-  "include": ["web"]
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": [
+      "vite/client"
+    ],
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "frontend"
+  ]
 }

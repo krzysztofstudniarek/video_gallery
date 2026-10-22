@@ -1,0 +1,23 @@
+#!/bin/sh
+set -eu
+
+root=$(git rev-parse --show-toplevel)
+deno="$root/mvp/node_modules/.bin/deno"
+if [ ! -x "$deno" ]; then
+  echo "Install MVP tooling with: npm --prefix mvp ci" >&2
+  exit 1
+fi
+
+# Check the index so partial staging cannot commit an unformatted version.
+# Leave the working tree and index untouched; CI runs the same rules again.
+snapshot=$(mktemp -d "${TMPDIR:-/tmp}/videoalbum-style.XXXXXX")
+trap 'rm -rf "$snapshot"' EXIT HUP INT TERM
+git checkout-index --all --prefix="$snapshot/"
+if [ ! -f "$snapshot/mvp/deno.json" ]; then
+  exit 0
+fi
+cd "$snapshot/mvp"
+if ! "$deno" fmt --check || ! "$deno" lint; then
+  echo "Run npm --prefix mvp run fmt and npm --prefix mvp run lint, then stage the fixes." >&2
+  exit 1
+fi
