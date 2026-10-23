@@ -1,7 +1,9 @@
 # Supabase MVP workspace
 
-This is the active Supabase-native workspace for issue #2, built on the validated issue #1
-compatibility spike. The React frontend retains the probe UI while product features are developed.
+This is the active Supabase-native workspace, built on the validated issue #1 compatibility spike
+and issue #2 tooling. Issue #3 adds the [production schema/security contract](DATABASE.md), SQL/RLS
+tests and direct Data API bypass checks. The React frontend retains the probe UI while product
+features are developed.
 Earlier `backend/` Python Workers files and the 2017 app remain reference only. Python, FastAPI and
 Workers are not dependencies of the new MVP or its CI.
 
@@ -77,8 +79,9 @@ for the explicit style rules and integration with existing custom Git hooks.
 
 `reset` destroys data in this disposable local project and reapplies migrations. It explicitly uses
 `--local`; never reset a shared/staging database. `test:local` creates two synthetic email/password
-users, checks actual Auth-issued JWTs, RLS, the Edge HTTPS/crypto probe, and the sharing resolver,
-then deletes the users. It captures local keys in memory and prints sanitised booleans/timings only.
+users, checks actual Auth-issued JWTs, RLS, the Edge HTTPS/crypto probe, the sharing resolver and
+the production schema through direct Data API requests, then deletes the users. It captures local
+keys in memory and prints sanitised booleans/timings only.
 `npm run stop` stops this project's containers without deleting local data.
 
 After changing migrations, use `npm run reset`, `npm run test:db`, then `npm run types:db`.

@@ -1,6 +1,7 @@
 // Local-only integration; credentials are captured in memory, never printed.
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { checkProductionSchema } from "./schema-local.mjs";
 import { createClient } from "@supabase/supabase-js";
 const config = JSON.parse(
   execFileSync("node_modules/.bin/supabase", ["status", "-o", "json"], {
@@ -92,10 +93,12 @@ try {
     "Disable failed",
   );
   assert((await share()).status === 404, "Disabled share resolved");
+  await checkProductionSchema({ clients, admin, anon, users, url, anonKey: config.ANON_KEY });
   console.log(
     JSON.stringify({
       local_integration: "passed",
       users: 2,
+      production_schema: "passed",
       first_request_ms: timings[0],
       warm_samples_ms: timings.slice(1),
     }),
