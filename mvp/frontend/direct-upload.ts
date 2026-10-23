@@ -5,10 +5,18 @@ export type Transport = (
   body: Blob | null,
   range: string,
   progress: (bytes: number) => void,
+  signal?: AbortSignal,
 ) => Promise<UploadReply>;
-export const xhrTransport: Transport = (url, body, range, progress) =>
+export const xhrTransport: Transport = (url, body, range, progress, signal) =>
   new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    const abort = () => {
+      xhr.abort();
+      reject(new DOMException("Transfer stopped", "AbortError"));
+    };
+    if (signal?.aborted) return abort();
+    signal?.addEventListener("abort", abort, { once: true });
+    xhr.onloadend = () => signal?.removeEventListener("abort", abort);
     xhr.open("PUT", url);
     xhr.timeout = 60000;
     xhr.setRequestHeader("Content-Range", range);
@@ -51,13 +59,16 @@ export async function directUpload(
   progress: (bytes: number) => void,
   paused: () => boolean,
   send: Transport = xhrTransport,
+  signal?: AbortSignal,
 ): Promise<string | null> {
+  signal?.throwIfAborted();
   const target = new URL(url);
   if (
     target.protocol !== "https:" || target.hostname !== "www.googleapis.com" || target.username ||
     target.password || target.port || !target.pathname.startsWith("/upload/youtube/v3/videos")
   ) throw new Error("Invalid upload destination");
-  const status = await send(url, null, `bytes */${file.size}`, () => {});
+  const status = await send(url, null, `bytes */${file.size}`, () => {}, signal);
+  signal?.throwIfAborted();
   if (status.status === 200 || status.status === 201) return videoId(status);
   if (status.status !== 308) {
     throw new Error(
@@ -74,7 +85,9 @@ export async function directUpload(
       file.slice(offset, end, "video/mp4"),
       `bytes ${offset}-${end - 1}/${file.size}`,
       (bytes) => progress(Math.min(offset + bytes, file.size)),
+      signal,
     );
+    signal?.throwIfAborted();
     if (reply.status === 200 || reply.status === 201) {
       progress(file.size);
       return videoId(reply);

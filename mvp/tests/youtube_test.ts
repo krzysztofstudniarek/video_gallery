@@ -172,6 +172,9 @@ function syntheticBackend(overrides: Record<string, string | undefined> = {}) {
     if (url.pathname.startsWith("/rest/v1/rpc/")) {
       const body = JSON.parse(String(init?.body));
       const name = url.pathname.split("/").pop();
+      if (name === "current_app_session") {
+        return Response.json({ active: true, deletion_requested: false });
+      }
       if (name === "yt_probe_credentials") {
         return Response.json(body.p_owner === owner && credential ? [credential] : []);
       }

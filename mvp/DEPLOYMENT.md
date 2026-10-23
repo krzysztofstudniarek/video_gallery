@@ -43,7 +43,7 @@ hosting and release configuration remain in issue #10; do not point the staging 
 Run **Actions → Deploy minimal Supabase staging app → Run workflow** on the reviewed branch. It
 validates configuration, installs locked tooling, runs checks, builds with the Pages base path,
 links the explicit staging project, applies only pending migrations (`db push`, never remote reset),
-sets FRONTEND_ORIGIN and deploys health/compatibility/share functions. Backend smoke checks must
+sets FRONTEND_ORIGIN and deploys health/compatibility/share/youtube/account functions. Backend smoke checks must
 pass before the frontend is published to Pages. The workflow URL provides the frontend deployment
 result. Database and function deployment are not a single transaction; check the failing stage
 before retrying.
@@ -67,6 +67,26 @@ authorized callback is `https://<project-ref>.supabase.co/auth/v1/callback`; its
 is the frontend origin. Add test users to Google's consent configuration. The frontend keeps the
 Pages base path in its PKCE redirect. Verify sign-in, run probe, sign-out, and rejection after
 sign-out. Do not broaden the redirect allowlist to wildcards.
+
+Use these exact environment boundaries (origin and callback are different settings):
+
+| Environment | Google authorized callback | Supabase Site URL and redirect allowlist | Frontend/Google JavaScript origin |
+| --- | --- | --- | --- |
+| Local | `http://127.0.0.1:54321/auth/v1/callback` | `http://127.0.0.1:5173/` | `http://127.0.0.1:5173` |
+| Current staging | `https://djuvcxgoqaahgxyuldlp.supabase.co/auth/v1/callback` | `https://krzysztofstudniarek.github.io/video_gallery/` | `https://krzysztofstudniarek.github.io` |
+| Production | `https://<production-project-ref>.supabase.co/auth/v1/callback` | Exact chosen production frontend URL, including base path | Exact chosen HTTPS origin |
+
+Production values are intentionally unresolved until #10/#26 selects/provisions that environment.
+Never copy staging project IDs or wildcard redirects into production. Match trailing slashes to the
+SDK's generated `redirectTo`. Record/verify the hosted JWT lifetime; ordinary REST accepts a signed
+access JWT until expiry after sign-out, whereas protected functions also verify the live Supabase
+session. The local config sets a one-hour JWT lifetime explicitly.
+
+Before public release, complete the [Auth rollout/maintenance gates](AUTH.md): independent deletion
+retry/expiry scheduling, original-deadline backup erasure, live two-account Google/deletion tests and
+production security headers. Vite embeds a restrictive CSP for static hosting. Hosting that supports
+response headers should additionally enforce `frame-ancestors 'none'` and `nosniff`. Nothing here
+changes hosted provider settings or activates the scheduler automatically.
 
 ## Verification and recovery
 

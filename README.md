@@ -15,6 +15,7 @@ The planned product flow is: sign in with Google, connect your YouTube channel, 
 - [Free MVP milestone](https://github.com/krzysztofstudniarek/video_gallery/milestone/1)
 - [Implementation backlog](docs/MVP.md#implementation-order)
 - [Contributing](CONTRIBUTING.md)
+- [Authentication, browser sessions and account deletion](mvp/AUTH.md)
 
 YouTube uploads are required for the MVP. Other platforms, payments, AI features and service-owned video hosting are deferred. Applicable Google/YouTube approvals and quotas must be verified before public launch.
 

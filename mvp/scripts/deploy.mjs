@@ -27,6 +27,6 @@ run(["link", "--project-ref", ref]);
 run(["db", "push", "--db-url", database, "--dry-run"]);
 run(["db", "push", "--db-url", database, "--yes"]);
 run(["secrets", "set", `FRONTEND_ORIGIN=${origin.origin}`, "--project-ref", ref]);
-for (const name of ["health", "compatibility", "share", "youtube"]) {
+for (const name of ["health", "compatibility", "share", "youtube", "account"]) {
   run(["functions", "deploy", name, "--project-ref", ref, "--use-api"]);
 }
