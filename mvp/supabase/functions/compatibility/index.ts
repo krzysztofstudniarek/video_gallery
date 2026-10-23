@@ -1,26 +1,19 @@
-import { createClient } from "npm:@supabase/supabase-js@2.118.0";
+import { requireUser } from "../_shared/auth.ts";
 import { encryptionProbe, oauthProbe, syntheticFetch } from "../_shared/probes.ts";
+import { runtimeConfig } from "../_shared/youtube/config.ts";
+import { ActionError } from "../_shared/youtube/errors.ts";
+import { corsHeaders } from "../_shared/youtube/http.ts";
 
-const headers = {
-  "Access-Control-Allow-Origin": Deno.env.get("FRONTEND_ORIGIN") ?? "http://127.0.0.1:5173",
-  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Cache-Control": "no-store",
-};
+const config = runtimeConfig((name) => Deno.env.get(name));
+const headers = corsHeaders(config.origin);
 Deno.serve(async (request) => {
+  if (request.headers.has("Origin") && request.headers.get("Origin") !== config.origin) {
+    return Response.json({ error: "origin_denied" }, { status: 403, headers });
+  }
   if (request.method === "OPTIONS") return new Response(null, { headers });
   if (request.method !== "POST") return new Response(null, { status: 405, headers });
-  const token = request.headers.get("Authorization")?.match(/^Bearer (.+)$/)?.[1];
-  if (!token) return Response.json({ error: "unauthorized" }, { status: 401, headers });
-  const client = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-    auth: { persistSession: false },
-  });
-  // getUser validates the JWT with Auth, including local legacy signing setups.
-  // Never authorize using decoded-but-unverified claims or a publishable key.
-  const { data: { user }, error } = await client.auth.getUser(token);
-  if (error || !user) return Response.json({ error: "unauthorized" }, { status: 401, headers });
   try {
+    const { client } = await requireUser(request, config);
     const { data, error: readError } = await client.from("spike_items").select("id").limit(1);
     if (readError || !data) throw new Error("rls_read_failed");
     const outbound = await fetch("https://www.googleapis.com/oauth2/v3/certs", {
@@ -35,7 +28,10 @@ Deno.serve(async (request) => {
       aes_gcm: await encryptionProbe(),
       oauth_synthetic: await oauthProbe(syntheticFetch),
     }, { headers });
-  } catch {
+  } catch (error) {
+    if (error instanceof ActionError) {
+      return Response.json({ error: error.code }, { status: error.status, headers });
+    }
     return Response.json({ error: "probe_failed" }, { status: 502, headers });
   }
 });

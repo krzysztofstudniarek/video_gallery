@@ -285,6 +285,7 @@ export type Database = {
       };
     };
     Functions: {
+      "begin_account_deletion": { Args: { "p_owner": string }; Returns: undefined };
       "consume_upload_oauth": {
         Args: { "p_hash": string; "p_owner": string; "p_workflow": string };
         Returns: {
@@ -292,9 +293,35 @@ export type Database = {
           "verifier_cipher": string;
         }[];
       };
+      "current_app_session": { Args: Record<PropertyKey, never>; Returns: Json };
+      "ensure_app_profile": { Args: Record<PropertyKey, never>; Returns: undefined };
+      "finish_account_deletion": { Args: { "p_owner": string }; Returns: undefined };
+      "finish_provider_revocation": { Args: { "p_id": string }; Returns: undefined };
       "finish_upload_workflow": {
         Args: { "p_owner": string; "p_workflow": string };
         Returns: boolean;
+      };
+      "note_account_deletion_attempt": { Args: { "p_owner": string }; Returns: undefined };
+      "note_provider_revocation_attempt": { Args: { "p_id": string }; Returns: undefined };
+      "pending_account_deletions": {
+        Args: Record<PropertyKey, never>;
+        Returns: unknown[];
+        SetofOptions: {
+          from: "*";
+          to: "account_deletions";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      "pending_provider_revocations": {
+        Args: { "p_owner"?: string };
+        Returns: unknown[];
+        SetofOptions: {
+          from: "*";
+          to: "provider_revocations";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
       "purge_expired_upload_data": { Args: { "p_before"?: string }; Returns: undefined };
       "request_upload": {

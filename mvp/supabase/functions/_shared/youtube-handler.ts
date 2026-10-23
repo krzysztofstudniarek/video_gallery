@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
+import { requireUser } from "./auth.ts";
 import { dispatchAction } from "./youtube/actions.ts";
 import { consentConfig, type Env, runtimeConfig } from "./youtube/config.ts";
 import { safeError } from "./youtube/errors.ts";
@@ -17,13 +18,9 @@ export function youtubeHandler(env: Env, send: typeof fetch = fetch) {
     }
     if (request.method === "OPTIONS") return new Response(null, { headers });
     if (request.method !== "POST") return reply({ error: "method_not_allowed" }, 405);
-    const token = request.headers.get("Authorization")?.match(/^Bearer (.+)$/)?.[1];
-    if (!token) return reply({ error: "sign_in_required" }, 401);
     try {
       const options = { auth: { persistSession: false }, global: { fetch: send } };
-      const auth = createClient(config.supabaseUrl, config.anonKey, options);
-      const { data: { user }, error } = await auth.auth.getUser(token);
-      if (error || !user) return reply({ error: "sign_in_required" }, 401);
+      const { user } = await requireUser(request, config, send);
       const input = parseAction(await readJson(request));
       const repository = new YoutubeRepository(
         createClient(config.supabaseUrl, config.serviceKey, options),
