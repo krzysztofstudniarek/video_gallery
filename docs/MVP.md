@@ -2,7 +2,7 @@
 
 ## Goal
 
-Let 5–10 pilot users create physical albums with uploaded YouTube videos and styled QR codes for free. Aim for at least 3 completed printed albums and actionable private feedback.
+Let 5–10 pilot users create physical albums with uploaded YouTube videos and styled QR codes for free. Aim for at least 3 completed printed albums and actionable feedback collected face to face by the owner.
 
 ## Required scope
 
@@ -23,7 +23,7 @@ QR generation requires successful processing and verified effective Public or Un
 5. Wait for successful processing and verified effective Public or Unlisted visibility before printing. Private remains available as an upload choice but is not eligible for QR generation.
 6. Add captions/order, choose a predefined QR style and preview the sheet.
 7. Check anonymous viewing, then download and print individual codes or an A4 sheet. Every code links directly to YouTube.
-8. Download the captions-and-links export before finishing. Keep the files for reprinting; scan directly on YouTube without an app account. Delete app data or submit private feedback as needed.
+8. Download the captions-and-links export before finishing. Keep the files for reprinting; scan directly on YouTube without an app account. Delete app data as needed. Pilot feedback is collected face to face by the owner.
 
 App-hosted public album/cover links and later in-app regeneration of old video codes are deferred. Finished workflows remove temporary YouTube data; the downloaded files are the reprinting source. See [the accepted direct-QR and retention decision](ADR-002-direct-youtube-qr.md).
 
@@ -55,12 +55,13 @@ The owner selected the **balanced pilot** on 22 October 2026: 5 albums/account, 
 
 The owner accepted [ADR 002: direct YouTube QR codes and temporary provider data](ADR-002-direct-youtube-qr.md) on 22 October 2026. Keep app-authored albums/captions/order/style until user deletion. Remove provider metadata, IDs/URLs, credentials and workflow inputs at completion/cancellation, or within seven days of workflow creation for interrupted work; refresh/retry never extends that deadline. Session capabilities clear promptly when terminal; OAuth state expires after ten minutes. Logs exclude sensitive payloads, and backups must not extend original deadlines.
 
-Disconnect stops app provider requests and requests Google revocation; app/account/album deletion clears the relevant data without deleting YouTube videos or changing printed codes. User-request/account deletion completes as soon as possible and within seven calendar days. Use the event matrix and acceptance scenarios in ADR 002 for #3/#6/#7/#8/#9/#10/#14/#15/#25/#26.
+Disconnect stops app provider requests and requests Google revocation; app/account/album deletion clears the relevant data without deleting YouTube videos or changing printed codes. User-request/account deletion completes as soon as possible and within seven calendar days. Use the event matrix and acceptance scenarios in ADR 002 for #3/#6/#7/#8/#10/#14/#15/#25/#26.
 
-Offer a versioned captions-and-links export and finished QR downloads before workflow completion. Once provider data is gone, app exports contain remaining user-authored fields only. Users keep downloaded files for reprinting; no permanent provider destination or QR archive is retained. Keep pilot feedback private and avoid automatic media/URL collection.
+Offer a versioned captions-and-links export and finished QR downloads before workflow completion. Once provider data is gone, app exports contain remaining user-authored fields only. Users keep downloaded files for reprinting; no permanent provider destination or QR archive is retained. The owner collects pilot feedback face to face; there is no in-app feedback form or storage.
 
 ## Out of scope
 
+- In-app feedback forms, feedback storage and feedback administration; pilot feedback is collected face to face.
 - Vimeo and every other video platform.
 - Pasted-link-only delivery as a substitute for uploads.
 - Service-owned video storage/transcoding, app-hosted playback/QR redirects and public album/cover links.
@@ -86,7 +87,6 @@ Offer a versioned captions-and-links export and finished QR downloads before wor
 - [ ] [#6 — Validate direct YouTube QR destinations](https://github.com/krzysztofstudniarek/video_gallery/issues/6)
 - [ ] [#7 — Create styled QR presets and printable sheets](https://github.com/krzysztofstudniarek/video_gallery/issues/7)
 - [ ] [#8 — Add album export, account deletion, and pilot privacy information](https://github.com/krzysztofstudniarek/video_gallery/issues/8)
-- [ ] [#9 — Collect private pilot feedback](https://github.com/krzysztofstudniarek/video_gallery/issues/9)
 - [ ] [#10 — Prepare Supabase environments, hosting, backups and cost controls](https://github.com/krzysztofstudniarek/video_gallery/issues/10)
 - [ ] [#11 — Run end-to-end checks and launch the free pilot](https://github.com/krzysztofstudniarek/video_gallery/issues/11)
 Execution order and completion boundaries:
@@ -95,7 +95,7 @@ Execution order and completion boundaries:
 2. Start #26 alongside this foundation using synthetic frontend/callback fixtures. It depends only on #1/#2. Validate host choice, SPA deep links, callbacks and CORS; direct YouTube QR codes require no permanent app redirect route. Production activation stays in #10.
 3. After #4, album CRUD/entry management #5 and channel integration #14 can proceed independently. Approval/quota discovery for #14 and limits planning may start earlier without waiting for implementation.
 4. #5 closes with album/entry management and a documented integration contract, using synthetic fixtures where needed. #15 then consumes #5/#14 and owns the integrated upload entry points, visibility selector/modal, progress, retries, resume/cancel and recovery. #5 does not depend on #15.
-5. After #15, implement direct YouTube destination validation #6 and downloads/printing #7. ADR 002 supersedes #6's old redirect/album-sharing scope. Lifecycle/export/deletion #8 and private feedback #9 consume #25; final operations #10 consumes #25/#26 and provider readiness.
+5. After #15, implement direct YouTube destination validation #6 and downloads/printing #7. ADR 002 supersedes #6's old redirect/album-sharing scope. Lifecycle/export/deletion #8 consumes #25; final operations #10 consumes #25/#26 and provider readiness.
 6. #11 gates launch with all dependencies complete. Numbers reflect creation order; #12 remains the release tracker.
 
 ## Pilot release gate
@@ -109,7 +109,7 @@ Execution order and completion boundaries:
 - Frontend hosting/OAuth callbacks, redacted logging, usage alerts and upload guardrails are configured.
 - Restore an independent Postgres backup into an isolated project; document Auth/config/secrets recovery separately.
 - Validate production upload/cleanup availability, hosting and budget. Printed playback is independent of Supabase/app uptime; expiry deadlines still apply during inactivity or outages.
-- Feedback, export, deletion and privacy/beta information are ready.
+- Export, deletion and privacy/beta information are ready. Pilot feedback is collected face to face; no in-app feedback feature is required.
 - ADR 002 lifecycle cases pass for workflow expiry/completion, revoked authorization, expired tokens/sessions, failed refresh, user deletion and restored backups; active-workflow checks and cleanup fit the quota budget.
 - Maintainer signs off and invites users; this planning change does not deploy an app or provision paid resources.
 

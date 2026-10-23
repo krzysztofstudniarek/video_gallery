@@ -15,4 +15,4 @@ labels: bug
 
 ## Additional context
 
-Do not include video URLs, QR images, family media, credentials or personal data. Use the private in-app feedback form when available.
+Do not include video URLs, QR images, family media, credentials or personal data. Pilot feedback is collected face to face by the owner.
