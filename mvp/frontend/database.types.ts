@@ -31,34 +31,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      "feedback": {
-        Row: {
-          "created_at": string;
-          "delete_after": string | null;
-          "id": string;
-          "message": string;
-          "owner_id": string;
-          "resolved_at": string | null;
-        };
-        ComputedFields: never;
-        Insert: {
-          "created_at"?: string;
-          "delete_after"?: string | null;
-          "id"?: string;
-          "message": string;
-          "owner_id"?: string;
-          "resolved_at"?: string | null;
-        };
-        Update: {
-          "created_at"?: string;
-          "delete_after"?: string | null;
-          "id"?: string;
-          "message"?: string;
-          "owner_id"?: string;
-          "resolved_at"?: string | null;
-        };
-        Relationships: [];
-      };
       "profiles": {
         Row: {
           "created_at": string;

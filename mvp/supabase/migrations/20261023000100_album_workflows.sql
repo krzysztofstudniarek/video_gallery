@@ -28,19 +28,6 @@ create table public.videos (
 );
 create index videos_album_order on public.videos(album_id, sort_order, id);
 create index videos_owner on public.videos(owner_id);
-create table public.feedback (
-  id uuid primary key default gen_random_uuid(),
-  owner_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
-  message text not null check (length(btrim(message)) between 1 and 4000),
-  created_at timestamptz not null default now(),
-  resolved_at timestamptz,
-  delete_after timestamptz,
-  check ((resolved_at is null and delete_after is null) or
-    (resolved_at is not null and delete_after is not null and delete_after <= resolved_at + interval '7 days'))
-);
-create index feedback_owner on public.feedback(owner_id, created_at, id);
-create index feedback_cleanup on public.feedback(delete_after) where delete_after is not null;
-
 create table public.upload_workflows (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
@@ -144,7 +131,7 @@ create table videoalbum_private.upload_idempotency (
 );
 -- No auth FK: restoration tombstones must survive deleting the identity itself.
 create table videoalbum_private.deletion_ledger (
-  resource_kind text not null check (resource_kind in ('account', 'album', 'video', 'workflow', 'feedback')),
+  resource_kind text not null check (resource_kind in ('account', 'album', 'video', 'workflow')),
   resource_id uuid not null,
   deleted_at timestamptz not null default now(),
   primary key (resource_kind, resource_id)
@@ -250,22 +237,6 @@ end $$;
 create trigger terminal_session after update of state on public.upload_jobs
 for each row execute function videoalbum_private.clear_terminal_session();
 
-create function videoalbum_private.guard_feedback()
-returns trigger language plpgsql set search_path = '' as $$
-begin
-  if old.resolved_at is not null and (new.resolved_at, new.delete_after)
-      is distinct from (old.resolved_at, old.delete_after) then
-    raise exception 'Feedback deletion deadline is immutable' using errcode = '23514';
-  end if;
-  if old.resolved_at is null and new.resolved_at is not null then
-    new.resolved_at := clock_timestamp();
-    new.delete_after := new.resolved_at + interval '7 days';
-  end if;
-  return new;
-end $$;
-create trigger feedback_deadline before update on public.feedback
-for each row execute function videoalbum_private.guard_feedback();
-
 create function videoalbum_private.record_deletion()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
@@ -282,8 +253,6 @@ create trigger deleted_video after delete on public.videos
 for each row execute function videoalbum_private.record_deletion('video');
 create trigger deleted_workflow after delete on public.upload_workflows
 for each row execute function videoalbum_private.record_deletion('workflow');
-create trigger deleted_feedback after delete on public.feedback
-for each row execute function videoalbum_private.record_deletion('feedback');
 
 create function videoalbum_private.reject_resurrection()
 returns trigger language plpgsql security definer set search_path = '' as $$
@@ -301,15 +270,13 @@ create trigger no_deleted_video before insert on public.videos
 for each row execute function videoalbum_private.reject_resurrection('video');
 create trigger no_deleted_workflow before insert on public.upload_workflows
 for each row execute function videoalbum_private.reject_resurrection('workflow');
-create trigger no_deleted_feedback before insert on public.feedback
-for each row execute function videoalbum_private.reject_resurrection('feedback');
 
 -- Clients may edit only app-authored fields. In particular table-level UPDATE/INSERT
 -- would override column restrictions, so explicitly remove Supabase default grants.
 do $$
 declare t text;
 begin
-  foreach t in array array['profiles', 'albums', 'videos', 'feedback', 'upload_workflows',
+  foreach t in array array['profiles', 'albums', 'videos', 'upload_workflows',
     'upload_jobs', 'youtube_connections'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all on public.%I from public, anon, authenticated', t);
@@ -330,9 +297,8 @@ grant insert (id, owner_id, title, qr_preset_id, sort_order), update (title, qr_
   on public.albums to authenticated;
 grant insert (id, owner_id, album_id, caption, sort_order), update (caption, sort_order)
   on public.videos to authenticated;
-grant insert (id, owner_id, message), update (message) on public.feedback to authenticated;
 grant insert (id, owner_id, album_id) on public.upload_workflows to authenticated;
-grant delete on public.albums, public.videos, public.feedback to authenticated;
+grant delete on public.albums, public.videos to authenticated;
 
 create policy profile_owner on public.profiles to authenticated
   using (owner_id = (select auth.uid()) and deletion_requested_at is null)
@@ -343,11 +309,6 @@ create policy album_owner on public.albums to authenticated
 create policy video_owner on public.videos to authenticated
   using (owner_id = (select auth.uid()) and exists (select 1 from public.albums a where a.id = videos.album_id and a.owner_id = videos.owner_id))
   with check (owner_id = (select auth.uid()) and exists (select 1 from public.albums a where a.id = videos.album_id and a.owner_id = videos.owner_id));
-create policy feedback_owner on public.feedback to authenticated
-  using (owner_id = (select auth.uid()) and (delete_after is null or delete_after > statement_timestamp())
-    and exists (select 1 from public.profiles p where p.owner_id = feedback.owner_id))
-  with check (owner_id = (select auth.uid()) and (delete_after is null or delete_after > statement_timestamp())
-    and exists (select 1 from public.profiles p where p.owner_id = feedback.owner_id));
 create policy workflow_owner on public.upload_workflows to authenticated
   using (owner_id = (select auth.uid()) and expires_at > statement_timestamp()
     and exists (select 1 from public.albums a where a.id = upload_workflows.album_id and a.owner_id = upload_workflows.owner_id))
@@ -439,7 +400,6 @@ begin
   delete from public.upload_workflows where expires_at <= p_before;
   delete from videoalbum_private.oauth_states where expires_at <= p_before;
   delete from videoalbum_private.upload_sessions where expires_at <= p_before;
-  delete from public.feedback where delete_after <= p_before;
 end $$;
 revoke all on all functions in schema videoalbum_private from public, anon, authenticated;
 revoke all on function public.request_upload(uuid,uuid,uuid,text,text,boolean,text),

@@ -30,7 +30,7 @@ This supersedes the Python/FastAPI/Cloudflare architecture: Supabase Edge Functi
 
 ## Feedback and privacy
 
-Public GitHub issues are suitable for general suggestions and sanitised bug reports. Never post unlisted video URLs, printed QR images, family media, credentials or personal information. The planned pilot includes a private feedback form.
+Public GitHub issues are suitable for general suggestions and sanitised bug reports. Never post unlisted video URLs, printed QR images, family media, credentials or personal information. The owner collects pilot feedback face to face; the app has no feedback form or feedback storage.
 
 ## Hosting
 

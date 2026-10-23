@@ -1,6 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 select no_plan();
+select ok(to_regclass('public.feedback') is null, 'no in-app feedback storage');
 insert into auth.users(id) values
  ('00000000-0000-4000-8000-000000000021'), ('00000000-0000-4000-8000-000000000022');
 insert into public.profiles(owner_id, display_name) values
@@ -12,7 +13,6 @@ insert into public.videos(id, owner_id, album_id, caption) select
  ('20000000-0000-4000-8000-' || right(id::text,12))::uuid, owner_id, id, title from public.albums;
 insert into public.upload_workflows(id, owner_id, album_id) select
  ('30000000-0000-4000-8000-' || right(id::text,12))::uuid, owner_id, id from public.albums;
-insert into public.feedback(owner_id, message) select owner_id, title from public.albums;
 insert into public.youtube_connections(workflow_id, owner_id, channel_id, channel_title, verified_at)
  select id, owner_id, 'synthetic-channel', 'Synthetic', now() from public.upload_workflows;
 insert into videoalbum_private.workflow_credentials(workflow_id, owner_id, refresh_cipher, key_id)
@@ -21,10 +21,10 @@ insert into videoalbum_private.workflow_credentials(workflow_id, owner_id, refre
 -- All production relations and capabilities deny anonymous access; no forgotten default grants.
 select ok(c.relrowsecurity, c.relname || ' has RLS') from pg_class c join pg_namespace n on n.oid=c.relnamespace
  where n.nspname in ('public','videoalbum_private') and c.relkind='r' and c.relname in
- ('profiles','albums','videos','feedback','upload_workflows','upload_jobs','youtube_connections',
+ ('profiles','albums','videos','upload_workflows','upload_jobs','youtube_connections',
  'workflow_credentials','upload_sessions','oauth_states','upload_idempotency','deletion_ledger');
 select ok(not has_table_privilege('anon', 'public.' || t, 'select,insert,update,delete'), t || ' denies anon')
- from unnest(array['profiles','albums','videos','feedback','upload_workflows','upload_jobs','youtube_connections','qr_ready_uploads']) t;
+ from unnest(array['profiles','albums','videos','upload_workflows','upload_jobs','youtube_connections','qr_ready_uploads']) t;
 select ok(not has_schema_privilege('authenticated','videoalbum_private','usage'), 'owner cannot enter private schema');
 select ok(not has_table_privilege('authenticated','videoalbum_private.' || t,'select,insert,update,delete'), t || ' denies frontend')
  from unnest(array['workflow_credentials','upload_sessions','oauth_states','upload_idempotency','deletion_ledger']) t;
@@ -43,18 +43,15 @@ set local request.jwt.claim.sub = '00000000-0000-4000-8000-000000000021';
 select is((select count(*)::int from public.profiles),1,'A sees only own profile');
 select is((select count(*)::int from public.albums),1,'A sees only own album');
 select is((select count(*)::int from public.videos),1,'A sees only own video');
-select is((select count(*)::int from public.feedback),1,'A sees only own feedback');
 select is((select count(*)::int from public.upload_workflows),1,'A sees only own live workflow');
 select is((select count(*)::int from public.youtube_connections),1,'A sees only own connection');
 select throws_ok($$insert into public.albums(owner_id,title) values ('00000000-0000-4000-8000-000000000022','forged')$$,'42501',null,'forged album owner denied');
 select throws_ok($$insert into public.videos(album_id) values ('10000000-0000-4000-8000-000000000022')$$,'42501',null,'video checks parent ownership');
 select throws_ok($$insert into public.upload_workflows(album_id) values ('10000000-0000-4000-8000-000000000022')$$,'42501',null,'workflow checks parent ownership');
-select throws_ok($$insert into public.feedback(owner_id,message) values ('00000000-0000-4000-8000-000000000022','forged')$$,'42501',null,'forged feedback owner denied');
 select throws_ok($$update public.albums set owner_id='00000000-0000-4000-8000-000000000022'$$,'42501',null,'owner changes denied');
 select throws_ok($$update public.videos set album_id='10000000-0000-4000-8000-000000000022'$$,'42501',null,'parent changes denied');
 select throws_ok($$update public.upload_workflows set expires_at=now()+interval '30 days'$$,'42501',null,'client cannot extend expiry');
 select throws_ok($$update public.profiles set deletion_requested_at=now()$$,'42501',null,'client cannot forge deletion status');
-select throws_ok($$update public.feedback set resolved_at=now()$$,'42501',null,'client cannot forge support status');
 select throws_ok($$insert into public.albums(title,qr_preset_id) values ('bad preset',5)$$,'23514',null,'only four QR presets');
 select throws_ok($$select public.request_upload('30000000-0000-4000-8000-000000000022','20000000-0000-4000-8000-000000000022',gen_random_uuid(),'Synthetic')$$,'42501',null,'RPC rejects another owner');
 select throws_ok($$select public.request_upload('30000000-0000-4000-8000-000000000021','20000000-0000-4000-8000-000000000022',gen_random_uuid(),'Synthetic')$$,'42501',null,'RPC rejects foreign video');
@@ -81,7 +78,6 @@ select is((select count(*)::int from public.upload_jobs),0,'B cannot see A jobs'
 select is((select display_name from public.profiles),'B','B sees own profile');
 select is((select title from public.albums),'B','B sees own album');
 select is((select caption from public.videos),'B','B sees own entry');
-select is((select message from public.feedback),'B','B sees own feedback');
 select is((select count(*)::int from public.youtube_connections),1,'B sees own connection');
 reset role;
 
@@ -179,9 +175,6 @@ select is((select count(*)::int from videoalbum_private.workflow_credentials),0,
 select is((select count(*)::int from public.youtube_connections),0,'finish removes provider metadata');
 select is((select count(*)::int from public.albums),2,'finish preserves albums');
 
-update public.feedback set resolved_at=now();
-select ok((select bool_and(delete_after=resolved_at+interval '7 days') from public.feedback),'resolved feedback has fixed deletion deadline');
-select throws_ok($$update public.feedback set delete_after=delete_after+interval '1 day'$$,'23514',null,'feedback deadline cannot extend');
 update public.profiles set deletion_requested_at=now() where owner_id='00000000-0000-4000-8000-000000000021';
 set local role authenticated;
 set local request.jwt.claim.sub = '00000000-0000-4000-8000-000000000021';

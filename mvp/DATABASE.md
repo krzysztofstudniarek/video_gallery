@@ -17,7 +17,6 @@ revoke-before-forget behavior as production implementations of ADR 002.
 | `profiles` | Lasting app display name, creation/deletion status; no copied Google profile | Read own live profile; insert own profile; update display name |
 | `albums` | Lasting independently authored title, order, QR preset ID | Owner CRUD; preset IDs 1–4 are the four required style slots |
 | `videos` | Lasting album entry ID, independently authored caption and order | Owner CRUD; parent album/owner cannot change |
-| `feedback` | Private user-authored feedback, resolution/deletion status | Owner read/create/edit/delete; support resolution is protected |
 | `upload_workflows` | Temporary owner/album scope with fixed creation/expiry | Owner read/create; finish/cancel is backend-only |
 | `upload_jobs` | Temporary upload inputs, per-upload confirmation, provider ID and trusted evidence | Owner read; create through `request_upload`; backend owns all writes |
 | `youtube_connections` | Temporary verified channel identity/title for a workflow | Owner read; backend writes |
@@ -42,7 +41,7 @@ contain only `public`; they are a convenience, not an authorization boundary.
 The schema does not store video bytes, public album projections, production share tokens, QR
 payloads, watch URLs or finished exports. An active job's provider ID is sufficient for a trusted
 pre-print flow to construct a validated direct YouTube watch URL. Never automatically copy upload
-inputs/provider values into lasting captions, titles, feedback or logs.
+inputs/provider values into lasting captions, titles or logs.
 
 ## Transactions and workflow use
 
@@ -100,15 +99,13 @@ Postgres otherwise grants function EXECUTE to PUBLIC by default.
 - Finish/cancel and the all-owner expiry sweep physically remove workflow trees. Read RLS already
   hides expired workflows/jobs/connections; child-write triggers reject late writes, missing parents
   and expired workflows, and lock against concurrent deletion. Tombstones reject re-creation of a
-  deleted workflow/album/entry/feedback UUID. Original idempotency reservations still block retry reuse.
+  deleted workflow/album/entry UUID. Original idempotency reservations still block retry reuse.
 - Marking `profiles.deletion_requested_at` blocks app access immediately. The account deletion handler
   must also revoke Auth sessions, stop workers, request provider revocation and delete the Auth user.
   Local deletion must succeed if Google is unavailable. If #14 retains a token for bounded revocation
   retries, add a private, revocation-only queue capped by the earlier original workflow expiry or
   seven-day deletion deadline; the current schema does not preserve tokens after workflow deletion.
-- Backend feedback resolution fixes `resolved_at`/`delete_after` once; resolved feedback is inaccessible
-  after that deadline and included in the sweep. Unresolved feedback follows the account lifecycle.
-- `purge_expired_upload_data()` covers inactive owners and all temporary tables plus resolved feedback.
+- `purge_expired_upload_data()` covers inactive owners and all temporary tables.
   Its optional cutoff allows a trusted scheduler to sweep **ahead** of deadlines with operating margin.
   Schedule/monitor it independently of login, monitor lag, and meet each physical deletion deadline.
   RLS expiry alone does not delete stored data. Hosting/scheduler availability is a release gate in #10.
@@ -135,7 +132,7 @@ cannot prove this contract.
 3. Restore into isolated quarantine with the Data API, workers, scheduled provider calls and outbound
    uploads disabled. Load the current deletion ledger from outside the restored snapshot first;
    remove matching accounts/resources and any cascade children. Restore original IDs/timestamps,
-   never regenerate deadlines. Remove every expired/deleted workflow and resolved-feedback row before
+   never regenerate deadlines. Remove every expired/deleted workflow before
    opening access. Backups following the exclusion rule restore no provider workflow/capability rows.
 4. Verify counts, foreign keys, RLS/grants and this test suite using synthetic identities. Verify all
    original deadlines and deletion requests against every live/recovery copy, then enable app access.

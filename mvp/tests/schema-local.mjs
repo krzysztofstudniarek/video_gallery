@@ -35,7 +35,6 @@ export async function checkProductionSchema({ clients, admin, anon, users, url, 
       Date.parse(workflow.expires_at) - Date.parse(workflow.created_at) === 7 * 86400 * 1000,
       "fixed seven-day deadline",
     );
-    await checked(client.from("feedback").insert({ message: "Synthetic feedback" }), "feedback");
     const request = {
       p_workflow_id: workflow.id,
       p_video_id: video.id,
@@ -56,12 +55,13 @@ export async function checkProductionSchema({ clients, admin, anon, users, url, 
     );
     fixtures.push({ album, video, workflow, job, request });
   }
+  const removedFeedback = await admin.from("feedback").select("id");
+  assert(removedFeedback.error?.code === "PGRST205", "in-app feedback table is absent");
   const [a, b] = fixtures;
   const tables = [
     "profiles",
     "albums",
     "videos",
-    "feedback",
     "upload_workflows",
     "upload_jobs",
     "youtube_connections",
@@ -95,7 +95,6 @@ export async function checkProductionSchema({ clients, admin, anon, users, url, 
       ["profiles", { owner_id: users[1], deletion_requested_at: new Date().toISOString() }],
       ["albums", { owner_id: users[1] }],
       ["videos", { album_id: b.album.id }],
-      ["feedback", { resolved_at: new Date().toISOString() }],
       ["upload_workflows", { expires_at: new Date(Date.now() + 8 * 86400000).toISOString() }],
       ["upload_jobs", { state: "uploaded" }],
       ["upload_jobs", { effective_visibility: "unlisted", processing_status: "succeeded" }],
@@ -108,7 +107,7 @@ export async function checkProductionSchema({ clients, admin, anon, users, url, 
       `${table}: protected columns`,
     );
   }
-  for (const table of ["albums", "videos", "feedback"]) {
+  for (const table of ["albums", "videos"]) {
     const result = await checked(
       clients[1].from(table).delete().eq("owner_id", users[0]).select("id"),
       `${table}: foreign delete`,

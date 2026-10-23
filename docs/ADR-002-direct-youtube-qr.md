@@ -4,6 +4,12 @@ Status: **accepted by the owner on 22 October 2026** in the discussion of
 [#25](https://github.com/krzysztofstudniarek/video_gallery/issues/25).
 This is the production design contract; implementation remains in the linked feature issues.
 
+## Scope amendment — 23 October 2026
+
+The owner will collect pilot feedback face to face. In-app feedback forms, feedback storage and
+feedback administration are removed from the MVP; #9 is no longer planned. This supersedes the
+earlier feedback-specific schema and retention requirements. Other lifecycle rules below remain in force.
+
 ## Decision
 
 Every video QR encodes the final `https://www.youtube.com/watch?v=<video-id>` URL directly.
@@ -46,7 +52,6 @@ reconciliation cannot extend it. A provider expiry or deletion request can requi
 | OAuth state and PKCE verifier | Private schema; owner-bound, state stored hashed | Single atomic use; expires after ten minutes. Delete consumed/expired records; expired state is unusable even before physical cleanup. |
 | Consent/public confirmation | Owner-scoped workflow record | Keep confirmation only for the current upload/workflow and never reuse it. A minimal app privacy-policy version/acceptance time may stay with the app account; exclude channel IDs and provider payloads. |
 | QR images/PDFs, watch URLs and captions-and-links exports | Generate for the owner to download; no public bucket, persistent app cache or server archive | Any temporary server copy follows the workflow deadline. A QR image still contains a provider identifier. Downloaded/printed copies remain under the user's control. |
-| Private feedback | Owner/private support access; separate from provider records | Do not automatically attach media or URLs. Remove on user request/account deletion within seven days; remove resolved feedback within seven days. Unresolved feedback follows the account lifecycle. |
 | Logs and counters | Restricted operational access | Sanitized logs at most seven days; anonymous aggregate counts at most 30 days. Never log credentials, OAuth queries, watch/session URLs, video/channel IDs, QR payloads or provider response bodies. |
 | Backups, replicas and restore copies | Restricted recovery storage | Do not extend any original expiry/deletion deadline. Exclude temporary provider data from backups, or use a verified erasure/expiry mechanism that meets each record's deadline. Encryption alone does not erase a retained copy. |
 
@@ -123,7 +128,7 @@ enforcement.
 | [#6](https://github.com/krzysztofstudniarek/video_gallery/issues/6) | Replace app redirect/album-sharing scope with validated direct YouTube destinations and independence from app hosting; coordinate with #7/#15. |
 | [#7](https://github.com/krzysztofstudniarek/video_gallery/issues/7) | Styled direct-link QR downloads, printable sheets and user-kept reprints; no app cover/share codes or persistent QR archive. |
 | [#8](https://github.com/krzysztofstudniarek/video_gallery/issues/8) | Downloadable versioned captions-and-links export before provider cleanup; lasting caption-only export afterward, deletion and clear privacy/reprinting information. |
-| [#9](https://github.com/krzysztofstudniarek/video_gallery/issues/9) | Minimal private feedback with the retention rules above. |
+| [#9](https://github.com/krzysztofstudniarek/video_gallery/issues/9) | Removed from app scope on 23 October 2026; the owner collects pilot feedback face to face. |
 | [#10](https://github.com/krzysztofstudniarek/video_gallery/issues/10) | Expiry scheduling/monitoring, redacted logs and backups that meet original deadlines; printed playback has no app uptime dependency. |
 | [#14](https://github.com/krzysztofstudniarek/video_gallery/issues/14) | Workflow-limited credentials, encryption key IDs, refresh/reconnect and explicit disconnect/revocation. |
 | [#15](https://github.com/krzysztofstudniarek/video_gallery/issues/15) | Direct resumable uploads, trusted pre-print verification, downloads/finish cleanup and nonduplicating expiry/recovery. |
