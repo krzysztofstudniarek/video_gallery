@@ -1,5 +1,12 @@
 # Prompt for a separate quota and limits planning agent
 
+Historical planning prompt. The owner selected the balanced profile on 22 October 2026;
+[PILOT-LIMITS.md](PILOT-LIMITS.md) is the current decision. The copied prompt below predates that
+selection. [ADR 002](ADR-002-direct-youtube-qr.md) later settled direct YouTube QR codes and
+workflow-limited provider retention, superseding this historical prompt's ongoing refresh and
+printed-link hosting assumptions. Remaining project verification and hosting questions are tracked
+in PILOT-LIMITS.md. The copied prompt is historical, not current implementation guidance.
+
 Copy the following prompt into a separate agent/chat:
 
 ```text

@@ -76,12 +76,13 @@ sign-out. Do not broaden the redirect allowlist to wildcards.
 - Repeat the manual workflow for future releases. For an application rollback, deploy a reviewed
   previous commit; use forward-fix database migrations rather than automatically reversing schema or
   deleting data.
-- Remove the disposable staging project/Pages deployment deliberately when no longer needed. Printed
-  codes must not point at a disposable staging deployment.
+- Remove the disposable staging project/Pages deployment deliberately when no longer needed. Production QR codes point directly to YouTube, never this staging deployment.
 
-For launch, use the explicit non-pausing Pro plan decision in README.md. Free staging can pause with
-inactivity; a failing health indicator is expected while paused. This setup does not purchase a plan
-or claim a completed hosted deployment.
+For launch, follow [ADR 002](../docs/ADR-002-direct-youtube-qr.md): validate hosting for upload and
+expiry-cleanup availability, not printed playback. Free staging can pause with inactivity; a failing
+health indicator is expected while paused. Production temporary-data deadlines still apply during
+inactivity. The earlier mandatory Pro-for-printed-links decision is superseded. This setup does not
+purchase a plan or claim a completed hosted deployment.
 
 References: [Supabase deployments](https://supabase.com/docs/guides/functions/deploy),
 [environment migrations](https://supabase.com/docs/guides/deployment/managing-environments),
