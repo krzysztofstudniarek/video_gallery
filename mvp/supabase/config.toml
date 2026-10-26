@@ -17,8 +17,9 @@ port = 54323
 
 [auth]
 enabled = true
-site_url = "http://127.0.0.1:5173"
-additional_redirect_urls = ["http://127.0.0.1:5173"]
+site_url = "http://127.0.0.1:5173/"
+additional_redirect_urls = ["http://127.0.0.1:5173/"]
+jwt_expiry = 3600
 enable_signup = true
 
 [auth.external.google]
@@ -40,4 +41,8 @@ verify_jwt = false
 
 # The handler verifies each user JWT through Supabase Auth before any private RPC.
 [functions.youtube]
+verify_jwt = false
+
+# Auth JWT + live Supabase session are verified in the handler.
+[functions.account]
 verify_jwt = false

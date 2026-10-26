@@ -67,6 +67,10 @@ jobs:
           exit 1
       - name: Check Auth, direct API isolation and Edge authorization
         run: npm run test:local
+      - name: Install isolated browser test runtime
+        run: npx playwright install --with-deps chromium
+      - name: Check persistent login, two-account UI isolation and deletion
+        run: npm run test:browser
       - name: Stop disposable containers
         if: always()
         run: npm run stop -- --no-backup > /dev/null 2>&1

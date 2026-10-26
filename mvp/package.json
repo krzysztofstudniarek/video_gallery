@@ -11,9 +11,10 @@
     "serve": "supabase functions serve --env-file supabase/.env.local",
     "test:db": "supabase test db",
     "test:local": "node tests/local.mjs",
+    "test:browser": "playwright test",
     "stop": "supabase stop",
     "test": "node --test scripts/*.test.mjs && deno test --allow-env tests",
-    "check": "deno check supabase/functions/compatibility/index.ts supabase/functions/share/index.ts supabase/functions/health/index.ts supabase/functions/youtube/index.ts && tsc --noEmit",
+    "check": "deno check supabase/functions/compatibility/index.ts supabase/functions/share/index.ts supabase/functions/health/index.ts supabase/functions/youtube/index.ts supabase/functions/account/index.ts && tsc --noEmit && tsc --noEmit -p tsconfig.tooling.json",
     "deploy:backend": "node scripts/deploy.mjs",
     "smoke:staging": "node scripts/smoke.mjs",
     "dev": "vite --host 127.0.0.1",
@@ -33,6 +34,8 @@
     "react-dom": "19.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "22.20.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "deno": "2.9.6",

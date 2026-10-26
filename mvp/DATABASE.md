@@ -102,9 +102,11 @@ Postgres otherwise grants function EXECUTE to PUBLIC by default.
   deleted workflow/album/entry UUID. Original idempotency reservations still block retry reuse.
 - Marking `profiles.deletion_requested_at` blocks app access immediately. The account deletion handler
   must also revoke Auth sessions, stop workers, request provider revocation and delete the Auth user.
-  Local deletion must succeed if Google is unavailable. If #14 retains a token for bounded revocation
-  retries, add a private, revocation-only queue capped by the earlier original workflow expiry or
-  seven-day deletion deadline; the current schema does not preserve tokens after workflow deletion.
+  [Issue #4 authentication](AUTH.md) implements that handler and private deletion/revocation retry
+  queues. Local deletion succeeds if Google is unavailable; revocation-only ciphertext is capped by
+  the earlier original workflow expiry or seven-day deletion deadline. Account deletion snapshots
+  capabilities before removing workflow/probe data. Ordinary finish/cancel still erases credentials
+  directly; #14 must apply the shared envelope/key-version contract when storing workflow credentials.
 - `purge_expired_upload_data()` covers inactive owners and all temporary tables.
   Its optional cutoff allows a trusted scheduler to sweep **ahead** of deadlines with operating margin.
   Schedule/monitor it independently of login, monitor lag, and meet each physical deletion deadline.

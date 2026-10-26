@@ -109,6 +109,13 @@ local/hosted function boot evidence rather than inferring it from Deno CLI.
 
 ## Google sign-in
 
+Issue #4 adds persistent SDK sign-in, an authenticated React view and a minimal confirmed account
+deletion flow. See [authentication and deletion](AUTH.md) for browser storage/CSP, session revocation
+boundaries, privileged operations, bounded deletion retry work and remaining rollout gates. Sign-out
+clears this browser's session; deletion removes owned app data and Auth identity without deleting
+YouTube videos or changing printed codes. YouTube connection/upload tools remain a compatibility
+probe pending #14/#15.
+
 Copy `.env.example` to ignored `.env.local`, fill in the local publishable (or legacy anon) key from
 `npx supabase status`, then `npm run dev` and open `http://127.0.0.1:5173`. Do not paste the full
 status output into an issue. Use a dedicated Google test project and test users. Configure its OAuth
@@ -119,11 +126,18 @@ Supabase Auth PKCE; click sign-in, complete consent, run the authenticated probe
 confirm further probes fail. Google sign-in and YouTube upload consent are separate authorizations.
 Basic Google sign-in does not grant YouTube uploads. No real credentials are fixtures.
 
-The compatibility function verifies the caller with `auth.getUser(token)` before any query.
+Protected functions verify the caller with `auth.getUser(token)` and the narrow
+`current_app_session` RPC against Supabase's live session before any private action.
 `verify_jwt=false` disables the legacy gateway check, not our caller verification. Invalid/missing
 JWTs must yield 401. The RLS client carries the verified user's JWT and never uses the privileged
 backend key. Auth availability is a dependency of this verification strategy; no unverified-claims
 fallback.
+
+After starting local functions, `npm run test:local` also verifies refresh, correctly expired JWTs,
+sign-out rejection by all protected functions and two-account deletion isolation. Run
+`npx playwright install chromium` and `npm run test:browser` for isolated browser checks, including
+closing/reopening a persistent profile. These synthetic accounts do not replace live staging Google
+consent validation. The PR workflow runs both suites without hosted secrets or personal media.
 
 ## Historical anonymous sharing probe and keys
 
