@@ -2,8 +2,11 @@
 
 This is the active Supabase-native workspace, built on the validated issue #1 compatibility spike
 and issue #2 tooling. Issue #3 adds the [production schema/security contract](DATABASE.md), SQL/RLS
-tests and direct Data API bypass checks. The React frontend retains the probe UI while product
-features are developed.
+tests and direct Data API bypass checks. Issue #5 adds the [minimal video list and QR selection](VIDEOS.md).
+Uploads connect in #15 and QR downloads in #7. Historical probe tools are available with `?tools=1`.
+The list includes existing Unlisted channel videos through the workflow-scoped channel-library API;
+#14 still supplies the production channel-connection UI. The [future album flow](../docs/FUTURE.md)
+is future work.
 Earlier `backend/` Python Workers files and the 2017 app remain reference only. Python, FastAPI and
 Workers are not dependencies of the new MVP or its CI.
 

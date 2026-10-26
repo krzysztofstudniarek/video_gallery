@@ -43,7 +43,7 @@ hosting and release configuration remain in issue #10; do not point the staging 
 Run **Actions → Deploy minimal Supabase staging app → Run workflow** on the reviewed branch. It
 validates configuration, installs locked tooling, runs checks, builds with the Pages base path,
 links the explicit staging project, applies only pending migrations (`db push`, never remote reset),
-sets FRONTEND_ORIGIN and deploys health/compatibility/share/youtube/account functions. Backend smoke checks must
+sets FRONTEND_ORIGIN and deploys health/compatibility/share/youtube/account/channel-library functions. Backend smoke checks must
 pass before the frontend is published to Pages. The workflow URL provides the frontend deployment
 result. Database and function deployment are not a single transaction; check the failing stage
 before retrying.

@@ -28,6 +28,12 @@ const account = await send("/functions/v1/account", {
   body: JSON.stringify({ action: "delete", confirm: true }),
 });
 if (account.status !== 401) throw new Error("Anonymous account deletion was not rejected");
+const library = await send("/functions/v1/channel-library", {
+  method: "POST",
+  headers: { apikey: key, "Content-Type": "application/json" },
+  body: JSON.stringify({ action: "list" }),
+});
+if (library.status !== 401) throw new Error("Anonymous channel discovery was not rejected");
 const share = await send("/functions/v1/share?token=invalid", { redirect: "manual" });
 if (share.status !== 404) throw new Error("Invalid share was not rejected");
 const table = await send("/rest/v1/spike_items?select=id&limit=1", { headers: { apikey: key } });

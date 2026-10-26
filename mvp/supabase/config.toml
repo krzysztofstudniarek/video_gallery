@@ -46,3 +46,7 @@ verify_jwt = false
 # Auth JWT + live Supabase session are verified in the handler.
 [functions.account]
 verify_jwt = false
+
+# Live Auth/session verification precedes the owner-bound credential lookup.
+[functions.channel-library]
+verify_jwt = false

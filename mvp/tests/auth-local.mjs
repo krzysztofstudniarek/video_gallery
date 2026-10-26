@@ -118,7 +118,7 @@ export async function checkAuth({ config, admin }) {
     for (const row of pending.data) await admin.rpc("finish_provider_revocation", { p_id: row.id });
     const savedRefresh = b.session.refresh_token;
     assert(!(await b.client.auth.signOut({ scope: "local" })).error, "sign out");
-    for (const name of ["account", "youtube", "compatibility"]) {
+    for (const name of ["account", "youtube", "compatibility", "channel-library"]) {
       const response = await fetch(`${url}/functions/v1/${name}`, {
         method: "POST",
         headers: headers(b.token),

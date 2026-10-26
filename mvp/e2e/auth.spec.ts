@@ -12,8 +12,8 @@ async function account() {
   ids.push(result.id);
   return result;
 }
-async function signIn(page: Page, session: Session) {
-  await page.goto(base);
+async function signIn(page: Page, session: Session, tools = false) {
+  await page.goto(tools ? `${base}/?tools=1` : base);
   await expect(page.getByRole("button", { name: "Sign in with Google" })).toBeVisible();
   await page.evaluate(
     (value) => localStorage.setItem("videoalbum.auth", JSON.stringify(value)),
@@ -138,13 +138,13 @@ test("two browser accounts show only their own channel and sign-out clears priva
   const ca = await browser.newContext(), cb = await browser.newContext();
   try {
     const pa = await ca.newPage(), pb = await cb.newPage();
-    await signIn(pa, a.session);
-    await signIn(pb, b.session);
+    await signIn(pa, a.session, true);
+    await signIn(pb, b.session, true);
     await expect(pa.locator("#youtube-status")).toContainText("Channel A");
     await expect(pa.locator("body")).not.toContainText("Channel B");
     await expect(pb.locator("#youtube-status")).toContainText("Channel B");
     const otherTab = await ca.newPage();
-    await otherTab.goto(base);
+    await otherTab.goto(`${base}/?tools=1`);
     await expect(otherTab.locator("#youtube-status")).toContainText("Channel A");
     await pa.getByRole("button", { name: "Sign out", exact: true }).click();
     await expect(pa.getByRole("button", { name: "Sign in with Google" })).toBeVisible();
@@ -176,6 +176,7 @@ test("expired stored access token refreshes through SDK and revoked refresh sign
   await page.reload();
   await expect(page.getByRole("button", { name: "Sign in with Google" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "YouTube upload validation" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Your videos" })).toHaveCount(0);
 });
 
 test("account deletion requires confirmation, clears private view and deletes the Auth identity", async ({ page }) => {
@@ -215,6 +216,7 @@ test("pending deletion hides tools and presents a usable retry", async ({ page }
     ),
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: "YouTube upload validation" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Your videos" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Retry account deletion" })).toBeEnabled();
   await page.unroute("**/functions/v1/account");
   await page.getByRole("button", { name: "Retry account deletion" }).click();

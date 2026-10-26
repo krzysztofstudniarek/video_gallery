@@ -1,5 +1,9 @@
 # YouTube consent and direct-upload compatibility probe
 
+Open the frontend with `?tools=1` to show these historical validation tools. The normal signed-in
+screen is the [minimal video list](VIDEOS.md); production uploads remain #15. YouTube consent
+callbacks also show the tools so an in-flight probe can complete.
+
 Production contract: [ADR 002](../docs/ADR-002-direct-youtube-qr.md), accepted 22 October 2026,
 uses direct YouTube QR destinations, user-downloaded sheets/exports and temporary provider data
 removed at workflow end/cancellation, with a seven-day maximum for interrupted work. The probe below

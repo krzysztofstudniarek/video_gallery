@@ -66,6 +66,13 @@ try {
     body: JSON.stringify({ action: "start" }),
   });
   assert(ytAnonymous.status === 401, "Anonymous YouTube consent accepted");
+  const library = await clients[0].functions.invoke("channel-library", {
+    body: { action: "list" },
+  });
+  assert(
+    !library.error && library.data.connected === false && library.data.items.length === 0,
+    "channel library requires its own live workflow connection, not historical probe credentials",
+  );
   const session = (await clients[0].auth.getSession()).data.session;
   const call = (token) =>
     fetch(`${url}/functions/v1/compatibility`, {

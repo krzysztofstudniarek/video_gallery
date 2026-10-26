@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import type { Session } from "@supabase/supabase-js";
 import { authDenied, client, initialized, leaveAccount } from "./client";
 import { Probe } from "./ProbePanel";
+import { showValidationTools } from "./callback";
+import { Videos } from "./Videos";
 
 type Account = { owner: string; email?: string; deleting: boolean };
 
@@ -176,7 +178,12 @@ function App() {
               Sign out
             </button>
             {!owned && <p>Verifying account access…</p>}
-            {owned && !owned.deleting && !locked && <Probe key={owned.owner} />}
+            {owned && !owned.deleting && !locked && (
+              <>
+                <Videos key={owned.owner} owner={owned.owner} />
+                {showValidationTools && <Probe key={`probe-${owned.owner}`} />}
+              </>
+            )}
             {(owned || locked) && (
               <section aria-labelledby="delete-title">
                 <h2 id="delete-title">Delete account</h2>
