@@ -1,4 +1,5 @@
-// Selection contains app identifiers only. Resolve destinations again immediately before export.
+// Keep selections in memory only. Channel selections contain temporary provider identifiers.
+// Resolve destinations again immediately before export.
 export type UploadedQrChoice = { videoId: string; jobId: string; workflowId: string };
 export type ChannelQrChoice = { source: "channel"; videoId: string; workflowId: string };
 export type QrChoice = UploadedQrChoice | ChannelQrChoice;

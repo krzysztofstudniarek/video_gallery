@@ -20,6 +20,9 @@ is recorded separately and does not add album controls now.
   private state on account changes; sign-out and pending deletion unmount it.
 - `loadVideoLibrary` uses the authenticated, generated-type Supabase client. Explicit owner filters
   complement database RLS; an owner argument is not authorization. The service key is never used.
+  A single `video_library` view query joins entries, albums, the latest visible job, workflow expiry
+  and QR readiness in one database snapshot. It uses `security_invoker`, so the caller's RLS applies
+  to all underlying reads. `toVideoItem` handles presentation mapping separately from loading.
 - Display order is `(album.sort_order, album.id, video.sort_order, video.id)`. Captions are rendered
   as text; empty captions use a numbered label. Provider upload titles/file names are not copied into
   lasting captions. Temporary provider IDs for eligible uploads allow deduplication with existing
@@ -47,6 +50,8 @@ is recorded separately and does not add album controls now.
   then checks actual `videos.list` metadata. Only matching-channel Unlisted videos are returned;
   Public, Private, deleted and unavailable results are excluded. Processing videos are visible but
   disabled. The list does not change visibility or upload another copy of an existing video.
+  This is YouTube's automatic index of channel uploads, not a user-created playlist or an app album.
+  The helper is named `ownedUploadsPlaylistId`; discovery creates or edits no YouTube playlists.
 - Each request examines at most 50 playlist entries. `Load more YouTube videos` continues with the
   same workflow and provider cursor, including pages containing no Unlisted results. Repeated IDs
   are deduplicated, including eligible videos already represented by app uploads.
@@ -69,7 +74,8 @@ is recorded separately and does not add album controls now.
 1. #15 creates/chooses an owner-scoped `albums.id`, creates `videos.id` entries, and attaches jobs
    through `upload_workflows.id` and `request_upload`. Existing `videos.caption`/`sort_order`,
    `albums.title`/`sort_order`/`qr_preset_id` are app-authored controls. Do not persist provider
-   upload inputs into these fields automatically. The minimal list needs no new schema or RPC.
+   upload inputs into these fields automatically. The list reads these existing relations through
+   the `video_library` projection; it adds no new lasting storage.
 2. #15 owns consent, visibility selection/Public confirmation, upload progress/retry/resume/cancel
    and trusted processing/visibility verification. The list cannot write those protected fields.
    Its upload button must stay unavailable until that production integration is implemented.
@@ -103,7 +109,10 @@ existing-video selection, deduplication, pagination, page failure/retry and expi
 fixtures never upload media or verify a real provider video; they do not satisfy production
 upload, playback or QR readiness. Existing SQL/direct-API tests exercise forged ownership,
 protected fields and deletion cascades. The channel-library migration adds only narrow backend RPCs;
-generated public types are regenerated from the disposable local schema.
+the joined-library migration adds a read-only security-invoker view. Generated public types are
+regenerated from the disposable local schema. SQL and direct-API checks cover ownership, retained
+entries after cleanup, and latest-job selection through this view; browser checks assert one list
+database request and preserve loading/error/expiry coverage.
 
 For historical synthetic upload validation only, open the existing frontend with `?tools=1`.
 The YouTube callback also opens those tools so an in-flight staging consent still completes.

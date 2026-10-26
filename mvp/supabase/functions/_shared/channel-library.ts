@@ -19,7 +19,7 @@ export class ChannelLibrary {
     return googleJson(this.send, url.href, { headers: { Authorization: `Bearer ${this.token}` } });
   }
 
-  async confirmChannel() {
+  private async ownedUploadsPlaylistId() {
     const result = await this.get("channels", {
       part: "contentDetails",
       mine: "true",
@@ -29,20 +29,29 @@ export class ChannelLibrary {
     if (result.items?.length !== 1 || channel?.id !== this.channelId) {
       throw new ActionError("channel_changed", 409);
     }
-    const playlist = channel.contentDetails?.relatedPlaylists?.uploads;
-    if (typeof playlist !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(playlist)) {
+    // YouTube maintains this automatic index of channel uploads. It is not a user-created
+    // playlist or an app album; discovery never creates or modifies YouTube playlists.
+    const uploadsPlaylistId = channel.contentDetails?.relatedPlaylists?.uploads;
+    if (
+      typeof uploadsPlaylistId !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(uploadsPlaylistId)
+    ) {
       throw new ActionError("channel_library_unavailable", 502);
     }
-    return playlist;
+    return uploadsPlaylistId;
   }
 
   async videos(ids: string[]): Promise<ChannelVideo[]> {
     if (!ids.length) return [];
+    const fields = [
+      "id",
+      "snippet(channelId,title)",
+      "status(privacyStatus,uploadStatus)",
+      "processingDetails/processingStatus",
+    ].join(",");
     const result = await this.get("videos", {
       part: "snippet,status,processingDetails",
       id: ids.join(","),
-      fields:
-        "items(id,snippet(channelId,title),status(privacyStatus,uploadStatus),processingDetails/processingStatus)",
+      fields: `items(${fields})`,
     });
     if (!Array.isArray(result.items)) throw new ActionError("channel_library_unavailable", 502);
     const rows = new Map<string, ChannelVideo>();
@@ -67,10 +76,10 @@ export class ChannelLibrary {
   }
 
   async page(pageToken?: string) {
-    const playlist = await this.confirmChannel();
+    const uploadsPlaylistId = await this.ownedUploadsPlaylistId();
     const result = await this.get("playlistItems", {
       part: "contentDetails",
-      playlistId: playlist,
+      playlistId: uploadsPlaylistId,
       maxResults: "50",
       fields: "nextPageToken,items/contentDetails/videoId",
       ...(pageToken ? { pageToken } : {}),
@@ -92,7 +101,7 @@ export class ChannelLibrary {
   }
 
   async verify(ids: string[]) {
-    await this.confirmChannel();
+    await this.ownedUploadsPlaylistId();
     const items = await this.videos(ids);
     if (items.length !== ids.length || items.some((item) => !item.processed)) {
       throw new ActionError("channel_selection_changed", 409);

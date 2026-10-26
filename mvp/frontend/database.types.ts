@@ -283,6 +283,29 @@ export type Database = {
         ComputedFields: never;
         Relationships: [];
       };
+      "video_library": {
+        Row: {
+          "album_id": string | null;
+          "album_sort_order": number | null;
+          "album_title": string | null;
+          "caption": string | null;
+          "effective_visibility": string | null;
+          "id": string | null;
+          "job_id": string | null;
+          "job_state": string | null;
+          "owner_id": string | null;
+          "processing_status": string | null;
+          "provider_video_id": string | null;
+          "qr_ready": boolean | null;
+          "qr_visibility": string | null;
+          "verified_at": string | null;
+          "video_sort_order": number | null;
+          "workflow_expires_at": string | null;
+          "workflow_id": string | null;
+        };
+        ComputedFields: never;
+        Relationships: [];
+      };
     };
     Functions: {
       "begin_account_deletion": { Args: { "p_owner": string }; Returns: undefined };

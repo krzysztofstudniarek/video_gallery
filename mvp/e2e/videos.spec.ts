@@ -120,8 +120,11 @@ test("minimal list selects only trusted eligible uploads; order is deterministic
     await entry(data, caption, patch);
   }
   let providerRequests = 0;
+  const databaseReads: string[] = [];
   page.on("request", (request) => {
     if (request.url().includes("/functions/v1/youtube")) providerRequests++;
+    const path = new URL(request.url()).pathname;
+    if (path.startsWith("/rest/v1/")) databaseReads.push(path);
   });
   await signIn(page, data.user);
   const checkboxes = page.getByRole("region", { name: "Your videos" }).getByRole("checkbox");
@@ -138,6 +141,7 @@ test("minimal list selects only trusted eligible uploads; order is deterministic
   await checkboxes.last().check();
   await expect(page.getByText("2 videos selected for QR codes.")).toBeVisible();
   expect(providerRequests).toBe(0);
+  expect(databaseReads).toEqual(["/rest/v1/video_library"]);
   expect(await resolve(page, data.user.id, [unlisted.choice!, publicVideo.choice!])).toEqual([
     { ...unlisted.choice, destination: "https://www.youtube.com/watch?v=synthetic01" },
     { ...publicVideo.choice, destination: "https://www.youtube.com/watch?v=synthetic01" },
@@ -218,7 +222,7 @@ test("loading, empty and retry states do not offer stale selection", async ({ pa
   const data = await fixture();
   let release!: () => void;
   const blocked = new Promise<void>((resolve) => release = resolve);
-  await page.route("**/rest/v1/videos?**", async (route) => {
+  await page.route("**/rest/v1/video_library?**", async (route) => {
     await blocked;
     await route.continue();
   });
@@ -226,13 +230,13 @@ test("loading, empty and retry states do not offer stale selection", async ({ pa
   await expect(page.getByText("Loading videos…")).toBeVisible();
   release();
   await expect(page.getByText("No videos yet. Uploaded videos will appear here.")).toBeVisible();
-  await page.unroute("**/rest/v1/videos?**");
+  await page.unroute("**/rest/v1/video_library?**");
   await entry(data, "Synthetic ready before failure", {});
   await page.getByRole("button", { name: "Refresh videos" }).click();
   await page.getByRole("checkbox", { name: "Select Synthetic ready before failure for QR code" })
     .check();
   await page.route(
-    "**/rest/v1/qr_ready_uploads?**",
+    "**/rest/v1/video_library?**",
     (route) =>
       route.fulfill({
         status: 403,
@@ -244,7 +248,7 @@ test("loading, empty and retry states do not offer stale selection", async ({ pa
   await expect(page.getByRole("alert")).toHaveText("Could not load videos. Try again.");
   await expect(page.getByText("0 videos selected for QR codes.")).toBeVisible();
   await expect(page.getByRole("checkbox", { name: /Select Synthetic/ })).toHaveCount(0);
-  await page.unroute("**/rest/v1/qr_ready_uploads?**");
+  await page.unroute("**/rest/v1/video_library?**");
   await page.getByRole("button", { name: "Refresh videos" }).click();
   await expect(
     page.getByRole("checkbox", { name: "Select Synthetic ready before failure for QR code" }),
@@ -259,12 +263,12 @@ test("idle expiry disables selection and hides provider status without reloading
   // Shorten only the browser's workflow response so its deadline can be exercised in isolation.
   // Database enforcement of actual seven-day expiry is covered by the transactional SQL suite.
   const expiresAt = new Date(Date.now() + 60_000).toISOString();
-  await page.route("**/rest/v1/upload_workflows?**", async (route) => {
+  await page.route("**/rest/v1/video_library?**", async (route) => {
     const response = await route.fetch();
     const rows = await response.json();
     await route.fulfill({
       response,
-      json: rows.map((row: object) => ({ ...row, expires_at: expiresAt })),
+      json: rows.map((row: object) => ({ ...row, workflow_expires_at: expiresAt })),
     });
   });
   await signIn(page, data.user);

@@ -66,6 +66,7 @@ export async function checkProductionSchema({ clients, admin, anon, users, url, 
     "upload_jobs",
     "youtube_connections",
     "qr_ready_uploads",
+    "video_library",
   ];
   for (const table of tables) {
     await denied(anon.from(table).select("*"), `${table}: anon denied`);

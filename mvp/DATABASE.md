@@ -21,6 +21,7 @@ revoke-before-forget behavior as production implementations of ADR 002.
 | `upload_jobs` | Temporary upload inputs, per-upload confirmation, provider ID and trusted evidence | Owner read; create through `request_upload`; backend owns all writes |
 | `youtube_connections` | Temporary verified channel identity/title for a workflow | Owner read; backend writes |
 | `qr_ready_uploads` | Security-invoker view over live jobs/workflows, no archive | Owner read; only verified eligible jobs |
+| `video_library` | Security-invoker join of albums/entries/latest job/workflow/readiness, no archive | Owner read; entries without live uploads remain visible |
 | Private `workflow_credentials` | Encrypted refresh envelope, explicit `key_id`, revocation intent | No frontend privileges or exposed schema |
 | Private `upload_sessions` | Encrypted resumable capability, `key_id`, earlier provider expiry | No frontend privileges or exposed schema |
 | Private `oauth_states` | Hashed state, encrypted verifier, `key_id`, one-use deadline | No frontend privileges or exposed schema |

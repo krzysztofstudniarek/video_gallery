@@ -11,16 +11,39 @@ import {
 } from "./video-selection";
 
 type Client = SupabaseClient<Database>;
-type Job = Database["public"]["Tables"]["upload_jobs"]["Row"];
+type LibraryRow = Database["public"]["Views"]["video_library"]["Row"];
 
-function uploadStatus(
-  job: Pick<Job, "state" | "verified_at" | "effective_visibility" | "processing_status">,
-) {
-  if (job.state === "failed" || job.processing_status === "failed") return "Upload failed";
-  if (job.state === "cancelled") return "Upload cancelled";
+function uploadStatus(job: LibraryRow) {
+  if (job.job_state === "failed" || job.processing_status === "failed") return "Upload failed";
+  if (job.job_state === "cancelled") return "Upload cancelled";
   if (job.verified_at && job.effective_visibility === "private") return "Private — QR unavailable";
   if (job.processing_status === "processing") return "Processing — QR unavailable";
   return "Awaiting verification — QR unavailable";
+}
+
+function toVideoItem(row: LibraryRow, now: number): VideoItem {
+  if (!row.id || row.caption === null || row.album_title === null) {
+    throw new Error("Could not load videos. Try again.");
+  }
+  // The temporary app context expires; this never expires or deletes the YouTube video.
+  const expiresAt = row.workflow_expires_at ? Date.parse(row.workflow_expires_at) : null;
+  const live = expiresAt !== null && expiresAt > now;
+  const choice = live && row.qr_ready && row.job_id && row.workflow_id
+    ? { videoId: row.id, jobId: row.job_id, workflowId: row.workflow_id }
+    : null;
+  return {
+    id: row.id,
+    caption: row.caption,
+    albumTitle: row.album_title,
+    expiresAt,
+    choice,
+    providerId: choice ? row.provider_video_id ?? undefined : undefined,
+    status: choice
+      ? `Ready for QR — ${row.qr_visibility === "public" ? "Public" : "Unlisted"}`
+      : row.job_id && live
+      ? uploadStatus(row)
+      : "No active upload — QR unavailable",
+  };
 }
 
 export async function loadVideoLibrary(
@@ -28,61 +51,14 @@ export async function loadVideoLibrary(
   owner: string,
   signal: AbortSignal,
 ): Promise<VideoItem[]> {
-  const [albums, videos, workflows, jobs, ready] = await Promise.all([
-    client.from("albums").select("id,title,sort_order").eq("owner_id", owner)
-      .order("sort_order").order("id").abortSignal(signal),
-    client.from("videos").select("id,album_id,caption,sort_order").eq("owner_id", owner)
-      .order("sort_order").order("id").abortSignal(signal),
-    client.from("upload_workflows").select("id,expires_at").eq("owner_id", owner)
-      .abortSignal(signal),
-    client.from("upload_jobs")
-      .select("id,video_id,workflow_id,state,verified_at,effective_visibility,processing_status")
-      .eq("owner_id", owner).order("created_at", { ascending: false })
-      .order("id", { ascending: false }).abortSignal(signal),
-    client.from("qr_ready_uploads").select(
-      "id,video_id,workflow_id,effective_visibility,provider_video_id",
-    ).eq(
-      "owner_id",
-      owner,
-    )
-      .abortSignal(signal),
-  ]);
-  if ([albums, videos, workflows, jobs, ready].some((result) => result.error)) {
+  const { data, error } = await client.from("video_library").select("*").eq("owner_id", owner)
+    .order("album_sort_order").order("album_id").order("video_sort_order").order("id")
+    .abortSignal(signal);
+  if (error) {
     throw new Error("Could not load videos. Try again.");
   }
   const now = Date.now();
-  const deadlines = new Map(workflows.data!.map((row) => [row.id, Date.parse(row.expires_at)]));
-  const eligible = new Map(ready.data!.map((row) => [row.id, row]));
-  // A newer pending/failed upload must never fall back to an older ready upload for this entry.
-  const latest = new Map<string, NonNullable<typeof jobs.data>[number]>();
-  for (const job of jobs.data!) {
-    if (!latest.has(job.video_id)) latest.set(job.video_id, job);
-  }
-  // Album order, then entry order, with UUID tie-breakers supplied by the queries.
-  return albums.data!.flatMap((album) =>
-    videos.data!.filter((video) => video.album_id === album.id).map((video) => {
-      const job = latest.get(video.id);
-      const expiresAt = job ? deadlines.get(job.workflow_id) ?? null : null;
-      const live = expiresAt !== null && expiresAt > now;
-      const verified = job && eligible.get(job.id);
-      const choice = job && live && verified
-        ? { videoId: video.id, jobId: job.id, workflowId: job.workflow_id }
-        : null;
-      return {
-        id: video.id,
-        caption: video.caption,
-        albumTitle: album.title,
-        expiresAt,
-        choice,
-        providerId: choice ? verified!.provider_video_id ?? undefined : undefined,
-        status: choice
-          ? `Ready for QR — ${verified!.effective_visibility === "public" ? "Public" : "Unlisted"}`
-          : job && live
-          ? uploadStatus(job)
-          : "No active upload — QR unavailable",
-      };
-    })
-  );
+  return data.map((row) => toVideoItem(row, now));
 }
 
 // #7/#15 call this at the download boundary, never trust a saved selection or cached watch URL.
