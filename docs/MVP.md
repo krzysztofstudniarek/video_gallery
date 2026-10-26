@@ -18,10 +18,10 @@ QR generation requires successful processing and verified effective Public or Un
 
 1. Sign in with Google.
 2. Separately authorize YouTube uploads and confirm the destination channel.
-3. Create an album, select videos and set the YouTube title/description and visibility; Unlisted is initially selected. Confirm the warning if choosing Public.
+3. Select videos to upload and set the YouTube visibility; Unlisted is initially selected. Confirm the warning if choosing Public.
 4. Explicitly start the upload and see progress/processing; failures have actionable retry/cancel options.
 5. Wait for successful processing and verified effective Public or Unlisted visibility before printing. Private remains available as an upload choice but is not eligible for QR generation.
-6. Add captions/order, choose a predefined QR style and preview the sheet.
+6. Select ready videos from the video list, choose a predefined QR style and preview the sheet.
 7. Check anonymous viewing, then download and print individual codes or an A4 sheet. Every code links directly to YouTube.
 8. Download the captions-and-links export before finishing. Keep the files for reprinting; scan directly on YouTube without an app account. Delete app data as needed. Pilot feedback is collected face to face by the owner.
 
@@ -61,6 +61,7 @@ Offer a versioned captions-and-links export and finished QR downloads before wor
 
 ## Out of scope
 
+- Separate album/entry management screens for renaming, caption editing or reordering. Management stays at uploading videos and selecting them for QR codes; existing app-authored storage fields remain available to the upload/print integration.
 - In-app feedback forms, feedback storage and feedback administration; pilot feedback is collected face to face.
 - Vimeo and every other video platform.
 - Pasted-link-only delivery as a substitute for uploads.
@@ -93,8 +94,8 @@ Execution order and completion boundaries:
 
 1. #1/#2 are complete. Apply the accepted #25 contract in ADR 002 before finalizing production schema #3; Auth #4 follows #3.
 2. Start #26 alongside this foundation using synthetic frontend/callback fixtures. It depends only on #1/#2. Validate host choice, SPA deep links, callbacks and CORS; direct YouTube QR codes require no permanent app redirect route. Production activation stays in #10.
-3. After #4, album CRUD/entry management #5 and channel integration #14 can proceed independently. Approval/quota discovery for #14 and limits planning may start earlier without waiting for implementation.
-4. #5 closes with album/entry management and a documented integration contract, using synthetic fixtures where needed. #15 then consumes #5/#14 and owns the integrated upload entry points, visibility selector/modal, progress, retries, resume/cancel and recovery. #5 does not depend on #15.
+3. After #4, the minimal video list/QR selection #5 and channel integration #14 can proceed independently. Approval/quota discovery for #14 and limits planning may start earlier without waiting for implementation.
+4. The owner narrowed #5 to a [minimal video list and QR selection](../mvp/VIDEOS.md), with a documented integration contract and synthetic fixtures where needed. #15 then consumes #5/#14 and owns the integrated upload entry points, visibility selector/modal, progress, retries, resume/cancel and recovery. #5 does not depend on #15. Album CRUD and caption/order editing stay out of the management UI.
 5. After #15, implement direct YouTube destination validation #6 and downloads/printing #7. ADR 002 supersedes #6's old redirect/album-sharing scope. Lifecycle/export/deletion #8 consumes #25; final operations #10 consumes #25/#26 and provider readiness.
 6. #11 gates launch with all dependencies complete. Numbers reflect creation order; #12 remains the release tracker.
 

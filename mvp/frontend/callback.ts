@@ -1,6 +1,7 @@
 // Capture once, before health/Auth/API requests. Never render or log callback data.
 const url = new URL(location.href);
 const youtubeCallback = url.searchParams.get("youtube_callback") === "1";
+export const showValidationTools = youtubeCallback || url.searchParams.get("tools") === "1";
 export const authCode = youtubeCallback ? null : url.searchParams.get("code");
 export const authDenied = !youtubeCallback && url.searchParams.has("error");
 let youtube = {
