@@ -21,7 +21,7 @@ QR generation requires successful processing and verified effective Public or Un
 3. Select videos to upload and set the YouTube visibility; Unlisted is initially selected. Confirm the warning if choosing Public.
 4. Explicitly start the upload and see progress/processing; failures have actionable retry/cancel options.
 5. Wait for successful processing and verified effective Public or Unlisted visibility before printing. Private remains available as an upload choice but is not eligible for QR generation.
-6. Select ready videos from the video list, choose a predefined QR style and preview the sheet.
+6. Select ready app uploads or existing Unlisted videos from the connected channel, complete the pre-print verification, choose a predefined QR style and preview the sheet.
 7. Check anonymous viewing, then download and print individual codes or an A4 sheet. Every code links directly to YouTube.
 8. Download the captions-and-links export before finishing. Keep the files for reprinting; scan directly on YouTube without an app account. Delete app data as needed. Pilot feedback is collected face to face by the owner.
 
@@ -60,6 +60,9 @@ Disconnect stops app provider requests and requests Google revocation; app/accou
 Offer a versioned captions-and-links export and finished QR downloads before workflow completion. Once provider data is gone, app exports contain remaining user-authored fields only. Users keep downloaded files for reprinting; no permanent provider destination or QR archive is retained. The owner collects pilot feedback face to face; there is no in-app feedback form or storage.
 
 ## Out of scope
+
+The [future album flow](FUTURE.md) will require album creation and one code for a whole album.
+That is a later iteration; current selection stays per video.
 
 - Separate album/entry management screens for renaming, caption editing or reordering. Management stays at uploading videos and selecting them for QR codes; existing app-authored storage fields remain available to the upload/print integration.
 - In-app feedback forms, feedback storage and feedback administration; pilot feedback is collected face to face.

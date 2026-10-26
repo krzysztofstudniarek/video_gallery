@@ -286,6 +286,16 @@ export type Database = {
     };
     Functions: {
       "begin_account_deletion": { Args: { "p_owner": string }; Returns: undefined };
+      "channel_library_context": {
+        Args: { "p_owner": string; "p_workflow"?: string };
+        Returns: {
+          "channel_id": string;
+          "expires_at": string;
+          "key_id": string;
+          "refresh_cipher": string;
+          "workflow_id": string;
+        }[];
+      };
       "consume_upload_oauth": {
         Args: { "p_hash": string; "p_owner": string; "p_workflow": string };
         Returns: {
@@ -341,6 +351,16 @@ export type Database = {
         Returns: {
           "video_id": string;
         }[];
+      };
+      "rotate_channel_library_credential": {
+        Args: {
+          "p_cipher": string;
+          "p_key_id": string;
+          "p_owner": string;
+          "p_previous_cipher": string;
+          "p_workflow": string;
+        };
+        Returns: boolean;
       };
       "yt_probe_clear_job": { Args: { "p_owner": string }; Returns: undefined };
       "yt_probe_consume": {

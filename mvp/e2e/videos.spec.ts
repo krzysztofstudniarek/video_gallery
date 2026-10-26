@@ -281,3 +281,136 @@ test("idle expiry disables selection and hides provider status without reloading
   await expect(page.locator("body")).not.toContainText("Ready for QR — Unlisted");
   expect(await resolve(page, data.user.id, [ready.choice!])).toBeNull();
 });
+
+test("existing Unlisted channel videos share the list, paginate and deduplicate current uploads", async ({ page }) => {
+  const data = await fixture();
+  await entry(data, "Synthetic app upload", {});
+  const expiresAt = new Date(Date.now() + 3600000).toISOString();
+  const requests: Record<string, unknown>[] = [];
+  await page.route("**/functions/v1/channel-library", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    const input = route.request().postDataJSON();
+    requests.push(input);
+    const items = input.pageToken
+      ? [
+        { id: "existing001", title: "Synthetic channel one", processed: true },
+        { id: "existing002", title: "Synthetic channel two", processed: true },
+      ]
+      : [
+        { id: "synthetic01", title: "Synthetic duplicate of app upload", processed: true },
+        { id: "existing001", title: "Synthetic channel one", processed: true },
+        { id: "pending0001", title: "Synthetic channel processing", processed: false },
+      ];
+    await route.fulfill({
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": "http://127.0.0.1:5173" },
+      body: JSON.stringify({
+        connected: true,
+        workflowId: data.workflow.id,
+        expiresAt,
+        items,
+        nextPageToken: input.pageToken ? null : "synthetic-cursor",
+        requiresAnonymousPlaybackCheck: true,
+      }),
+    });
+  });
+  await signIn(page, data.user);
+  await expect(page.getByRole("checkbox", { name: "Select Synthetic channel one for QR code" }))
+    .toBeEnabled();
+  await expect(
+    page.getByRole("checkbox", { name: "Select Synthetic channel processing for QR code" }),
+  ).toBeDisabled();
+  await expect(page.getByRole("checkbox", { name: /Synthetic duplicate/ })).toHaveCount(0);
+  await page.getByRole("checkbox", { name: "Select Synthetic channel one for QR code" }).check();
+  await page.getByRole("button", { name: "Load more YouTube videos" }).click();
+  await expect(page.getByRole("checkbox", { name: "Select Synthetic channel two for QR code" }))
+    .toBeEnabled();
+  await expect(page.getByRole("checkbox", { name: "Select Synthetic channel one for QR code" }))
+    .toHaveCount(1);
+  await page.getByRole("checkbox", { name: "Select Synthetic channel two for QR code" }).check();
+  await expect(page.getByText("2 videos selected for QR codes.")).toBeVisible();
+  expect(requests[1]).toMatchObject({
+    action: "list",
+    workflowId: data.workflow.id,
+    pageToken: "synthetic-cursor",
+  });
+  await expect(page.getByRole("button", { name: "Load more YouTube videos" })).toHaveCount(0);
+  // The QR handoff must not convert a successful owner metadata read into anonymous playback proof.
+  expect(
+    await resolve(page, data.user.id, [{
+      source: "channel",
+      workflowId: data.workflow.id,
+      videoId: "existing001",
+    }]),
+  ).toBeNull();
+  expect(requests.at(-1)).toMatchObject({ action: "verify", videoIds: ["existing001"] });
+  expect(await page.evaluate(() => localStorage.getItem("videoalbum.auth"))).not.toContain(
+    "existing001",
+  );
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Sign in with Google" })).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("Synthetic channel one");
+});
+
+test("existing channel metadata and selected IDs disappear on idle workflow expiry", async ({ page }) => {
+  const data = await fixture();
+  await page.clock.install();
+  const expiresAt = new Date(Date.now() + 60_000).toISOString();
+  await page.route("**/functions/v1/channel-library", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    await route.fulfill({
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": "http://127.0.0.1:5173" },
+      body: JSON.stringify({
+        connected: true,
+        workflowId: data.workflow.id,
+        expiresAt,
+        items: [{ id: "existing001", title: "Synthetic temporary channel title", processed: true }],
+        nextPageToken: "cursor",
+      }),
+    });
+  });
+  await signIn(page, data.user);
+  await page.getByRole("checkbox", { name: "Select Synthetic temporary channel title for QR code" })
+    .check();
+  await expect(page.getByText("1 video selected for QR codes.")).toBeVisible();
+  await page.clock.fastForward(60_001);
+  await expect(page.locator("body")).not.toContainText("Synthetic temporary channel title");
+  await expect(page.getByText("0 videos selected for QR codes.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Load more YouTube videos" })).toHaveCount(0);
+});
+
+test("channel page failure clears stale metadata and selection; refresh retries", async ({ page }) => {
+  const data = await fixture();
+  let fail = false;
+  await page.route("**/functions/v1/channel-library", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    await route.fulfill({
+      status: fail ? 403 : 200,
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": "http://127.0.0.1:5173" },
+      body: JSON.stringify(
+        fail ? { error: "channel_connection_expired" } : {
+          connected: true,
+          workflowId: data.workflow.id,
+          expiresAt: new Date(Date.now() + 3600000).toISOString(),
+          items: [{ id: "existing001", title: "Synthetic channel retry", processed: true }],
+          nextPageToken: "cursor",
+        },
+      ),
+    });
+  });
+  await signIn(page, data.user);
+  await page.getByRole("checkbox", { name: "Select Synthetic channel retry for QR code" }).check();
+  fail = true;
+  await page.getByRole("button", { name: "Load more YouTube videos" }).click();
+  await expect(page.getByRole("alert")).toHaveText(
+    "Could not load existing YouTube videos. Refresh to try again.",
+  );
+  await expect(page.locator("body")).not.toContainText("Synthetic channel retry");
+  await expect(page.getByText("0 videos selected for QR codes.")).toBeVisible();
+  fail = false;
+  await page.getByRole("button", { name: "Refresh videos" }).click();
+  await expect(page.getByRole("checkbox", { name: "Select Synthetic channel retry for QR code" }))
+    .toBeEnabled();
+});

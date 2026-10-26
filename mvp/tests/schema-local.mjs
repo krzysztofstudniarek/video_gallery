@@ -164,6 +164,14 @@ export async function checkProductionSchema({ clients, admin, anon, users, url, 
           p_hash: "a".repeat(64),
         }],
         ["purge_expired_upload_data", {}],
+        ["channel_library_context", { p_owner: users[0], p_workflow: a.workflow.id }],
+        ["rotate_channel_library_credential", {
+          p_owner: users[0],
+          p_workflow: a.workflow.id,
+          p_previous_cipher: "synthetic",
+          p_cipher: "forged",
+          p_key_id: "forged",
+        }],
       ]
     ) {
       await denied(client.rpc(name, params), `${name}: direct RPC bypass denied`);

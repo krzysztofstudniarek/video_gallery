@@ -1,5 +1,10 @@
 // Selection contains app identifiers only. Resolve destinations again immediately before export.
-export type QrChoice = { videoId: string; jobId: string; workflowId: string };
+export type UploadedQrChoice = { videoId: string; jobId: string; workflowId: string };
+export type ChannelQrChoice = { source: "channel"; videoId: string; workflowId: string };
+export type QrChoice = UploadedQrChoice | ChannelQrChoice;
+export function isChannelChoice(choice: QrChoice): choice is ChannelQrChoice {
+  return "source" in choice && choice.source === "channel";
+}
 export type VideoItem = {
   id: string;
   caption: string;
@@ -7,6 +12,8 @@ export type VideoItem = {
   status: string;
   expiresAt: number | null;
   choice: QrChoice | null;
+  source?: "channel";
+  providerId?: string;
 };
 
 export function availableChoice(item: VideoItem, now: number): QrChoice | null {

@@ -62,7 +62,9 @@ inputs/provider values into lasting captions, titles or logs.
    and browser/UI integration remain in #8/#14/#15; this migration does not claim to implement them.
 4. Trusted workers write credentials, states and capabilities using narrowly reviewed backend SQL/RPCs.
    Current backend-only RPCs are `consume_upload_oauth`, `finish_upload_workflow` and
-   `purge_expired_upload_data`. A service-key PostgREST client cannot select a non-exposed private schema;
+   `purge_expired_upload_data`. The channel-library migration also adds service-only
+   `channel_library_context` and `rotate_channel_library_credential` for live owner/channel lookup
+   and credential compare-and-swap within the original deadline. A service-key PostgREST client cannot select a non-exposed private schema;
    use a restricted backend DB connection or add a narrowly scoped, tested RPC in the owning feature.
    Do not expose the private schema to make backend access convenient. `consume_upload_oauth` atomically
    deletes and returns a live owner/workflow-bound verifier. States are fixed at at most ten minutes,

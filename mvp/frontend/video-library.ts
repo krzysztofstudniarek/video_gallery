@@ -1,8 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./database.types";
+import { verifyChannelSelection } from "./channel-library";
 import {
   availableChoice,
+  isChannelChoice,
   type QrChoice,
+  type UploadedQrChoice,
   type VideoItem,
   youtubeWatchDestination,
 } from "./video-selection";
@@ -36,7 +39,9 @@ export async function loadVideoLibrary(
       .select("id,video_id,workflow_id,state,verified_at,effective_visibility,processing_status")
       .eq("owner_id", owner).order("created_at", { ascending: false })
       .order("id", { ascending: false }).abortSignal(signal),
-    client.from("qr_ready_uploads").select("id,video_id,workflow_id,effective_visibility").eq(
+    client.from("qr_ready_uploads").select(
+      "id,video_id,workflow_id,effective_visibility,provider_video_id",
+    ).eq(
       "owner_id",
       owner,
     )
@@ -69,6 +74,7 @@ export async function loadVideoLibrary(
         albumTitle: album.title,
         expiresAt,
         choice,
+        providerId: choice ? verified!.provider_video_id ?? undefined : undefined,
         status: choice
           ? `Ready for QR — ${verified!.effective_visibility === "public" ? "Public" : "Unlisted"}`
           : job && live
@@ -88,15 +94,28 @@ export async function resolveQrSelection(
   signal: AbortSignal,
 ) {
   if (!choices.length) throw new Error("Select at least one ready video.");
+  const channel = choices.filter(isChannelChoice);
+  if (channel.length) {
+    await verifyChannelSelection(client, channel, signal);
+    // #7/#15 must complete the anonymous playback gate before enabling channel QR downloads.
+    // Never mistake successful owner-authorized metadata reads for anonymous playback evidence.
+    throw new Error(
+      "Complete the anonymous playback check before downloading channel-video QR codes.",
+    );
+  }
+  const uploads = choices.filter((choice): choice is UploadedQrChoice => !isChannelChoice(choice));
   const current = await loadVideoLibrary(client, owner, signal);
   const { data, error } = await client.from("qr_ready_uploads")
     .select("id,video_id,workflow_id,provider_video_id").eq("owner_id", owner)
-    .in("id", choices.map((choice) => choice.jobId)).abortSignal(signal);
+    .in("id", uploads.map((choice) => choice.jobId)).abortSignal(signal);
   if (error) throw new Error("Could not verify the QR selection. Try again.");
-  return choices.map((choice) => {
+  return uploads.map((choice) => {
     const item = current.find((item) => item.id === choice.videoId);
     const live = item && availableChoice(item, Date.now());
-    if (!live || live.jobId !== choice.jobId || live.workflowId !== choice.workflowId) {
+    if (
+      !live || isChannelChoice(live) || live.jobId !== choice.jobId ||
+      live.workflowId !== choice.workflowId
+    ) {
       throw new Error("A selected video is no longer ready for QR codes.");
     }
     const row = data.find((candidate) =>
