@@ -25,9 +25,11 @@ proposal: codes point directly to YouTube, finished files are downloaded for rep
 provider data is removed at workflow end or within seven days of workflow creation. No ongoing
 metadata refresh or permanent provider/QR archive. The spending envelope remains open. No live configuration is changed by adding this contract.
 
-The [minimal app deployment guide](DEPLOYMENT.md) describes the manual staging workflow: Supabase
-migrations/functions plus GitHub Pages frontend, with a public health indicator and backend smoke
-checks. Staging validation evidence is recorded below; production provisioning is separate work.
+The [deployment guide](DEPLOYMENT.md) records the Vercel frontend at `https://momentsreply.com/`
+and the existing manual Supabase/legacy Pages workflow. The [navigation plan](../docs/ROUTING.md)
+requires bookmarkable screens and browser Back/Forward through shared routing in #26. Root Google
+login and separate YouTube consent were owner-confirmed on the new domain on 29 October 2026;
+new routing/host privacy checks and separate production backend activation remain open.
 
 ## Workspace and pull request checks
 
@@ -192,8 +194,9 @@ Select an explicitly authorized staging Supabase project before linking the CLI.
 migrations, configure the Google provider and redirect allowlist, deploy `health`, `compatibility`
 and `share`, and set FRONTEND_ORIGIN to the exact staging frontend origin. Configure backend secrets
 privately. Exercise missing/invalid JWTs, two signed-in users and anonymous resolution as in the
-local suite. Staging project `djuvcxgoqaahgxyuldlp` is deployed with the GitHub Pages frontend; see
-the dated evidence below.
+local suite. Staging project `djuvcxgoqaahgxyuldlp` now backs the Vercel frontend at momentsreply.com;
+the dated evidence below includes historical Pages tests. Vercel's Production label does not
+establish production backend or lifecycle readiness.
 
 | Check                                    | Evidence                                                                                                                                                                                                                                                                                                                                               |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

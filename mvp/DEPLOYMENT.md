@@ -1,9 +1,41 @@
 # Minimal staging app deployment
 
-The initial base app deploys Postgres migrations and TypeScript Edge Functions to Supabase, and the
-static Vite frontend to GitHub Pages. Supabase Edge Functions serve APIs, not the HTML frontend. No
-production project is configured by this workspace change; the workflow is manual and nothing
-deploys on push. Existing staging validation is recorded in [README.md](README.md).
+## Current Vercel host and navigation plan — 29 October 2026
+
+The owner selected Vercel and deployed `master` from root directory `mvp/` to project
+`video-gallery`. The frontend is available at `https://momentsreply.com/`, with the assigned Vercel
+URL `https://video-gallery-flax.vercel.app/`. Vercel reported Valid Configuration for the custom
+domain; browser navigation over HTTPS rendered the app. Supabase remains the backend.
+
+Use the Vite preset, `npm run build`, output `dist`, and root asset base `/`. Supply only
+`VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` from the intended existing Supabase project.
+No Vercel backend, Marketplace provisioning or backend secret is required. The current frontend
+uses the staging Supabase project even though Vercel calls its deployment environment Production.
+
+The owner confirmed Google login, separate YouTube consent/return/channel connection, and changing
+the saved GitHub staging `FRONTEND_ORIGIN` to `https://momentsreply.com`. Health returned HTTP 200
+with that exact CORS origin; the browser displayed Supabase backend connected. No upload was
+requested in the new-domain callback test.
+
+The accepted [routing plan](../docs/ROUTING.md) requires bookmarkable app screens, reloads and
+Back/Forward. #26 implements the shared router, Vercel route fallback, missing-asset/not-found
+behavior and synthetic callback/navigation coverage. Keep login returning to
+`https://momentsreply.com/`, and set both the Google YouTube OAuth redirect and backend
+`YOUTUBE_REDIRECT_URI` to `https://momentsreply.com/?youtube_callback=1`. Do not broaden callback
+allowlists to every private screen. The post-login default screen remains undecided.
+
+Remaining #26/#10 work includes reviewed deployment/rollback, production response headers,
+host-side callback-log privacy, independent expiry/backup guarantees, and splitting/retiring the
+old Pages publication below. This documentation changes no workflow or live settings and does not
+claim those gates are implemented. Cross-origin browser sessions do not migrate automatically.
+
+## Existing Supabase and historical Pages workflow
+
+The existing manual workflow deploys Postgres migrations and TypeScript Edge Functions to
+Supabase and also publishes a Vite frontend to GitHub Pages. That publication is legacy staging;
+the current app address is momentsreply.com. Supabase Edge Functions serve APIs, not HTML.
+Existing staging validation is recorded in [README.md](README.md). Review Vercel Git/preview release
+settings separately; the manual-only statement here applies to the GitHub workflow.
 
 Use separate Supabase projects for staging and production, each with its own database, Auth users,
 OAuth clients/redirects, encryption keys and backend secrets. The local `project_id` identifies only
@@ -11,7 +43,10 @@ Docker resources. Keep hosted credentials in the matching protected GitHub envir
 only disposable local resources and must never receive staging or production secrets. Production
 hosting and release configuration remain in issue #10; do not point the staging workflow at it.
 
-## One-time setup
+## Historical Pages setup and shared backend settings
+
+The Pages-specific steps below document the old deployment, not a second current app address.
+Keep the shared backend origin aligned with momentsreply.com until the publication stage is split.
 
 1. Create/select a disposable Supabase staging project. Save the database password privately. Copy
    its 20-letter project ref and **publishable** key. Create a Supabase access token for
@@ -28,7 +63,7 @@ hosting and release configuration remain in issue #10; do not point the staging 
    | Variable | `SUPABASE_PROJECT_REF`     | Staging project ref                                              |
    | Variable | `SUPABASE_DB_POOLER_HOST`  | Session pooler hostname from Supabase Connect (host only)        |
    | Variable | `SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_…`, safe for the frontend                        |
-   | Variable | `FRONTEND_ORIGIN`          | `https://krzysztofstudniarek.github.io` (no trailing slash/path) |
+   | Variable | `FRONTEND_ORIGIN`          | `https://momentsreply.com` (no trailing slash/path) |
    | Variable | `FRONTEND_BASE_PATH`       | `/video_gallery/` (`/` for a root custom domain)                 |
    | Secret   | `SUPABASE_ACCESS_TOKEN`    | Deployment access token                                          |
    | Secret   | `SUPABASE_DB_PASSWORD`     | Staging database password                                        |
@@ -59,7 +94,10 @@ To deploy from a trusted local terminal, export the same settings privately and 
 automates Pages publication. CLI commands use the project ref explicitly; no existing local link is
 trusted. Never pass a backend key as a VITE_* setting. No secret is needed in the built frontend.
 
-## Enable Google after the base deployment
+## Historical Pages Google setup
+
+The paragraph below describes the former callback setup. Use the current Vercel values in the
+environment table for the live app; the owner removed the Pages return URL from hosted Auth.
 
 In Supabase Auth URL configuration, set Site URL and allowlisted redirect to the exact frontend URL,
 including `/video_gallery/`. Enable Google provider with a dedicated Google OAuth web client. Its
@@ -73,10 +111,10 @@ Use these exact environment boundaries (origin and callback are different settin
 | Environment | Google authorized callback | Supabase Site URL and redirect allowlist | Frontend/Google JavaScript origin |
 | --- | --- | --- | --- |
 | Local | `http://127.0.0.1:54321/auth/v1/callback` | `http://127.0.0.1:5173/` | `http://127.0.0.1:5173` |
-| Current staging | `https://djuvcxgoqaahgxyuldlp.supabase.co/auth/v1/callback` | `https://krzysztofstudniarek.github.io/video_gallery/` | `https://krzysztofstudniarek.github.io` |
-| Production | `https://<production-project-ref>.supabase.co/auth/v1/callback` | Exact chosen production frontend URL, including base path | Exact chosen HTTPS origin |
+| Current staging-backed Vercel app | `https://djuvcxgoqaahgxyuldlp.supabase.co/auth/v1/callback` | `https://momentsreply.com/` | `https://momentsreply.com` |
+| Separate production backend, pending #10 | `https://<production-project-ref>.supabase.co/auth/v1/callback` | Exact reviewed frontend return URL | Exact reviewed HTTPS origin |
 
-Production values are intentionally unresolved until #10/#26 selects/provisions that environment.
+Separate production backend values remain unresolved until #10 provisions/reviews that environment.
 Never copy staging project IDs or wildcard redirects into production. Match trailing slashes to the
 SDK's generated `redirectTo`. Record/verify the hosted JWT lifetime; ordinary REST accepts a signed
 access JWT until expiry after sign-out, whereas protected functions also verify the live Supabase
@@ -102,7 +140,7 @@ For launch, follow [ADR 002](../docs/ADR-002-direct-youtube-qr.md): validate hos
 expiry-cleanup availability, not printed playback. Free staging can pause with inactivity; a failing
 health indicator is expected while paused. Production temporary-data deadlines still apply during
 inactivity. The earlier mandatory Pro-for-printed-links decision is superseded. This setup does not
-purchase a plan or claim a completed hosted deployment.
+purchase a plan or claim production readiness; current frontend deployment evidence is recorded above.
 
 References: [Supabase deployments](https://supabase.com/docs/guides/functions/deploy),
 [environment migrations](https://supabase.com/docs/guides/deployment/managing-environments),

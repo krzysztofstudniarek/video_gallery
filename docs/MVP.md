@@ -29,7 +29,8 @@ App-hosted public album/cover links and later in-app regeneration of old video c
 
 ## Architecture
 
-- Supabase-native backend: managed Auth, PostgreSQL/RLS, generated Data API and TypeScript/Deno Edge Functions. Static React/TypeScript hosting, SPA routing and OAuth callbacks are validated in #26; production activation and operations remain in #10. No separate Python server.
+- Supabase-native backend: managed Auth, PostgreSQL/RLS, generated Data API and TypeScript/Deno Edge Functions. The React/Vite frontend is hosted on Vercel at `https://momentsreply.com/`. #26 implements the shared browser-history router and validates deep links/OAuth callbacks; production backend activation and operations remain in #10. No separate Python server.
+- Bookmarkable app screens, direct loads/reloads and browser Back/Forward are required from the start. Use one shared React Router layer, guarded owner-only screens, safe signed-out returns and the existing exact root callbacks. Follow the [routing implementation plan](ROUTING.md); the post-login default screen remains undecided. This does not add album-management or public sharing screens.
 - Postgres metadata with versioned Supabase SQL migrations, ownership indexes, constraints and tested RLS policies on every exposed table.
 - Supabase Auth manages identities/sessions; user-scoped Data API access enforces RLS. Protected Edge Functions validate JWTs. Backend-only privileged keys never enter the frontend.
 - Temporary encrypted YouTube credentials in a private non-exposed schema with key IDs/revocation handling; Edge Functions refresh only for the active workflow, separately from Supabase Auth.
@@ -81,11 +82,11 @@ That is a later iteration; current selection stays per video.
 
 - [x] [#1 — Validate Supabase Auth, Postgres, RLS and Edge Functions](https://github.com/krzysztofstudniarek/video_gallery/issues/1)
 - [x] [#2 — Set up MVP workspace and continuous integration](https://github.com/krzysztofstudniarek/video_gallery/issues/2)
-- [ ] [#25 — Define YouTube data retention, refresh, revocation and deletion lifecycle](https://github.com/krzysztofstudniarek/video_gallery/issues/25)
-- [ ] [#26 — Validate frontend hosting and OAuth callback routing](https://github.com/krzysztofstudniarek/video_gallery/issues/26)
-- [ ] [#3 — Implement Supabase Postgres schema, migrations and RLS](https://github.com/krzysztofstudniarek/video_gallery/issues/3)
-- [ ] [#4 — Add Supabase Google sign-in and owner-only access](https://github.com/krzysztofstudniarek/video_gallery/issues/4)
-- [ ] [#5 — Build albums and YouTube video management](https://github.com/krzysztofstudniarek/video_gallery/issues/5)
+- [x] [#25 — Define YouTube data retention, refresh, revocation and deletion lifecycle](https://github.com/krzysztofstudniarek/video_gallery/issues/25)
+- [x] [#3 — Implement Supabase Postgres schema, migrations and RLS](https://github.com/krzysztofstudniarek/video_gallery/issues/3)
+- [x] [#4 — Add Supabase Google sign-in and owner-only access](https://github.com/krzysztofstudniarek/video_gallery/issues/4)
+- [ ] [#26 — Implement Vercel browser-history routing and validate OAuth callbacks](https://github.com/krzysztofstudniarek/video_gallery/issues/26)
+- [ ] [#5 — Build minimal video list and QR selection](https://github.com/krzysztofstudniarek/video_gallery/issues/5)
 - [ ] [#14 — YouTube authorization and applicable approval requirements](https://github.com/krzysztofstudniarek/video_gallery/issues/14)
 - [ ] [#15 — Resumable uploads with explicit visibility verification](https://github.com/krzysztofstudniarek/video_gallery/issues/15)
 - [ ] [#6 — Validate direct YouTube QR destinations](https://github.com/krzysztofstudniarek/video_gallery/issues/6)
@@ -95,22 +96,23 @@ That is a later iteration; current selection stays per video.
 - [ ] [#11 — Run end-to-end checks and launch the free pilot](https://github.com/krzysztofstudniarek/video_gallery/issues/11)
 Execution order and completion boundaries:
 
-1. #1/#2 are complete. Apply the accepted #25 contract in ADR 002 before finalizing production schema #3; Auth #4 follows #3.
-2. Start #26 alongside this foundation using synthetic frontend/callback fixtures. It depends only on #1/#2. Validate host choice, SPA deep links, callbacks and CORS; direct YouTube QR codes require no permanent app redirect route. Production activation stays in #10.
-3. After #4, the minimal video list/QR selection #5 and channel integration #14 can proceed independently. Approval/quota discovery for #14 and limits planning may start earlier without waiting for implementation.
-4. The owner narrowed #5 to a [minimal video list and QR selection](../mvp/VIDEOS.md), with a documented integration contract and synthetic fixtures where needed. #15 then consumes #5/#14 and owns the integrated upload entry points, visibility selector/modal, progress, retries, resume/cancel and recovery. #5 does not depend on #15. Album CRUD and caption/order editing stay out of the management UI.
-5. After #15, implement direct YouTube destination validation #6 and downloads/printing #7. ADR 002 supersedes #6's old redirect/album-sharing scope. Lifecycle/export/deletion #8 consumes #25; final operations #10 consumes #25/#26 and provider readiness.
-6. #11 gates launch with all dependencies complete. Numbers reflect creation order; #12 remains the release tracker.
+1. #1/#2/#25/#3/#4 are closed. Apply their existing Auth, ownership and lifecycle contracts rather than reopening their completed foundation work.
+2. Implement shared navigation in #26 now: bookmarkable video/account screens, root callbacks, safe login returns, Vercel fallback/asset behavior and synthetic browser tests. Feature placeholders can prove the router without waiting for downstream screens. Host/domain and live root callback evidence are recorded, but routed navigation and host privacy/rollout checks remain open.
+3. The [minimal video list/QR selection](../mvp/VIDEOS.md) in #5 and production channel work in #14 consume the shared shell for UI integration. Their data/provider work can proceed in parallel. #5 does not wait for #15; album CRUD and caption/order editing remain outside management scope.
+4. #15 consumes #5/#14 and adds routed uploads, visibility/Public confirmation, progress and safe navigation/reload/retry/resume/cancel recovery. Navigation cannot initiate another upload or extend expiry. #6 validates direct YouTube destinations independently of app route URLs.
+5. #7 adds routed private preview/downloads; #8 integrates account/privacy/export/deletion with navigation. Bookmarks cannot recover purged destinations. #10 handles Vercel release/rollback, exact callbacks, logging, independent cleanup/backups and retiring/splitting the legacy Pages publication stage.
+6. #11 gates launch, including the complete navigation matrix in [ROUTING.md](ROUTING.md). #12 remains the release tracker. The post-login default screen remains open; this plan does not add future album screens.
 
 ## Pilot release gate
 
-- Sign-in → channel connection → album → default-Unlisted upload → processing/visibility verification → preset → print → anonymous scan works. Repeat for explicitly confirmed Public; a completed Private upload cannot generate QR codes.
+- Sign-in → channel connection → video selection/upload → default-Unlisted upload → processing/visibility verification → preset → print → anonymous scan works. Repeat for explicitly confirmed Public; a completed Private upload cannot generate QR codes.
 - Verify the Public warning, confirmation, cancellation/Escape, default selection and backend rejection of unconfirmed Public requests. Selecting visibility alone never uploads. Provider mismatches block QR readiness without changing the requested privacy.
 - Applicable Google OAuth publishing/scope verification, YouTube compliance/audit requirements and actual production quotas are checked and resolved separately in #14. Use current official sources and project evidence rather than assuming every unverified project is private-only or every project needs the same audit. Unsupported provider visibility cannot be used as a silent fallback.
 - Interrupted/retried uploads do not duplicate videos; revocation, quota failures and incorrect privacy produce clear errors.
 - All style presets scan from paper on representative devices.
 - Direct Data API RLS tests cover anonymous/user A/user B, including forged ownership, private-schema isolation and protected upload/visibility fields. Auth and Edge Function JWT checks pass; expired temporary data is inaccessible.
 - Frontend hosting/OAuth callbacks, redacted logging, usage alerts and upload guardrails are configured.
+- Bookmark/direct entry, reload, Back/Forward, safe signed-out return and inaccessible/expired/deleted-route behavior pass on the Vercel custom domain. Back or route remounts cannot expose stale private data, repeat mutations or restart uploads. App routes never become printed QR destinations.
 - Restore an independent Postgres backup into an isolated project; document Auth/config/secrets recovery separately.
 - Validate production upload/cleanup availability, hosting and budget. Printed playback is independent of Supabase/app uptime; expiry deadlines still apply during inactivity or outages.
 - Export, deletion and privacy/beta information are ready. Pilot feedback is collected face to face; no in-app feedback feature is required.

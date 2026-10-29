@@ -11,6 +11,7 @@ The active Supabase MVP workspace is in [mvp/](mvp/README.md), with a React/Type
 The planned product flow is: sign in with Google, connect your YouTube channel, upload videos or choose existing Unlisted videos, select videos for QR codes, choose a QR style, print and scan. Management stays at a minimal video list and QR selection; uploads connect in #15. Uploads default to Unlisted (anyone with the link can view/share). Users may choose Private or Public; Public requires a warning and explicit confirmation that the video will be publicly visible. QR generation requires successful processing and verified Public or Unlisted visibility; Private is ineligible. The current staging probe remains an Unlisted-only feasibility tool; the production selector/modal is tracked in #15. QR codes contain direct YouTube watch URLs, so scans/playback do not depend on this app. Users download the finished sheets and captions-and-links export for reprinting. The service keeps app-authored album data and temporary encrypted upload/provider data, never video files; provider data is removed at workflow completion/cancellation or within seven days for interrupted work.
 
 - [MVP scope and architecture](docs/MVP.md)
+- [Bookmarkable navigation and implementation plan](docs/ROUTING.md)
 - [Minimal video list and existing Unlisted channel videos](mvp/VIDEOS.md)
 - [Future album creation and one QR code per album](docs/FUTURE.md)
 - [Accepted direct YouTube QR and simple retention decision](docs/ADR-002-direct-youtube-qr.md)
@@ -37,10 +38,10 @@ Public GitHub issues are suitable for general suggestions and sanitised bug repo
 
 ## Hosting
 
-Production hosting and a permanent domain are not configured by the workspace change. Frontend host selection and callback/routing validation are covered by #26; production Supabase environments, activation, usage limits, backups and release checks remain in #10.
+The frontend is deployed on Vercel at [momentsreply.com](https://momentsreply.com/), currently backed by the staging Supabase project. Google login and separate YouTube authorization were owner-confirmed on 29 October 2026. #26 now owns bookmarkable browser-history routes, reload/Back/Forward behavior and remaining callback/host-privacy validation. Production Supabase environments, activation, usage limits, backups and release checks remain in #10; the live domain is not a production-readiness claim.
 
 Supabase Free can pause after low activity. Select production hosting for upload availability and reliable expiry cleanup; printed YouTube codes continue independently of the app. See [backend architecture](docs/ADR-001-supabase.md) and [direct-QR decision](docs/ADR-002-direct-youtube-qr.md).
 
 ## Staging deployment
 
-The [deployment guide](mvp/DEPLOYMENT.md) documents the manually triggered Supabase backend and GitHub Pages frontend workflow. Nothing deploys on push. Live Google sign-in and browser-to-YouTube validation evidence is recorded in the [workspace README](mvp/README.md).
+The [deployment guide](mvp/DEPLOYMENT.md) records Vercel configuration and the existing manually triggered Supabase/GitHub Pages workflow. Retiring or splitting its Pages publication remains #26/#10 work; preserve explicit backend deployment order. Live Google sign-in and browser-to-YouTube validation evidence is recorded in the [workspace README](mvp/README.md), with current host/callback evidence in the deployment and routing plans.

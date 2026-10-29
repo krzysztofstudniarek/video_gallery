@@ -33,10 +33,10 @@ video's processing/privacy.
 3. Under Audience keep staging in Testing and add your test account.
 4. Create a **separate Web application OAuth client** named VideoAlbum YouTube staging. Do not
    overwrite the working Supabase sign-in client. Its JavaScript origin is
-   `https://krzysztofstudniarek.github.io`. Its authorized redirect URI is exactly:
+   `https://momentsreply.com`. Its authorized redirect URI is exactly:
 
    ```text
-   https://krzysztofstudniarek.github.io/video_gallery/?youtube_callback=1
+   https://momentsreply.com/?youtube_callback=1
    ```
 
    The callback is the frontend, which immediately removes the code/state from the address bar and
@@ -167,6 +167,12 @@ configured: status reports unconfigured and consent/upload actions return 503.
   reconsent in Testing as proven durable production access.
 
 ## Evidence
+
+On 29 October 2026 the owner confirmed migrating the frontend origin, YouTube redirect secret and
+Google OAuth client to momentsreply.com, then completing consent/return/channel connection there.
+No upload was requested in this migration test. The [routing plan](../docs/ROUTING.md) preserves
+this exact root callback when private screens gain paths; routed return/denial/replay coverage and
+production credential lifecycle remain #26/#14 work.
 
 On 2026-10-21 the owner confirmed live staging Google sign-in, YouTube consent and server-side
 refresh. A direct browser transfer showed a generic XHR failure. After PR #21 was deployed,

@@ -1,5 +1,9 @@
 # Future album flow
 
+The 29 October 2026 [bookmarkable navigation decision](ROUTING.md) changes navigation for current
+screens; it does not bring this album-first flow, album CRUD/detail screens or a single album QR
+into the MVP. Album routes may be added when that future feature is separately agreed.
+
 Owner direction recorded on 26 October 2026, after the minimal scope of #5:
 
 - Keep the current flow simple: upload videos or choose existing Unlisted videos from the connected
