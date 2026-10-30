@@ -2,7 +2,7 @@
 
 Owner decision: **29 October 2026**. Users must be able to bookmark app screens and use browser
 Back/Forward from the start. This supersedes the earlier root-only navigation proposal in #26.
-This document is an implementation plan; routing has not been deployed by recording it.
+The routing implementation is reviewed separately from this plan; merging the documentation alone does not deploy routing.
 
 ## Architecture and route scope
 
@@ -18,7 +18,7 @@ internal links. No framework migration, custom history router, SSR or Vercel bac
 | Upload entry and current upload workflow | Final paths agreed in #15; workflow views use app-generated IDs | #15 |
 | Owner-only print preview/download | Final path agreed in #7; workflow context uses app-generated IDs | #7 |
 
-The post-login default screen remains **undecided**. A valid bookmarked internal destination takes
+The owner selected a **home screen with navigation links** on 30 October 2026. Ordinary sign-in returns to `/`; a valid bookmarked internal destination takes
 precedence over that default. Do not interpret routing approval as approval to build album CRUD,
 caption/reordering screens, public album pages or one QR for an album. Those stay in
 [future scope](FUTURE.md). Future album routes can be added without changing this foundation.
@@ -35,7 +35,7 @@ caption/reordering screens, public album pages or one QR for an album. Those sta
 - A signed-out deep link waits for session initialization, offers sign-in and returns to the
   requested internal screen afterward. Store only a validated internal return path temporarily per
   tab, with bounded lifetime and one-use consumption. Reject external/protocol-relative targets,
-  malformed paths and callback-bearing return values; fall back to the eventual default safely.
+  malformed paths and callback-bearing return values; fall back to Home safely.
 - URL IDs never grant access. Recheck the current verified owner, deleting-account state and
   workflow cancellation/expiry through the existing RLS/Edge boundaries. Use a neutral unavailable
   screen for inaccessible/deleted records. Sign-out/account changes clear private UI and memory;
@@ -130,3 +130,36 @@ synthetic routing coverage, host logging/privacy and legacy Pages retirement rem
 Vercel's Production environment currently serves a staging Supabase project. It is not a claim
 that #10's separate production backend, cleanup/backup or launch gates are complete. This planning
 change does not deploy application code, purchase resources or alter provider settings.
+
+## Routing implementation — 30 October 2026
+
+The routing PR adds a React Router data router with `/` (home), `/videos`, `/account` and `/tools`.
+Home contains navigation rather than redirecting to the video list. Existing `?tools=1` links are
+replaced with `/tools` before the router starts. Future upload/workflow/print/album paths are not
+implemented as placeholders; unknown paths show the app not-found screen.
+
+Account controls, including explicit deletion, live on `/account`. The historical probe remains
+separate validation tooling at `/tools`, not the production upload/connection UI. Only verified
+non-deleting owners can mount video/probe content. Navigation away from a selected QR set or
+unfinished probe work prompts before discarding it; full reload uses the browser's unload guard
+where supported. Refresh/reentry requires reselection. Future production upload coordination still
+belongs to #15.
+
+Return paths are a strict list of current app screens stored per tab for at most ten minutes and
+consumed once. YouTube returns also bind to the initiating app owner. Callbacks stay at the existing
+exact root URLs; malformed/mixed/duplicate values and hash-only tokens are scrubbed without exchange.
+Same-document query/fragment changes are scrubbed without replay. A late callback cannot override
+a newer sign-out/account-change event.
+
+`mvp/vercel.json` serves extensionless app routes through the SPA while excluding asset requests
+and paths containing a dot from fallback. Missing assets fail as assets; unknown app routes may
+render a not-found screen with HTTP 200. No middleware/backend service is added. Security response
+headers supplement the existing restrictive CSP meta tag. Platform callback logs and retirement of
+the legacy Pages publication remain separate #26/#10 gates.
+
+`npm run test:routing` builds the frontend with synthetic public settings and runs isolated browser
+fixtures without Supabase or Docker. `ROUTING_BASE_PATH=/video_gallery/ npm run test:routing` checks
+the old asset base separately; it does not make Pages a supported deep-link host. Existing disposable
+Auth/RLS/database suites remain CI checks; do not repoint their reset/fixture operations at hosted
+staging. Hosted integration validation uses the existing staging environment and non-mutating smoke
+checks. Preview URLs are not added to OAuth/CORS allowlists just to run synthetic tests.

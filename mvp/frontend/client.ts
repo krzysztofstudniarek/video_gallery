@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./database.types";
-import { authCode, authDenied } from "./callback";
+import { authCode, authDenied, callback } from "./callback";
+import { consumeReturn, returnKey } from "./routing-policy";
 
 export const storageKey = "videoalbum.auth";
 function withoutProviderTokens(value: string) {
@@ -49,14 +50,39 @@ export const client = createClient<Database>(
     },
   },
 );
-// A single exchange prevents React mounts from consuming a one-use code twice.
-export const initialized = authCode
-  ? client.auth.exchangeCodeForSession(authCode)
-  : client.auth.getSession();
+// One initialization promise: route mounts and Back cannot consume callback values twice.
+export const initialized = (async () => {
+  const result = authCode
+    ? await client.auth.exchangeCodeForSession(authCode)
+    : await client.auth.getSession();
+  const session = result.data.session;
+  const destination = callback.flow
+    ? consumeReturn(sessionStorage, callback.flow, session?.user.id) ??
+      (callback.flow === "youtube" && session ? "/tools" : "/")
+    : null;
+  let callbackMessage = "";
+  if (callback.flow === "youtube") {
+    if (callback.invalid) {
+      callbackMessage = "YouTube authorization response was invalid. Connect again.";
+    } else if (!session) callbackMessage = "Sign in, then start Connect YouTube again.";
+    else if (callback.denied) {
+      callbackMessage = "YouTube consent was declined. No upload was started.";
+    } else {
+      const { error } = await client.functions.invoke("youtube", {
+        body: { action: "complete", code: callback.code, state: callback.state },
+      });
+      callbackMessage = error
+        ? "YouTube authorization could not be completed. Connect again."
+        : "YouTube consent saved. Confirm the destination channel before uploading.";
+    }
+  }
+  return { ...result, destination, callbackMessage };
+})();
 export { authDenied };
 
 export async function leaveAccount(message: string) {
   client.auth.stopAutoRefresh();
+  sessionStorage.removeItem(returnKey);
   let failed = false;
   try {
     failed = !!(await client.auth.signOut({ scope: "local" })).error;

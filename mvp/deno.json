@@ -32,7 +32,10 @@
       "package.json",
       "tsconfig.json",
       "tsconfig.tooling.json",
-      "index.html"
+      "index.html",
+      "routing-e2e/",
+      "playwright.routing.config.ts",
+      "vercel.json"
     ]
   },
   "lint": {
@@ -43,7 +46,9 @@
       "scripts/",
       "e2e/",
       "vite.config.ts",
-      "playwright.config.ts"
+      "playwright.config.ts",
+      "routing-e2e/",
+      "playwright.routing.config.ts"
     ],
     "exclude": [
       "frontend/database.types.ts"

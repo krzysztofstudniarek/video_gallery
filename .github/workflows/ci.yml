@@ -69,6 +69,8 @@ jobs:
         run: npm run test:local
       - name: Install isolated browser test runtime
         run: npx playwright install --with-deps chromium
+      - name: Check built frontend routes, callbacks and navigation without hosted credentials
+        run: npm run test:routing
       - name: Check persistent login, two-account UI isolation and deletion
         run: npm run test:browser
       - name: Stop disposable containers

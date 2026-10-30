@@ -22,7 +22,7 @@ Back/Forward. #26 implements the shared router, Vercel route fallback, missing-a
 behavior and synthetic callback/navigation coverage. Keep login returning to
 `https://momentsreply.com/`, and set both the Google YouTube OAuth redirect and backend
 `YOUTUBE_REDIRECT_URI` to `https://momentsreply.com/?youtube_callback=1`. Do not broaden callback
-allowlists to every private screen. The post-login default screen remains undecided.
+allowlists to every private screen. The owner selected a home screen with navigation links as the post-login default.
 
 Remaining #26/#10 work includes reviewed deployment/rollback, production response headers,
 host-side callback-log privacy, independent expiry/backup guarantees, and splitting/retiring the

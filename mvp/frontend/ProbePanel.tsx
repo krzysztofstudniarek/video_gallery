@@ -1,15 +1,26 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { mountProbe } from "./probe";
+import { NavigationGuard } from "./NavigationGuard";
 
 export function Probe() {
   const root = useRef<HTMLElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
-    mountProbe(root.current!, controller.signal);
+    mountProbe(root.current!, controller.signal, setBusy);
     return () => controller.abort();
   }, []);
   return (
-    <section ref={root} aria-label="YouTube validation tools">
+    <section
+      ref={root}
+      aria-label="YouTube validation tools"
+      onChangeCapture={() => setDirty(true)}
+    >
+      <NavigationGuard
+        when={busy || dirty}
+        message="Leaving stops this browser’s pending request or transfer and clears selected inputs. It does not cancel a video at YouTube. Resume/check the existing upload before starting another."
+      />
       <h2>Compatibility tools</h2>
       <p>Use a dedicated test channel and synthetic media.</p>
       <button type="button" id="probe">Run authenticated probe</button>

@@ -1,8 +1,16 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "allowJs": true
   },
-  "include": ["e2e", "playwright.config.ts", "vite.config.ts"]
+  "include": [
+    "e2e",
+    "playwright.config.ts",
+    "vite.config.ts",
+    "routing-e2e",
+    "playwright.routing.config.ts"
+  ]
 }
