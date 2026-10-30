@@ -65,7 +65,7 @@ async function signIn(page: Page, user: Awaited<ReturnType<typeof createAccount>
   await page.evaluate((session) => {
     localStorage.setItem("videoalbum.auth", JSON.stringify(session));
   }, user.session);
-  await page.reload();
+  await page.goto("/videos");
   await expect(page.getByRole("heading", { name: "Your videos" })).toBeVisible();
 }
 

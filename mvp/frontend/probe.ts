@@ -1,9 +1,12 @@
 import { client } from "./client";
-import { takeYoutubeCallback } from "./callback";
+import { rememberReturn } from "./routing-policy";
 import { directUpload } from "./direct-upload";
 
-export function mountProbe(document: HTMLElement, signal: AbortSignal) {
-  const { youtubeCallback, consentCode, consentState, consentDenied } = takeYoutubeCallback();
+export function mountProbe(
+  document: HTMLElement,
+  signal: AbortSignal,
+  onBusy: (busy: boolean) => void,
+) {
   const output = document.querySelector("output")!;
   document.querySelector("#probe")!.addEventListener("click", async () => {
     const { data, error } = await client.functions.invoke("compatibility", { body: {}, signal });
@@ -79,6 +82,7 @@ export function mountProbe(document: HTMLElement, signal: AbortSignal) {
   async function run(action: () => Promise<void>) {
     if (busy || signal.aborted) return;
     busy = true;
+    onBusy(true);
     const buttons = [...document.querySelectorAll<HTMLButtonElement>("button")];
     for (const button of buttons) if (button.id !== "youtube-pause") button.disabled = true;
     try {
@@ -87,6 +91,7 @@ export function mountProbe(document: HTMLElement, signal: AbortSignal) {
       output.textContent = error instanceof Error ? error.message : "Request failed";
     } finally {
       busy = false;
+      onBusy(false);
       for (const button of buttons) button.disabled = false;
     }
   }
@@ -99,6 +104,8 @@ export function mountProbe(document: HTMLElement, signal: AbortSignal) {
     if (url.origin !== "https://accounts.google.com") {
       throw new Error("Unexpected consent destination");
     }
+    const { data } = await client.auth.getSession();
+    rememberReturn(sessionStorage, "youtube", "/tools", data.session?.user.id);
     location.assign(url.href);
   });
   button("youtube-status-refresh", status);
@@ -201,22 +208,7 @@ export function mountProbe(document: HTMLElement, signal: AbortSignal) {
     video = null;
     await status();
   });
-  void run(async () => {
-    const { data } = await client.auth.getSession();
-    if (!data.session) {
-      if (youtubeCallback) {
-        output.textContent = "Sign-in session missing. Sign in, then start Connect YouTube again.";
-      }
-      return;
-    }
-    if (consentDenied) output.textContent = "YouTube consent was declined. No upload was started.";
-    else if (youtubeCallback && consentCode && consentState) {
-      await youtube("complete", { code: consentCode, state: consentState });
-      output.textContent =
-        "YouTube consent saved. Confirm the destination channel before uploading.";
-    }
-    await status();
-  });
+  void run(status);
 
   signal.addEventListener("abort", () => {
     paused = true;

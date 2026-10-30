@@ -1,14 +1,33 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { Session } from "@supabase/supabase-js";
 import { authDenied, client, initialized, leaveAccount } from "./client";
 import { Probe } from "./ProbePanel";
-import { showValidationTools } from "./callback";
+import {
+  createBrowserRouter,
+  Link,
+  NavLink,
+  RouterProvider,
+  useLocation,
+  useNavigate,
+} from "react-router";
+import { rememberReturn, returnKey } from "./routing-policy";
 import { Videos } from "./Videos";
 
 type Account = { owner: string; email?: string; deleting: boolean };
 
 function App() {
+  const routeLocation = useLocation();
+  const navigate = useNavigate();
+  const path = routeLocation.pathname.replace(/\/$/, "") || "/";
+  const heading = useRef<HTMLHeadingElement>(null);
+  const titles: Record<string, string> = {
+    "/": "Home",
+    "/videos": "Your videos",
+    "/account": "Account",
+    "/tools": "Validation tools",
+  };
+  const known = path in titles;
   const [session, setSession] = useState<Session | null>(null);
   const currentSession = useRef<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,11 +42,22 @@ function App() {
   });
   const [connection, setConnection] = useState("Checking backend connection…");
 
+  useLayoutEffect(() => {
+    // Same-document hash/history changes do not rerun the bootstrap module. Scrub them too,
+    // without treating navigation as another OAuth exchange.
+    if (routeLocation.search || routeLocation.hash) {
+      setMessage("Google sign-in did not complete. Please try again.");
+      void navigate(path, { replace: true, state: null });
+    }
+  }, [routeLocation.search, routeLocation.hash, path, navigate]);
+
   useEffect(() => {
     let alive = true;
+    let observedAuth = false;
     const { data: { subscription } } = client.auth.onAuthStateChange((_event, value) => {
       // Keep this callback synchronous; SDK methods here can deadlock its Auth lock.
       if (alive) {
+        observedAuth = true;
         if (currentSession.current?.user.id !== value?.user.id) {
           setLocked(false);
           setBusy(false);
@@ -36,12 +66,20 @@ function App() {
         setSession(value);
       }
     });
-    void initialized.then(({ data, error }) => {
+    void initialized.then(({ data, error, destination, callbackMessage }) => {
       if (!alive) return;
-      currentSession.current = data.session;
-      setSession(data.session);
+      // A delayed callback must not resurrect a session that signed out/switched in another tab.
+      const latest = observedAuth ? currentSession.current : data.session;
+      currentSession.current = latest;
+      setSession(latest);
       setLoading(false);
       if (error || authDenied) setMessage("Google sign-in did not complete. Please try again.");
+      else if (callbackMessage) setMessage(callbackMessage);
+      if (destination) {
+        void navigate(latest?.user.id === data.session?.user.id ? destination : "/", {
+          replace: true,
+        });
+      }
     }).catch(() => {
       if (alive) {
         setLoading(false);
@@ -66,7 +104,7 @@ function App() {
       subscription.unsubscribe();
       controller.abort();
     };
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     setConfirmDelete(false);
@@ -102,6 +140,7 @@ function App() {
 
   async function signIn() {
     setBusy(true);
+    rememberReturn(sessionStorage, "auth", path);
     try {
       const { error } = await client.auth.signInWithOAuth({
         provider: "google",
@@ -111,8 +150,12 @@ function App() {
           queryParams: { prompt: "select_account" },
         },
       });
-      if (error) setMessage("Google sign-in is unavailable. Please try again shortly.");
+      if (error) {
+        sessionStorage.removeItem(returnKey);
+        setMessage("Google sign-in is unavailable. Please try again shortly.");
+      }
     } catch {
+      sessionStorage.removeItem(returnKey);
       setMessage("Google sign-in is unavailable. Please try again shortly.");
     } finally {
       setBusy(false);
@@ -156,13 +199,35 @@ function App() {
   }
 
   const owned = account?.owner === session?.user.id ? account : null;
+  useEffect(() => {
+    document.title = `${titles[path] ?? "Page not found"} | VideoAlbum`;
+    heading.current?.focus();
+    setConfirmDelete(false);
+  }, [path]);
   return (
     <main>
-      <h1>VideoAlbum</h1>
+      <h1 ref={heading} tabIndex={-1}>VideoAlbum</h1>
+      <nav aria-label="Main navigation">
+        <NavLink to="/" end>Home</NavLink>
+        {" · "}
+        <NavLink to="/videos">Your videos</NavLink>
+        {" · "}
+        <NavLink to="/account">Account</NavLink>
+      </nav>
       <p>Turn videos in your own YouTube channel into printed QR codes for your photo albums.</p>
       <p id="connection" role="status">{connection}</p>
       <p role="status">{message}</p>
-      {loading ? <p>Restoring your sign-in…</p> : session
+      {!known
+        ? (
+          <section>
+            <h2>Page not found</h2>
+            <p>This screen is unavailable.</p>
+            <Link to="/">Go home</Link>
+          </section>
+        )
+        : loading
+        ? <p>Restoring your sign-in…</p>
+        : session
         ? (
           <>
             {owned && <p>Signed in as {owned.email ?? "a Google account"}.</p>}
@@ -180,12 +245,31 @@ function App() {
             {!owned && <p>Verifying account access…</p>}
             {owned && !owned.deleting && !locked && (
               <>
-                <Videos key={owned.owner} owner={owned.owner} />
-                {showValidationTools && <Probe key={`probe-${owned.owner}`} />}
+                {path === "/" && (
+                  <section>
+                    <h2>Home</h2>
+                    <p>
+                      Choose Your videos to select videos for QR codes, or Account to manage your
+                      account.
+                    </p>
+                  </section>
+                )}
+                {path === "/videos" && <Videos key={owned.owner} owner={owned.owner} />}
+                {path === "/tools" && <Probe key={`probe-${owned.owner}`} />}
               </>
             )}
-            {(owned || locked) && (
-              <section aria-labelledby="delete-title">
+            {owned && (owned.deleting || locked) && path !== "/account" && (
+              <p>
+                Account access is blocked.{" "}
+                <Link to="/account">Open Account to retry deletion or sign out.</Link>
+              </p>
+            )}
+            {(owned || locked) && path === "/account" && (
+              <section aria-labelledby="account-title">
+                <h2 id="account-title">Account</h2>
+                <p>
+                  <Link to="/tools">Open YouTube validation tools (test accounts only)</Link>
+                </p>
                 <h2 id="delete-title">Delete account</h2>
                 <p>
                   Permanently delete your VideoAlbum account, albums, captions and upload records.
@@ -228,4 +312,7 @@ function App() {
   );
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+const router = createBrowserRouter([{ path: "*", element: <App /> }], {
+  basename: import.meta.env.BASE_URL,
+});
+createRoot(document.getElementById("root")!).render(<RouterProvider router={router} />);

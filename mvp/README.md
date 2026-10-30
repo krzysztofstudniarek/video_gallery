@@ -285,3 +285,19 @@ interrupted-upload recovery feasibility check, without claiming the explicit pau
 verified. Exact file size and browser version were not captured. The original browser error remains
 unexplained; automatic completion recovery is follow-up product work. The Supabase feasibility gate
 is validated; this is not a production-readiness or durable printed-link availability claim.
+
+## Browser-history routing
+
+The routing implementation uses `/` for Home with navigation links, `/videos` for the existing
+video list, `/account` for account/deletion controls and `/tools` for historical validation tools.
+Existing `?tools=1` links still open the tools screen. Bookmark/reload and Back/Forward use the
+shared router; login returns through the exact root callback to a validated one-use internal path.
+See [the routing contract](../docs/ROUTING.md).
+
+For synthetic built-frontend checks without Supabase or Docker, run `npm run test:routing` after
+installing the Playwright browser (`npx playwright install chromium`, or use an installed Chrome
+with `PLAYWRIGHT_CHANNEL=chrome`). Check the legacy asset base with
+`ROUTING_BASE_PATH=/video_gallery/ npm run test:routing`. These fixtures cover callback/navigation
+behavior and are not live Google/YouTube or RLS evidence. Hosted staging health/CORS and anonymous
+API boundaries are checked separately. Database-reset and fixture-deletion scripts continue to
+target disposable CI/local resources only, never the hosted staging project.

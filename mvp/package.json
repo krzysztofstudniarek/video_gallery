@@ -26,12 +26,14 @@
     "style:check": "npm run fmt:check && npm run lint",
     "hooks:install": "git config --local core.hooksPath .githooks",
     "types:db": "node scripts/database-types.mjs",
-    "types:db:check": "node scripts/database-types.mjs --check"
+    "types:db:check": "node scripts/database-types.mjs --check",
+    "test:routing": "node tests/routing-browser.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "react-router": "7.18.5"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

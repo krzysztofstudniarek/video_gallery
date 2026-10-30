@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { client } from "./client";
+import { NavigationGuard } from "./NavigationGuard";
 import { channelItems, type ChannelPage, loadChannelPage } from "./channel-library";
 import { loadVideoLibrary } from "./video-library";
 import { availableChoice, selectedChoices, type VideoItem } from "./video-selection";
@@ -148,6 +149,10 @@ export function Videos({ owner }: { owner: string }) {
   return (
     <section aria-labelledby="videos-title">
       <h2 id="videos-title">Your videos</h2>
+      <NavigationGuard
+        when={choices.length > 0}
+        message="Leaving clears your current QR selection. Your saved videos are unchanged; reselect them when you return."
+      />
       <p>Select verified videos for QR codes.</p>
       <button type="button" disabled aria-describedby="upload-availability">Upload videos</button>
       <p id="upload-availability">YouTube uploads are not available on this screen yet.</p>

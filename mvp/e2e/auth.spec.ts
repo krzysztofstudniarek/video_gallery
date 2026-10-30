@@ -13,7 +13,7 @@ async function account() {
   return result;
 }
 async function signIn(page: Page, session: Session, tools = false) {
-  await page.goto(tools ? `${base}/?tools=1` : base);
+  await page.goto(tools ? `${base}/?tools=1` : `${base}/account`);
   await expect(page.getByRole("button", { name: "Sign in with Google" })).toBeVisible();
   await page.evaluate(
     (value) => localStorage.setItem("videoalbum.auth", JSON.stringify(value)),
@@ -21,7 +21,9 @@ async function signIn(page: Page, session: Session, tools = false) {
   );
   await page.reload();
   await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Delete account", exact: true })).toBeVisible();
+  if (!tools) {
+    await expect(page.getByRole("heading", { name: "Delete account", exact: true })).toBeVisible();
+  }
 }
 test.afterEach(async () => {
   for (const id of ids.splice(0)) {
@@ -72,7 +74,7 @@ test("persistent SDK session survives closing and reopening the browser without 
     await context.close();
     context = await chromium.launchPersistentContext(dir, options);
     page = context.pages()[0];
-    await page.goto(base);
+    await page.goto(`${base}/account`);
     await expect(page.getByText(`Signed in as ${user.email}.`)).toBeVisible();
     await expect(page.getByRole("heading", { name: "Delete account", exact: true })).toBeVisible();
   } finally {
@@ -101,7 +103,7 @@ test("successful login exchanges one PKCE code and removes callback values befor
     });
   });
   await page.goto(`${base}/?code=synthetic-code`);
-  await expect(page.getByRole("heading", { name: "Delete account", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Home", exact: true })).toBeVisible();
   expect(page.url()).toBe(`${base}/`);
   expect(exchanges).toBe(1);
 });
