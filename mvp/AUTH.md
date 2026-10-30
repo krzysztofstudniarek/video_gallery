@@ -4,6 +4,12 @@ Issue #4 uses Supabase Auth as the sole identity/session system. The owner chose
 sign-in and a minimal account-deletion UI on 23 October 2026. Google login requests only
 `openid email profile`; YouTube upload/read consent, tokens and refresh remain separate (#14).
 
+The [29 October navigation plan](../docs/ROUTING.md) adds bookmarkable protected screens and safe
+signed-out returns through #26. Preserve this completed session/storage contract, clear private
+screen state on sign-out/account changes, and keep the validated root login callback. A return path
+is temporary per-tab app navigation state, not a provider-data or token cache. `/account` hosts
+account/deletion controls when routed integration ships; Back cannot replay deletion or restore access.
+
 ## Browser sessions
 
 `frontend/client.ts` owns one SDK client with explicit PKCE, automatic refresh and localStorage

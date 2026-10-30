@@ -12,6 +12,12 @@ earlier feedback-specific schema and retention requirements. Other lifecycle rul
 
 ## Decision
 
+The owner requires bookmarkable authenticated app navigation and browser Back/Forward from
+29 October 2026; [ROUTING.md](ROUTING.md) defines the implementation plan. Private video/account,
+upload and preview routes do not become public sharing/resolver URLs or printed QR destinations.
+Bookmarks never preserve provider data beyond its existing deadline or authorize future album
+management screens. The data lifecycle and direct YouTube QR contract below remain unchanged.
+
 Every video QR encodes the final `https://www.youtube.com/watch?v=<video-id>` URL directly.
 YouTube hosts the video and handles playback and visibility. A scan does not contact VideoAlbum,
 Supabase, a redirect service or an app-owned domain. Disconnecting, deleting an app account or an
