@@ -114,6 +114,10 @@ local/hosted function boot evidence rather than inferring it from Deno CLI.
 
 ## Google sign-in
 
+The owner completed the guided live staging sign-in, persistent-session, two-account session and
+confirmed account-deletion checks on 26 October 2026 after PR #31 deployed successfully. See the
+[dated evidence and its limits](AUTH.md#live-staging-evidence--26-october-2026).
+
 Issue #4 adds persistent SDK sign-in, an authenticated React view and a minimal confirmed account
 deletion flow. See [authentication and deletion](AUTH.md) for browser storage/CSP, session revocation
 boundaries, privileged operations, bounded deletion retry work and remaining rollout gates. Sign-out

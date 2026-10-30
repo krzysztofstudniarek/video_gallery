@@ -143,3 +143,35 @@ Sources checked 23 October 2026: [Supabase sessions](https://supabase.com/docs/g
 [Google login](https://supabase.com/docs/guides/auth/social-sign-in/auth-google),
 [sign-out](https://supabase.com/docs/guides/auth/signout),
 [user deletion](https://supabase.com/docs/guides/auth/managing-user-data).
+
+## Live staging evidence — 26 October 2026
+
+PR #31 merged as `d29bdf88482ad3f9bbd8c680be5a6c07e91f49cf`.
+[Deployment run 40328403063, attempt 2](https://github.com/krzysztofstudniarek/video_gallery/actions/runs/40328403063/attempts/2)
+completed successfully for both backend and frontend after replacing an expired deployment PAT.
+The public frontend displayed backend connectivity and restored an existing session.
+
+The owner then performed the guided tests in regular and private browser windows and confirmed:
+
+| Manual check | Owner-reported result |
+| --- | --- |
+| Sign out, reload, sign in with Google | Signed-out state persists through reload; Google returns to the app with the expected identity and private tools |
+| Authenticated probes for two Google accounts | Both returned `jwt_verified`, `postgres_read`, `https` and `aes_gcm` as true; synthetic OAuth refresh/initiation also passed with Unlisted metadata |
+| Close and reopen the regular browser | Saved app sign-in survives and authenticated access works |
+| Separate account sessions | Each window displays its expected account; signing out A leaves B signed in |
+| Confirmed deletion of disposable B | Confirmation gates deletion; the deletion flow completes and B loses protected access in its other window after reload |
+| Auth identity deletion | B is absent from Supabase Authentication → Users before any new sign-in |
+| Unrelated account after deletion | A can sign in and its authenticated probe still succeeds |
+
+These are owner-reported live Google/UI checks. Database row isolation, direct REST/RPC bypass,
+expired/invalid JWT rejection, SDK refresh, callback-error handling and dependency-failure scenarios
+are covered by the automated local suites described above; do not label those as hosted manual
+measurements. The OAuth booleans in the compatibility probe are synthetic and do not prove a live
+YouTube upload or provider revocation. No real upload, deliberate hosted token-expiry/refresh test,
+denied Google consent, or Google-outage deletion test was recorded in this session. Browser versions
+and the exact deletion notification text were not captured. No account identifiers, credentials,
+provider destinations or media are retained in this evidence.
+
+The guided staging authentication/deletion checks are complete. Independent maintenance scheduling,
+original-deadline backup erasure and production hosting/security configuration remain release gates
+in #10/#26; workflow-scoped YouTube authorization/cleanup remains #14/#15 work.
