@@ -6,6 +6,7 @@ export function mountProbe(
   document: HTMLElement,
   signal: AbortSignal,
   onBusy: (busy: boolean) => void,
+  beforeConsent: () => boolean,
 ) {
   const output = document.querySelector("output")!;
   document.querySelector("#probe")!.addEventListener("click", async () => {
@@ -105,6 +106,7 @@ export function mountProbe(
       throw new Error("Unexpected consent destination");
     }
     const { data } = await client.auth.getSession();
+    if (signal.aborted || !beforeConsent()) return;
     rememberReturn(sessionStorage, "youtube", "/tools", data.session?.user.id);
     location.assign(url.href);
   });

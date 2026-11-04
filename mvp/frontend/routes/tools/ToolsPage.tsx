@@ -1,5 +1,6 @@
 import { useAppAccess } from "../../app/App";
 import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { mountProbe } from "./probe";
 import { NavigationGuard } from "../../app/NavigationGuard";
 
@@ -7,16 +8,34 @@ function Probe() {
   const root = useRef<HTMLElement>(null);
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const dirtyInputs = useRef(false);
   useEffect(() => {
     const controller = new AbortController();
-    mountProbe(root.current!, controller.signal, setBusy);
+    mountProbe(root.current!, controller.signal, setBusy, () => {
+      if (
+        dirtyInputs.current && !confirm(
+          "Connecting YouTube leaves this screen and clears selected inputs. Continue to Google?",
+        )
+      ) return false;
+      // Remove the unload warning before the intentional OAuth handoff. The pending start
+      // request is finished; ordinary route changes and active transfers remain guarded.
+      flushSync(() => {
+        dirtyInputs.current = false;
+        setDirty(false);
+        setBusy(false);
+      });
+      return true;
+    });
     return () => controller.abort();
   }, []);
   return (
     <section
       ref={root}
       aria-label="YouTube validation tools"
-      onChangeCapture={() => setDirty(true)}
+      onChangeCapture={() => {
+        dirtyInputs.current = true;
+        setDirty(true);
+      }}
     >
       <NavigationGuard
         when={busy || dirty}

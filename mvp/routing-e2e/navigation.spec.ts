@@ -37,6 +37,7 @@ async function mockBackend(page: Page) {
     else if (path.endsWith("/channel-library")) body = { connected: false };
     else if (path.endsWith("/youtube")) {
       const action = request.method() === "POST" ? request.postDataJSON().action : "";
+      if (action === "start") await new Promise((resolve) => setTimeout(resolve, 250));
       body = action === "start"
         ? { authorization_url: "https://accounts.google.com/synthetic" }
         : { configured: true, channel: { id: "synthetic", title: "Synthetic channel" }, job: null };
@@ -107,6 +108,11 @@ test("signed-out bookmark returns through the exact root PKCE callback once", as
 
 test("YouTube callback completes once and restores the guarded tools route", async ({ page }) => {
   await signedIn(page, "tools");
+  const dialogs: string[] = [];
+  page.on("dialog", async (dialog) => {
+    dialogs.push(dialog.type());
+    await dialog.dismiss();
+  });
   await page.route(
     "https://accounts.google.com/**",
     (route) => route.fulfill({ contentType: "text/html", body: "Synthetic YouTube consent" }),
@@ -120,6 +126,7 @@ test("YouTube callback completes once and restores the guarded tools route", asy
   });
   await page.getByRole("button", { name: "Connect YouTube", exact: true }).click();
   await expect(page.getByText("Synthetic YouTube consent")).toBeVisible();
+  expect(dialogs).toEqual([]);
   await page.goto(
     home + "?youtube_callback=1&code=synthetic-youtube-code&state=synthetic-youtube-state",
   );
@@ -134,6 +141,36 @@ test("YouTube callback completes once and restores the guarded tools route", asy
   expect(storage).not.toContain("synthetic-youtube-state");
   await page.reload();
   expect(completed).toBe(1);
+});
+
+test("YouTube consent warns about selected inputs and leaves only after confirmation", async ({ page }) => {
+  await signedIn(page, "tools");
+  await page.route(
+    "https://accounts.google.com/**",
+    (route) => route.fulfill({ contentType: "text/html", body: "Synthetic YouTube consent" }),
+  );
+  await page.getByLabel("Is this test video made for kids?").selectOption("no");
+  const dialogs: string[] = [];
+  let allow = false;
+  page.on("dialog", async (dialog) => {
+    dialogs.push(dialog.type());
+    if (dialog.type() === "confirm" && allow) await dialog.accept();
+    else await dialog.dismiss();
+  });
+  await page.getByRole("button", { name: "Connect YouTube", exact: true }).click();
+  await expect.poll(() => dialogs.length).toBe(1);
+  expect(dialogs).toEqual(["confirm"]);
+  await expect(page).toHaveURL(home + "tools");
+  await expect(page.getByLabel("Is this test video made for kids?")).toHaveValue("no");
+  expect(await page.evaluate(() => sessionStorage.getItem("videoalbum.return"))).toBeNull();
+  // Cancelling consent must retain the normal unfinished-work guard.
+  await page.getByRole("link", { name: "Home", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Stay here" })).toBeVisible();
+  await page.getByRole("button", { name: "Stay here" }).click();
+  allow = true;
+  await page.getByRole("button", { name: "Connect YouTube", exact: true }).click();
+  await expect(page.getByText("Synthetic YouTube consent")).toBeVisible();
+  expect(dialogs).toEqual(["confirm", "confirm"]);
 });
 
 test("malformed callbacks are scrubbed without exchange or reflecting provider errors", async ({ page }) => {
