@@ -171,3 +171,25 @@ the old asset base separately; it does not make Pages a supported deep-link host
 Auth/RLS/database suites remain CI checks; do not repoint their reset/fixture operations at hosted
 staging. Hosted integration validation uses the existing staging environment and non-mutating smoke
 checks. Preview URLs are not added to OAuth/CORS allowlists just to run synthetic tests.
+
+
+## Backend deployment separation and Pages retirement — 4 November 2026
+
+The staging workflow now deploys only Supabase: validation/tests/type checks, explicit project link,
+pending migrations, frontend origin, Edge Functions and backend smoke checks. Vercel independently
+builds the frontend at the root asset base. Pages build artifacts, the Pages deployment job and its
+write/identity permissions are removed. `FRONTEND_BASE_PATH` is no longer a deployment input.
+
+After merging this separation, unpublish the existing Pages site in repository Settings → Pages;
+removing the workflow stages alone does not remove the currently published site. Follow the
+[deployment checklist](../mvp/DEPLOYMENT.md#retire-the-existing-pages-site-after-merge), verify the old
+address stops serving the app and confirm Vercel/backend connectivity. Do not re-run an old workflow
+commit to deploy or roll back; it contains the former Pages publisher.
+
+Current temporary origin is `https://video-gallery-flax.vercel.app`, with matching root login and
+`/?youtube_callback=1` returns. The owner confirmed bookmarked `/videos` Google login and the live
+YouTube return to `/tools` after #35/#36; reload retained the connected destination. The intended
+custom domain remains momentsreply.com. Returning to it requires coordinated Google, Supabase Auth,
+Edge origin/YouTube callback and saved GitHub staging origin changes. No wildcards are needed.
+Platform callback-log privacy and independent cleanup/backup/production activation remain #26/#10
+gates; Pages retirement does not complete them.

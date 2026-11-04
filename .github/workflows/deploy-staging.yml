@@ -1,4 +1,4 @@
-name: Deploy minimal Supabase staging app
+name: Deploy Supabase staging backend
 on:
   workflow_dispatch:
 
@@ -22,9 +22,7 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_DB_POOLER_HOST: ${{ vars.SUPABASE_DB_POOLER_HOST }}
       FRONTEND_ORIGIN: ${{ vars.FRONTEND_ORIGIN }}
-      VITE_SUPABASE_URL: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co
-      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
-      VITE_BASE_PATH: ${{ vars.FRONTEND_BASE_PATH }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,23 +35,5 @@ jobs:
         run: node scripts/preflight.mjs
       - run: npm test
       - run: npm run check
-      - run: npm run build -- --base="$VITE_BASE_PATH"
       - run: npm run deploy:backend
       - run: npm run smoke:staging
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: mvp/dist
-
-  frontend:
-    needs: backend
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Publish the minimal frontend
-        id: deployment
-        uses: actions/deploy-pages@v4

@@ -25,8 +25,9 @@ proposal: codes point directly to YouTube, finished files are downloaded for rep
 provider data is removed at workflow end or within seven days of workflow creation. No ongoing
 metadata refresh or permanent provider/QR archive. The spending envelope remains open. No live configuration is changed by adding this contract.
 
-The [deployment guide](DEPLOYMENT.md) records the Vercel frontend at `https://momentsreply.com/`
-and the existing manual Supabase/legacy Pages workflow. The [navigation plan](../docs/ROUTING.md)
+The [deployment guide](DEPLOYMENT.md) records the Vercel frontend temporarily at
+`https://video-gallery-flax.vercel.app/` (intended custom domain: `https://momentsreply.com/`)
+and the manual Supabase backend-only workflow, with a checklist for unpublishing the legacy Pages site. The [navigation plan](../docs/ROUTING.md)
 requires bookmarkable screens and browser Back/Forward through shared routing in #26. Root Google
 login and separate YouTube consent were owner-confirmed on the new domain on 29 October 2026;
 new routing/host privacy checks and separate production backend activation remain open.

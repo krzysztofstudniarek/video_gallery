@@ -8,9 +8,7 @@ const valid = {
   SUPABASE_DB_PASSWORD: "synthetic",
   SUPABASE_DB_POOLER_HOST: "aws-0-eu-central-1.pooler.supabase.com",
   FRONTEND_ORIGIN: "https://example.test",
-  VITE_SUPABASE_URL: "https://abcdefghijklmnopqrst.supabase.co",
-  VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_synthetic",
-  VITE_BASE_PATH: "/video_gallery/",
+  SUPABASE_PUBLISHABLE_KEY: "sb_publishable_synthetic",
 };
 function check(overrides) {
   return spawnSync(process.execPath, ["scripts/preflight.mjs"], {
@@ -23,11 +21,12 @@ test("valid configuration passes without printing values", () => {
   assert.equal(result.status, 0);
   assert.equal(result.stdout.trim(), "Deployment configuration validated");
 });
-test("reject privileged frontend key", () => {
-  assert.notEqual(check({ VITE_SUPABASE_PUBLISHABLE_KEY: "sb_secret_synthetic" }).status, 0);
+test("reject missing or privileged smoke key", () => {
+  assert.notEqual(check({ SUPABASE_PUBLISHABLE_KEY: "sb_secret_synthetic" }).status, 0);
+  assert.notEqual(check({ SUPABASE_PUBLISHABLE_KEY: "" }).status, 0);
 });
-test("reject mismatched frontend/backend project", () => {
-  assert.notEqual(check({ VITE_SUPABASE_URL: "https://another-project.supabase.co" }).status, 0);
+test("reject an invalid backend project ref", () => {
+  assert.notEqual(check({ SUPABASE_PROJECT_REF: "https://another-project.supabase.co" }).status, 0);
 });
 test("reject missing credentials and path in CORS origin", () => {
   assert.notEqual(check({ SUPABASE_ACCESS_TOKEN: "" }).status, 0);

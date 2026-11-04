@@ -1,158 +1,139 @@
-# Minimal staging app deployment
+# Vercel frontend and Supabase staging backend deployment
 
-## Current Vercel host and navigation plan — 29 October 2026
+## Current host and callback settings — 4 November 2026
 
-The owner selected Vercel and deployed `master` from root directory `mvp/` to project
-`video-gallery`. The frontend is available at `https://momentsreply.com/`, with the assigned Vercel
-URL `https://video-gallery-flax.vercel.app/`. Vercel reported Valid Configuration for the custom
-domain; browser navigation over HTTPS rendered the app. Supabase remains the backend.
+Vercel project `video-gallery` builds `master` from root directory `mvp/`. Use the Vite preset,
+`npm run build`, output `dist`, and root asset base `/`. Supabase serves the backend APIs and data.
+The current app uses the staging Supabase project even though Vercel labels its deployment
+Production; a separate production backend and release gates remain #10 work.
 
-Use the Vite preset, `npm run build`, output `dist`, and root asset base `/`. Supply only
-`VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` from the intended existing Supabase project.
-No Vercel backend, Marketplace provisioning or backend secret is required. The current frontend
-uses the staging Supabase project even though Vercel calls its deployment environment Production.
+Use **https://video-gallery-flax.vercel.app/** temporarily while the owner's network blocks the
+new momentsreply.com domain. The intended custom domain remains https://momentsreply.com/. Google
+login returned to bookmarked `/videos`, and separate YouTube consent returned to `/tools` with a
+connected destination after #35/#36. Reload retained that connection. No upload was performed in
+these callback checks. Earlier custom-domain validation remains historical evidence in #26.
 
-The owner confirmed Google login, separate YouTube consent/return/channel connection, and changing
-the saved GitHub staging `FRONTEND_ORIGIN` to `https://momentsreply.com`. Health returned HTTP 200
-with that exact CORS origin; the browser displayed Supabase backend connected. No upload was
-requested in the new-domain callback test.
+| Setting | Current temporary value |
+| --- | --- |
+| Supabase project ref | `djuvcxgoqaahgxyuldlp` |
+| Vercel frontend environment | `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` for that project |
+| Supabase Auth Site URL and exact login redirect | `https://video-gallery-flax.vercel.app/` |
+| Google identity provider callback | `https://djuvcxgoqaahgxyuldlp.supabase.co/auth/v1/callback` |
+| Google OAuth JavaScript origin | `https://video-gallery-flax.vercel.app` |
+| Google YouTube redirect and Edge `YOUTUBE_REDIRECT_URI` | `https://video-gallery-flax.vercel.app/?youtube_callback=1` |
+| Edge and GitHub staging `FRONTEND_ORIGIN` | `https://video-gallery-flax.vercel.app` (no trailing slash/path) |
 
-The accepted [routing plan](../docs/ROUTING.md) requires bookmarkable app screens, reloads and
-Back/Forward. #26 implements the shared router, Vercel route fallback, missing-asset/not-found
-behavior and synthetic callback/navigation coverage. Keep login returning to
-`https://momentsreply.com/`, and set both the Google YouTube OAuth redirect and backend
-`YOUTUBE_REDIRECT_URI` to `https://momentsreply.com/?youtube_callback=1`. Do not broaden callback
-allowlists to every private screen. The owner selected a home screen with navigation links as the post-login default.
+The existing exact custom-domain login redirect may remain allowlisted for restoration. Do not
+add wildcard preview origins or every private route. Returning to momentsreply.com requires updating
+Google origins/YouTube redirect, Supabase Site URL/redirects, Edge FRONTEND_ORIGIN/YOUTUBE_REDIRECT_URI
+and the saved GitHub staging origin together, then repeating the live login and consent checks.
+Sessions do not migrate between browser origins automatically. Vercel needs no backend secret,
+Marketplace provisioning or custom backend. Never put a privileged key in a `VITE_*` variable.
 
-Remaining #26/#10 work includes reviewed deployment/rollback, production response headers,
-host-side callback-log privacy, independent expiry/backup guarantees, and splitting/retiring the
-old Pages publication below. This documentation changes no workflow or live settings and does not
-claim those gates are implemented. Cross-origin browser sessions do not migrate automatically.
+## Backend-only workflow
 
-## Existing Supabase and historical Pages workflow
+Run **Actions → Deploy Supabase staging backend → Run workflow** on reviewed `master` after this
+change is merged. The workflow file remains `.github/workflows/deploy-staging.yml`; only its display
+name changes. It is manual, serialized by the existing `videoalbum-staging` concurrency group and
+uses the `staging` GitHub environment with `contents: read` permissions.
 
-The existing manual workflow deploys Postgres migrations and TypeScript Edge Functions to
-Supabase and also publishes a Vite frontend to GitHub Pages. That publication is legacy staging;
-the current app address is momentsreply.com. Supabase Edge Functions serve APIs, not HTML.
-Existing staging validation is recorded in [README.md](README.md). Review Vercel Git/preview release
-settings separately; the manual-only statement here applies to the GitHub workflow.
+The workflow installs locked tools, validates backend configuration, runs unit tests/type checks,
+links the explicit project, checks pending migrations with `db push --dry-run`, applies them with
+`db push` (never remote reset), sets FRONTEND_ORIGIN, deploys the Edge Functions and runs hosted
+smoke checks. Functions remain health/compatibility/share/youtube/account/channel-library.
+The migration → function deployment → smoke order is unchanged. Database and function deployment
+are not a single transaction; inspect the failing stage before retrying.
 
-Use separate Supabase projects for staging and production, each with its own database, Auth users,
-OAuth clients/redirects, encryption keys and backend secrets. The local `project_id` identifies only
-Docker resources. Keep hosted credentials in the matching protected GitHub environment; PR CI uses
-only disposable local resources and must never receive staging or production secrets. Production
-hosting and release configuration remain in issue #10; do not point the staging workflow at it.
+There is no frontend build, Pages artifact, Pages deployment job, `pages: write` or `id-token: write`
+in this workflow. It does not read FRONTEND_BASE_PATH or require a `github-pages` environment.
+Vercel owns frontend builds and releases separately. Frontend build validation remains in PR CI.
 
-## Historical Pages setup and shared backend settings
+Configure these GitHub `staging` environment values:
 
-The Pages-specific steps below document the old deployment, not a second current app address.
-Keep the shared backend origin aligned with momentsreply.com until the publication stage is split.
+| Kind | Name | Value |
+| --- | --- | --- |
+| Variable | `SUPABASE_PROJECT_REF` | Explicit staging project ref |
+| Variable | `SUPABASE_DB_POOLER_HOST` | Session pooler hostname from Supabase Connect, host only |
+| Variable | `SUPABASE_PUBLISHABLE_KEY` | Public `sb_publishable_…` key for backend smoke requests |
+| Variable | `FRONTEND_ORIGIN` | Exact current HTTPS frontend origin, without trailing slash/path |
+| Secret | `SUPABASE_ACCESS_TOKEN` | Supabase deployment access token |
+| Secret | `SUPABASE_DB_PASSWORD` | Staging database password |
 
-1. Create/select a disposable Supabase staging project. Save the database password privately. Copy
-   its 20-letter project ref and **publishable** key. Create a Supabase access token for
-   deployments. Do not put those credentials in files tracked by Git or paste them into a
-   chat/issue.
-2. In this GitHub repository, select **Settings → Pages → Build and deployment → GitHub Actions**.
-   The default frontend is `https://krzysztofstudniarek.github.io/video_gallery/`. For a custom
-   domain, configure it first and use the matching origin/base path below.
-3. Create a GitHub environment named `staging`, restrict it to the intended deployment branch, and
-   optionally add required reviewers. Add these values:
+The existing environment variable names above are unchanged. The workflow passes the public key to
+smoke checks as `SUPABASE_PUBLISHABLE_KEY`; the frontend's `VITE_SUPABASE_PUBLISHABLE_KEY` remains a
+separate Vercel build setting. The obsolete FRONTEND_BASE_PATH variable may be removed after merge;
+leaving it temporarily has no effect. Do not delete the `staging` environment or its credentials.
+Keep the existing YouTube client, encryption key and redirect secrets in Supabase; deployment only
+updates FRONTEND_ORIGIN and does not replace those settings.
 
-   | Kind     | Name                       | Value                                                            |
-   | -------- | -------------------------- | ---------------------------------------------------------------- |
-   | Variable | `SUPABASE_PROJECT_REF`     | Staging project ref                                              |
-   | Variable | `SUPABASE_DB_POOLER_HOST`  | Session pooler hostname from Supabase Connect (host only)        |
-   | Variable | `SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_…`, safe for the frontend                        |
-   | Variable | `FRONTEND_ORIGIN`          | `https://momentsreply.com` (no trailing slash/path) |
-   | Variable | `FRONTEND_BASE_PATH`       | `/video_gallery/` (`/` for a root custom domain)                 |
-   | Secret   | `SUPABASE_ACCESS_TOKEN`    | Deployment access token                                          |
-   | Secret   | `SUPABASE_DB_PASSWORD`     | Staging database password                                        |
+Use distinct Supabase projects for staging and production, each with its own Auth users, OAuth
+configuration, encryption keys and backend credentials. Do not point this staging workflow at a
+production project. PR CI has no hosted credentials and uses only disposable database fixtures on
+the GitHub runner. Do not repoint reset, generated-type or account-deletion fixture scripts at
+shared staging. Local Docker is not required for hosted deployment or smoke checks.
 
-4. Ensure the `github-pages` environment allows the same deployment branch. Commit/review the
-   workspace and workflow, then merge the workflow into the default branch so GitHub exposes the
-   manual Actions trigger. Do not reuse a production project or production credentials for this
-   spike.
+## Retire the existing Pages site after merge
 
-## Deploy
+Removing publication steps does not remove an already published site. Complete this one-time
+operational step after the backend-only workflow is on `master`:
 
-Run **Actions → Deploy minimal Supabase staging app → Run workflow** on the reviewed branch. It
-validates configuration, installs locked tooling, runs checks, builds with the Pages base path,
-links the explicit staging project, applies only pending migrations (`db push`, never remote reset),
-sets FRONTEND_ORIGIN and deploys health/compatibility/share/youtube/account/channel-library functions. Backend smoke checks must
-pass before the frontend is published to Pages. The workflow URL provides the frontend deployment
-result. Database and function deployment are not a single transaction; check the failing stage
-before retrying.
+1. Confirm this PR is merged and no old staging/Pages deployment is still running. Avoid re-running
+   old deployment runs: they execute their original commit, which still contains the Pages publisher.
+2. Open repository **Settings → Pages** and use the current deployment's menu → **Unpublish site**.
+   Follow [GitHub's unpublication instructions](https://docs.github.com/en/pages/getting-started-with-github-pages/unpublishing-a-github-pages-site).
+   This removes the published frontend, not the repository, Vercel project or Supabase backend.
+3. Verify `https://krzysztofstudniarek.github.io/video_gallery/` no longer serves VideoAlbum (normally
+   HTTP 404 after the change propagates). Do not replace it with a redirect page or restore it as a
+   second frontend. Keep the old Pages return URL out of Supabase Auth's redirect allowlist.
+4. Confirm the Vercel root and `/videos` reload, backend health/CORS and sign-in still work. Record
+   sanitized evidence in #26. No real upload or account deletion is needed for this host check.
+5. Run the new backend-only workflow from reviewed `master` when ready to validate the deployment
+   split. It should finish after backend smoke checks and must not create a Pages publication.
 
-The minimal app works before Google is configured: it displays the backend connection status. The
-authenticated probe requires sign-in. The health endpoint proves API reachability, not Postgres
-connectivity; migrations and permission smoke checks cover the database separately. No YouTube
-upload is performed by deployment or smoke checks.
+Do not remove historical deployment records or the `github-pages` environment as part of this step;
+they are not needed for the new workflow, but removing them is unnecessary for unpublication.
+No new DNS record, hosting plan or OAuth credential is required.
 
-To deploy from a trusted local terminal, export the same settings privately and use
-`npm run deploy:backend`, `npm run smoke:staging`, and build with
-`npm run build -- --base=/video_gallery/`. Upload `dist/` to a static host; the GitHub workflow
-automates Pages publication. CLI commands use the project ref explicitly; no existing local link is
-trusted. Never pass a backend key as a VITE_* setting. No secret is needed in the built frontend.
+## Frontend rollout and recovery
 
-## Historical Pages Google setup
+Vercel builds and deploys the frontend from GitHub independently of the manual backend workflow.
+For changes spanning frontend and backend, prepare backward-compatible migrations/functions first.
+Deploy and smoke-check the required backend before promoting a frontend that depends on it; use
+Vercel's deployment controls to coordinate that release. The split does not automatically sequence
+Vercel promotion with backend changes.
 
-The paragraph below describes the former callback setup. Use the current Vercel values in the
-environment table for the live app; the owner removed the Pages return URL from hosted Auth.
+For a frontend rollback, redeploy/promote a reviewed compatible Vercel deployment. Keep current
+origin/callback settings aligned. Use forward-fix database migrations; do not automatically reverse
+schema changes, reset hosted data or rerun the former Pages workflow as a rollback mechanism.
 
-In Supabase Auth URL configuration, set Site URL and allowlisted redirect to the exact frontend URL,
-including `/video_gallery/`. Enable Google provider with a dedicated Google OAuth web client. Its
-authorized callback is `https://<project-ref>.supabase.co/auth/v1/callback`; its JavaScript origin
-is the frontend origin. Add test users to Google's consent configuration. The frontend keeps the
-Pages base path in its PKCE redirect. Verify sign-in, run probe, sign-out, and rejection after
-sign-out. Do not broaden the redirect allowlist to wildcards.
+To deploy from a trusted terminal, export the same backend settings privately, install locked
+workspace tools and use `node scripts/preflight.mjs`, `npm run deploy:backend`, then
+`npm run smoke:staging` from `mvp/`. Every CLI operation targets the explicit project/pooler rather
+than trusting a developer's existing link. These commands do not require a frontend build/base path.
 
-Use these exact environment boundaries (origin and callback are different settings):
+Smoke checks cover health=200, missing-user-JWT rejection, malformed share=404 and anonymous table
+read denial. Health does not prove Postgres connectivity or real OAuth/upload behavior; migrations,
+permission checks and live callback validation supply separate evidence.
 
-| Environment | Google authorized callback | Supabase Site URL and redirect allowlist | Frontend/Google JavaScript origin |
-| --- | --- | --- | --- |
-| Local | `http://127.0.0.1:54321/auth/v1/callback` | `http://127.0.0.1:5173/` | `http://127.0.0.1:5173` |
-| Current staging-backed Vercel app | `https://djuvcxgoqaahgxyuldlp.supabase.co/auth/v1/callback` | `https://momentsreply.com/` | `https://momentsreply.com` |
-| Separate production backend, pending #10 | `https://<production-project-ref>.supabase.co/auth/v1/callback` | Exact reviewed frontend return URL | Exact reviewed HTTPS origin |
+## Remaining release gates
 
-Separate production backend values remain unresolved until #10 provisions/reviews that environment.
-Never copy staging project IDs or wildcard redirects into production. Match trailing slashes to the
-SDK's generated `redirectTo`. Record/verify the hosted JWT lifetime; ordinary REST accepts a signed
-access JWT until expiry after sign-out, whereas protected functions also verify the live Supabase
-session. The local config sets a one-hour JWT lifetime explicitly.
+Complete the [Auth rollout/maintenance gates](AUTH.md), platform callback-log privacy, independent
+expiry/deletion scheduling, original-deadline backup erasure, production activation and operating
+limits under #10/#26. Browser URL cleanup does not erase the initial request from platform logs.
+Vercel response security headers and restrictive frontend CSP remain in place. Unpublishing Pages
+neither activates a scheduler nor establishes production readiness.
 
-Before public release, complete the [Auth rollout/maintenance gates](AUTH.md): independent deletion
-retry/expiry scheduling, original-deadline backup erasure, live two-account Google/deletion tests and
-production security headers. Vite embeds a restrictive CSP for static hosting. Hosting that supports
-response headers should additionally enforce `frame-ancestors 'none'` and `nosniff`. Nothing here
-changes hosted provider settings or activates the scheduler automatically.
+Supabase Free may pause after inactivity. Choose production hosting for upload availability and
+reliable expiry cleanup. Printed QR codes contain direct YouTube URLs and do not depend on the
+app domain, Pages, Vercel or Supabase availability. See [ADR 002](../docs/ADR-002-direct-youtube-qr.md).
 
-## Verification and recovery
+## GitHub runner IPv4 connectivity
 
-- Open the deployed frontend and confirm “Supabase backend connected”.
-- Smoke checks assert health=200, missing user JWT=401, malformed share=404 and anonymous table
-  reads denied. These do not replace two-user/staging OAuth tests.
-- Repeat the manual workflow for future releases. For an application rollback, deploy a reviewed
-  previous commit; use forward-fix database migrations rather than automatically reversing schema or
-  deleting data.
-- Remove the disposable staging project/Pages deployment deliberately when no longer needed. Production QR codes point directly to YouTube, never this staging deployment.
-
-For launch, follow [ADR 002](../docs/ADR-002-direct-youtube-qr.md): validate hosting for upload and
-expiry-cleanup availability, not printed playback. Free staging can pause with inactivity; a failing
-health indicator is expected while paused. Production temporary-data deadlines still apply during
-inactivity. The earlier mandatory Pro-for-printed-links decision is superseded. This setup does not
-purchase a plan or claim production readiness; current frontend deployment evidence is recorded above.
+In Supabase **Connect**, select **Session pooler** and copy its exact hostname to the GitHub staging
+SUPABASE_DB_POOLER_HOST variable. Do not infer a region/index or paste a URL. Migrations use session
+mode on port 5432 with TLS. The database password is supplied privately via PGPASSWORD, not in a
+command-line URL. This avoids direct database IPv6 connectivity without adding a paid IPv4 option.
 
 References: [Supabase deployments](https://supabase.com/docs/guides/functions/deploy),
 [environment migrations](https://supabase.com/docs/guides/deployment/managing-environments),
 [Edge HTTP routing limitations](https://supabase.com/docs/guides/functions/http-methods).
-
-## GitHub runner IPv4 connectivity
-
-In the Supabase project click **Connect**, select **Session pooler**, and copy only the hostname
-(for example `aws-0-eu-central-1.pooler.supabase.com`) into the GitHub staging environment variable
-`SUPABASE_DB_POOLER_HOST`. Use the exact host shown for your project; do not infer the region/index
-or paste the full URL. Migrations use session mode on port 5432 with TLS. The database password is
-read from the existing secret into PGPASSWORD; it is never placed in URL arguments. This avoids
-direct database IPv6 connectivity on GitHub-hosted runners and does not require a paid IPv4 add-on.
-After merging this fix, start a new workflow run on master; rerunning the old run uses the old
-deployment script.
