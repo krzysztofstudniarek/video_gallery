@@ -1,8 +1,8 @@
 import { expect, type Page, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { admin, createAccount } from "./local";
-import type { Database } from "../frontend/database.types";
-import type { QrChoice } from "../frontend/video-selection";
+import type { Database } from "../frontend/auth/database.types";
+import type { QrChoice } from "../frontend/routes/videos/video-selection";
 
 // Synthetic app/provider metadata only. These fixtures never upload or verify a real video.
 const owners: string[] = [];
@@ -65,14 +65,15 @@ async function signIn(page: Page, user: Awaited<ReturnType<typeof createAccount>
   await page.evaluate((session) => {
     localStorage.setItem("videoalbum.auth", JSON.stringify(session));
   }, user.session);
-  await page.reload();
+  await page.goto("/videos");
   await expect(page.getByRole("heading", { name: "Your videos" })).toBeVisible();
 }
 
 async function resolve(page: Page, owner: string, choices: QrChoice[]) {
   return await page.evaluate(async ({ owner, choices }) => {
     // Exercise the same typed repository exported to the future QR download screen.
-    const clientPath = "/frontend/client.ts", libraryPath = "/frontend/video-library.ts";
+    const clientPath = "/frontend/auth/client.ts",
+      libraryPath = "/frontend/routes/videos/video-library.ts";
     const { client } = await import(clientPath);
     const { resolveQrSelection } = await import(libraryPath);
     try {

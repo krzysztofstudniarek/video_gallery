@@ -3,7 +3,7 @@ import {
   selectedChoices,
   type VideoItem,
   youtubeWatchDestination,
-} from "../frontend/video-selection.ts";
+} from "../frontend/routes/videos/video-selection.ts";
 
 function assert(value: unknown): asserts value {
   if (!value) throw new Error("Assertion failed");

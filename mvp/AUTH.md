@@ -12,7 +12,7 @@ account/deletion controls when routed integration ships; Back cannot replay dele
 
 ## Browser sessions
 
-`frontend/client.ts` owns one SDK client with explicit PKCE, automatic refresh and localStorage
+`frontend/auth/client.ts` owns one SDK client with explicit PKCE, automatic refresh and localStorage
 persistence. A browser restart preserves the app session. The compatibility probe's previous SDK
 storage key and any in-flight PKCE verifier migrate once; the old key is removed. Google provider
 access/refresh tokens are stripped from persisted Auth sessions because this application does not

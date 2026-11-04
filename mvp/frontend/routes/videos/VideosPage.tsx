@@ -1,10 +1,12 @@
+import { useAppAccess } from "../../app/App";
 import { useEffect, useRef, useState } from "react";
-import { client } from "./client";
+import { client } from "../../auth/client";
+import { NavigationGuard } from "../../app/NavigationGuard";
 import { channelItems, type ChannelPage, loadChannelPage } from "./channel-library";
 import { loadVideoLibrary } from "./video-library";
 import { availableChoice, selectedChoices, type VideoItem } from "./video-selection";
 
-export function Videos({ owner }: { owner: string }) {
+function Videos({ owner }: { owner: string }) {
   const [items, setItems] = useState<VideoItem[] | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState("");
@@ -148,6 +150,10 @@ export function Videos({ owner }: { owner: string }) {
   return (
     <section aria-labelledby="videos-title">
       <h2 id="videos-title">Your videos</h2>
+      <NavigationGuard
+        when={choices.length > 0}
+        message="Leaving clears your current QR selection. Your saved videos are unchanged; reselect them when you return."
+      />
       <p>Select verified videos for QR codes.</p>
       <button type="button" disabled aria-describedby="upload-availability">Upload videos</button>
       <p id="upload-availability">YouTube uploads are not available on this screen yet.</p>
@@ -221,4 +227,10 @@ export function Videos({ owner }: { owner: string }) {
       )}
     </section>
   );
+}
+
+export function VideosPage() {
+  const { owner, canAccess } = useAppAccess();
+  if (!canAccess || !owner) return null;
+  return <Videos key={owner} owner={owner} />;
 }

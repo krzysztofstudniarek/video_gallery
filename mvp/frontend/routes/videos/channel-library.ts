@@ -1,4 +1,4 @@
-import { client } from "./client";
+import { client } from "../../auth/client";
 import type { ChannelQrChoice, VideoItem } from "./video-selection";
 
 export type ChannelPage = {

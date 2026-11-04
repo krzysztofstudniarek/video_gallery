@@ -30,7 +30,7 @@ App-hosted public album/cover links and later in-app regeneration of old video c
 ## Architecture
 
 - Supabase-native backend: managed Auth, PostgreSQL/RLS, generated Data API and TypeScript/Deno Edge Functions. The React/Vite frontend is hosted on Vercel at `https://momentsreply.com/`. #26 implements the shared browser-history router and validates deep links/OAuth callbacks; production backend activation and operations remain in #10. No separate Python server.
-- Bookmarkable app screens, direct loads/reloads and browser Back/Forward are required from the start. Use one shared React Router layer, guarded owner-only screens, safe signed-out returns and the existing exact root callbacks. Follow the [routing implementation plan](ROUTING.md); the post-login default screen remains undecided. This does not add album-management or public sharing screens.
+- Bookmarkable app screens, direct loads/reloads and browser Back/Forward are required from the start. Use one shared React Router layer, guarded owner-only screens, safe signed-out returns and the existing exact root callbacks. Follow the [routing implementation plan](ROUTING.md); the post-login default is a home screen with navigation links. This does not add album-management or public sharing screens.
 - Postgres metadata with versioned Supabase SQL migrations, ownership indexes, constraints and tested RLS policies on every exposed table.
 - Supabase Auth manages identities/sessions; user-scoped Data API access enforces RLS. Protected Edge Functions validate JWTs. Backend-only privileged keys never enter the frontend.
 - Temporary encrypted YouTube credentials in a private non-exposed schema with key IDs/revocation handling; Edge Functions refresh only for the active workflow, separately from Supabase Auth.
@@ -101,7 +101,7 @@ Execution order and completion boundaries:
 3. The [minimal video list/QR selection](../mvp/VIDEOS.md) in #5 and production channel work in #14 consume the shared shell for UI integration. Their data/provider work can proceed in parallel. #5 does not wait for #15; album CRUD and caption/order editing remain outside management scope.
 4. #15 consumes #5/#14 and adds routed uploads, visibility/Public confirmation, progress and safe navigation/reload/retry/resume/cancel recovery. Navigation cannot initiate another upload or extend expiry. #6 validates direct YouTube destinations independently of app route URLs.
 5. #7 adds routed private preview/downloads; #8 integrates account/privacy/export/deletion with navigation. Bookmarks cannot recover purged destinations. #10 handles Vercel release/rollback, exact callbacks, logging, independent cleanup/backups and retiring/splitting the legacy Pages publication stage.
-6. #11 gates launch, including the complete navigation matrix in [ROUTING.md](ROUTING.md). #12 remains the release tracker. The post-login default screen remains open; this plan does not add future album screens.
+6. #11 gates launch, including the complete navigation matrix in [ROUTING.md](ROUTING.md). #12 remains the release tracker. The post-login default is the home screen with navigation links; this plan does not add future album screens.
 
 ## Pilot release gate
 
