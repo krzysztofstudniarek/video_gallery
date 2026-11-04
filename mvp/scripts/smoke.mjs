@@ -1,5 +1,5 @@
 const ref = process.env.SUPABASE_PROJECT_REF;
-const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const key = process.env.SUPABASE_PUBLISHABLE_KEY;
 if (!/^[a-z]{20}$/.test(ref ?? "") || !key?.startsWith("sb_publishable_")) {
   throw new Error("Configure staging project ref and publishable key");
 }

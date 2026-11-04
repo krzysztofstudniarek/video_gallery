@@ -38,10 +38,10 @@ Public GitHub issues are suitable for general suggestions and sanitised bug repo
 
 ## Hosting
 
-The frontend is deployed on Vercel at [momentsreply.com](https://momentsreply.com/), currently backed by the staging Supabase project. Google login and separate YouTube authorization were owner-confirmed on 29 October 2026. #26 now owns bookmarkable browser-history routes, reload/Back/Forward behavior and remaining callback/host-privacy validation. Production Supabase environments, activation, usage limits, backups and release checks remain in #10; the live domain is not a production-readiness claim.
+The frontend is deployed on Vercel, currently backed by the staging Supabase project. Use [video-gallery-flax.vercel.app](https://video-gallery-flax.vercel.app/) temporarily while the owner’s network blocks the new [momentsreply.com](https://momentsreply.com/) domain. Google login and separate YouTube authorization were owner-confirmed on 29 October 2026. #26 now owns bookmarkable browser-history routes, reload/Back/Forward behavior and remaining callback/host-privacy validation. Production Supabase environments, activation, usage limits, backups and release checks remain in #10; the live domain is not a production-readiness claim.
 
 Supabase Free can pause after low activity. Select production hosting for upload availability and reliable expiry cleanup; printed YouTube codes continue independently of the app. See [backend architecture](docs/ADR-001-supabase.md) and [direct-QR decision](docs/ADR-002-direct-youtube-qr.md).
 
 ## Staging deployment
 
-The [deployment guide](mvp/DEPLOYMENT.md) records Vercel configuration and the existing manually triggered Supabase/GitHub Pages workflow. Retiring or splitting its Pages publication remains #26/#10 work; preserve explicit backend deployment order. Live Google sign-in and browser-to-YouTube validation evidence is recorded in the [workspace README](mvp/README.md), with current host/callback evidence in the deployment and routing plans.
+The [deployment guide](mvp/DEPLOYMENT.md) separates the Vercel frontend from the manually triggered Supabase backend workflow. The workflow applies migrations, deploys functions and runs smoke checks; it no longer builds or publishes a Pages frontend. The guide includes the one-time unpublication of the existing Pages site after this change is merged. Live Google sign-in and browser-to-YouTube validation evidence is recorded in the [workspace README](mvp/README.md), with current host/callback evidence in the deployment and routing plans.
