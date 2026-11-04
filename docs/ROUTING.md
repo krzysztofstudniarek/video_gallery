@@ -23,6 +23,14 @@ precedence over that default. Do not interpret routing approval as approval to b
 caption/reordering screens, public album pages or one QR for an album. Those stay in
 [future scope](FUTURE.md). Future album routes can be added without changing this foundation.
 
+## Frontend folder layout
+
+`mvp/frontend/routes/` groups the implemented screens by URL: `home/`, `videos/`, `account/` and
+`tools/`. Each folder has a named `*Page.tsx` component and keeps its screen-specific helpers beside
+it. `app/router.tsx` declares the explicit paths and titles; `app/App.tsx` is the persistent parent
+layout for navigation, login and account access. OAuth bootstrap and the shared Supabase client live
+under `auth/`. See [the workspace tree](../mvp/README.md#frontend-structure).
+
 ## Browser behavior and private access
 
 - Direct entry, a new tab, reload, Back and Forward must restore the requested screen from its URL.

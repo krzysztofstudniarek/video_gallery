@@ -1,11 +1,12 @@
+import { useAppAccess } from "../../app/App";
 import { useEffect, useRef, useState } from "react";
-import { client } from "./client";
-import { NavigationGuard } from "./NavigationGuard";
+import { client } from "../../auth/client";
+import { NavigationGuard } from "../../app/NavigationGuard";
 import { channelItems, type ChannelPage, loadChannelPage } from "./channel-library";
 import { loadVideoLibrary } from "./video-library";
 import { availableChoice, selectedChoices, type VideoItem } from "./video-selection";
 
-export function Videos({ owner }: { owner: string }) {
+function Videos({ owner }: { owner: string }) {
   const [items, setItems] = useState<VideoItem[] | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState("");
@@ -226,4 +227,10 @@ export function Videos({ owner }: { owner: string }) {
       )}
     </section>
   );
+}
+
+export function VideosPage() {
+  const { owner, canAccess } = useAppAccess();
+  if (!canAccess || !owner) return null;
+  return <Videos key={owner} owner={owner} />;
 }

@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-const target = new URL("../frontend/database.types.ts", import.meta.url);
+const target = new URL("../frontend/auth/database.types.ts", import.meta.url);
 const workspace = new URL("../", import.meta.url);
 const executable = fileURLToPath(new URL("node_modules/.bin/supabase", workspace));
 const result = spawnSync(executable, [

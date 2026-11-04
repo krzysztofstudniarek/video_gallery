@@ -21,7 +21,7 @@ from #26. Direct loads, reloads and Back/Forward must respect the current verifi
 workflow expiry. Selection/provider data stays in memory, never in route URLs or browser history;
 reloading may clear it. This integration adds no album CRUD or public sharing screen.
 
-- `Videos.tsx` mounts only for the currently verified, non-deleting account. Its owner key resets
+- `frontend/routes/videos/VideosPage.tsx` mounts only for the currently verified, non-deleting account. Its owner key resets
   private state on account changes; sign-out and pending deletion unmount it.
 - `loadVideoLibrary` uses the authenticated, generated-type Supabase client. Explicit owner filters
   complement database RLS; an owner argument is not authorization. The service key is never used.

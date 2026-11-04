@@ -1,8 +1,9 @@
+import { useAppAccess } from "../../app/App";
 import { useEffect, useRef, useState } from "react";
 import { mountProbe } from "./probe";
-import { NavigationGuard } from "./NavigationGuard";
+import { NavigationGuard } from "../../app/NavigationGuard";
 
-export function Probe() {
+function Probe() {
   const root = useRef<HTMLElement>(null);
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -75,4 +76,10 @@ export function Probe() {
       <output aria-live="polite"></output>
     </section>
   );
+}
+
+export function ToolsPage() {
+  const { owner, canAccess } = useAppAccess();
+  if (!canAccess || !owner) return null;
+  return <Probe key={owner} />;
 }

@@ -1,5 +1,5 @@
-import { client } from "./client";
-import { rememberReturn } from "./routing-policy";
+import { client } from "../../auth/client";
+import { rememberReturn } from "../../auth/routing-policy";
 import { directUpload } from "./direct-upload";
 
 export function mountProbe(

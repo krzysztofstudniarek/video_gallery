@@ -3,7 +3,7 @@
 This is the active Supabase-native workspace, built on the validated issue #1 compatibility spike
 and issue #2 tooling. Issue #3 adds the [production schema/security contract](DATABASE.md), SQL/RLS
 tests and direct Data API bypass checks. Issue #5 adds the [minimal video list and QR selection](VIDEOS.md).
-Uploads connect in #15 and QR downloads in #7. Historical probe tools are available with `?tools=1`.
+Uploads connect in #15 and QR downloads in #7. Historical probe tools are available at `/tools` (`?tools=1` remains a legacy shortcut).
 The list includes existing Unlisted channel videos through the workflow-scoped channel-library API;
 #14 still supplies the production channel-connection UI. The [future album flow](../docs/FUTURE.md)
 is future work.
@@ -31,6 +31,42 @@ requires bookmarkable screens and browser Back/Forward through shared routing in
 login and separate YouTube consent were owner-confirmed on the new domain on 29 October 2026;
 new routing/host privacy checks and separate production backend activation remain open.
 
+## Frontend structure
+
+The URL-to-screen map lives in `frontend/app/router.tsx`. These are explicit React Router routes;
+folder names do not create routes automatically.
+
+```text
+frontend/
+├── main.tsx                       # React startup
+├── app/
+│   ├── App.tsx                    # Shared navigation, session and account access
+│   ├── router.tsx                 # Route declarations and page titles
+│   └── NavigationGuard.tsx        # Unsaved-work navigation warning
+├── routes/
+│   ├── home/HomePage.tsx          # /
+│   ├── videos/                   # /videos
+│   │   ├── VideosPage.tsx
+│   │   ├── video-library.ts
+│   │   ├── channel-library.ts
+│   │   └── video-selection.ts
+│   ├── account/AccountPage.tsx    # /account
+│   ├── tools/                    # /tools (validation only)
+│   │   ├── ToolsPage.tsx
+│   │   ├── probe.ts
+│   │   └── direct-upload.ts
+│   └── NotFoundPage.tsx
+└── auth/
+    ├── client.ts                 # Supabase client and session initialization
+    ├── callback.ts               # OAuth callback cleanup before router creation
+    ├── routing-policy.ts         # Allowed callback return destinations
+    └── database.types.ts         # Generated public-schema types
+```
+
+Keep screen-specific code beside its page. `App` stays mounted across child routes and supplies
+verified access through its outlet context; video selections and tools mount only for that owner.
+Keep tests in the existing test directories. Add future route folders when their screens are built.
+
 ## Workspace and pull request checks
 
 - `supabase/config.toml`: disposable local Supabase configuration (Postgres 17).
@@ -38,7 +74,7 @@ new routing/host privacy checks and separate production backend activation remai
 - `supabase/functions/`: Deno/TypeScript Edge Functions and shared backend code.
 - `supabase/tests/`: transactional pgTAP database and RLS tests.
 - `frontend/`: React/TypeScript frontend, built by Vite from `index.html`.
-- `frontend/database.types.ts`: generated public-schema types, imported by the frontend client.
+- `frontend/auth/database.types.ts`: generated public-schema types, imported by the frontend client.
 - `tests/`: synthetic Deno tests and a two-user local Auth/Data API/Edge integration check.
 
 The [PR workflow](../.github/workflows/ci.yml) runs on pull requests (including forks), pushes to
@@ -90,7 +126,7 @@ keys in memory and prints sanitised booleans/timings only.
 `npm run stop` stops this project's containers without deleting local data.
 
 After changing migrations, use `npm run reset`, `npm run test:db`, then `npm run types:db`.
-Commit the migrations and regenerated `frontend/database.types.ts` together. The generator always
+Commit the migrations and regenerated `frontend/auth/database.types.ts` together. The generator always
 uses the pinned CLI and `--local --schema public`; it never reads a linked hosted schema. CI compares
 the Deno-formatted generated output byte-for-byte and fails for missing or stale types without
 overwriting them.

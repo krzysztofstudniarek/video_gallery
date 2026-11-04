@@ -4,7 +4,7 @@ import {
   rememberReturn,
   returnKey,
   safePath,
-} from "../frontend/routing-policy.ts";
+} from "../frontend/auth/routing-policy.ts";
 function assert(value: unknown) {
   if (!value) throw new Error("Routing policy assertion failed");
 }

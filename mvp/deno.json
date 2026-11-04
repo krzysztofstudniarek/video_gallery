@@ -51,7 +51,7 @@
       "playwright.routing.config.ts"
     ],
     "exclude": [
-      "frontend/database.types.ts"
+      "frontend/auth/database.types.ts"
     ],
     "rules": {
       "tags": [
