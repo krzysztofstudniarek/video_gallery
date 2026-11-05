@@ -121,15 +121,16 @@ fallback and no pasted-link substitute. Earlier successful Unlisted probe upload
 current Public/Private behavior or production upload readiness.
 
 Local verification commands: `npm run style:check`, `npm run check`, `npm test`,
-`PLAYWRIGHT_CHANNEL=chrome npm run test:routing`. With a disposable local Supabase engine available,
-run `npm run reset`, `npm run test:db`, `npm run types:db` and `npm run types:db:check`.
+`PLAYWRIGHT_CHANNEL=chrome npm run test:routing`. The owner selected existing GitHub Actions CI for
+Docker-based disposable Supabase tests; do not run Docker on the owner’s computer for this task.
+CI runs `npm run reset`, `npm run test:db` and `npm run types:db:check` against its isolated instance.
 Never reset or load test fixtures into the shared hosted project.
 
 ## Validation recorded for this change
 
-On 5 November 2026, formatting/lint, Edge/TypeScript checks, the frontend build, nine Node tests,
-53 Deno tests and 14 isolated routing/browser tests passed. Browser tests use installed Chrome and
-synthetic API responses; they are not hosted Google evidence. The added SQL/RLS tests and database
-migration have not been executed. Database declarations were updated to match the intended RPC
-schema; regeneration/drift checking against a disposable database remains outstanding. Docker checks
-were stopped at the owner's request. No hosted migration, reset, fixtures or deployment was run.
+On 5 November 2026, [disposable CI run 42061344457](https://github.com/krzysztofstudniarek/video_gallery/actions/runs/42061344457)
+passed on implementation commit `18f846c`: formatting/lint, Edge/TypeScript checks, frontend build,
+nine Node tests, 53 Deno tests, migration application and reset, 227 SQL/RLS assertions across seven
+files, generated database type drift checking, two-user Auth/Edge integration, 14 routing/browser
+tests and 17 additional browser tests. Provider responses in automated tests are synthetic; this is
+not hosted Google evidence. No shared hosted migration, reset, fixture load or deployment was run.
