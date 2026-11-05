@@ -43,7 +43,8 @@ jobs:
       - name: Start disposable local Supabase
         run: |
           if ! npm start > "$RUNNER_TEMP/supabase-start.log" 2>&1; then
-            echo "Local Supabase startup failed; reproduce with npm start."
+            echo "Local Supabase startup failed; sanitized startup errors follow."
+            node scripts/startup-diagnostics.mjs "$RUNNER_TEMP/supabase-start.log"
             exit 1
           fi
       - name: Reapply migrations from an empty local database
