@@ -5,7 +5,7 @@ the screen to a video list and QR selection. Album CRUD, caption editing and reo
 additional screens or controls. The existing owner-only schema retains those app-authored fields
 and supports their use by the upload/print flows.
 
-The default signed-in screen shows `Your videos`, an explicitly unavailable upload entry point,
+The `/videos` screen shows `Your videos`, an explicitly unavailable upload entry point,
 and selection checkboxes. Actual YouTube connection/uploads remain #14/#15; this screen does not
 present the historical staging probe as a production upload flow. QR rendering/downloads remain #7.
 The same list also supports existing Unlisted videos from a connected YouTube channel. Discovery
@@ -16,10 +16,14 @@ is recorded separately and does not add album controls now.
 
 ## List and selection
 
-The [navigation plan](../docs/ROUTING.md) places this screen at `/videos`, using the shared router
-from #26. Direct loads, reloads and Back/Forward must respect the current verified account and
+The [shared navigation layer](../docs/ROUTING.md) mounts this screen at `/videos`, using the router
+from #26. Home remains the post-login default unless a valid bookmark takes precedence.
+Direct loads, reloads and Back/Forward respect the current verified account and
 workflow expiry. Selection/provider data stays in memory, never in route URLs or browser history;
-reloading may clear it. This integration adds no album CRUD or public sharing screen.
+refreshing, reloading and leaving the screen clear selection. The screen explains that downloaded
+QR files must be kept for reprinting because the app cannot recover them later. Navigation away
+from a selection requires the shared leave confirmation. This integration adds no album CRUD or
+public sharing screen.
 
 - `frontend/routes/videos/VideosPage.tsx` mounts only for the currently verified, non-deleting account. Its owner key resets
   private state on account changes; sign-out and pending deletion unmount it.
@@ -63,7 +67,10 @@ reloading may clear it. This integration adds no album CRUD or public sharing sc
 - API titles, IDs and cursors remain in component memory for the active workflow only. They are not
   copied to album titles, lasting captions, jobs or a provider archive. Expiry erases channel rows
   and selection; sign-out/account switching unmounts the private state. Refresh and failed page reads
-  clear stale channel data. Credential rotation uses a backend-only compare-and-swap without extending
+  clear stale channel data. Expiry also aborts pending pagination. The browser rejects pages that
+  arrive after expiry, have an invalid deadline or change workflow/deadline during pagination, so
+  late responses cannot restore expired titles or continuation cursors.
+  Credential rotation uses a backend-only compare-and-swap without extending
   the deadline; terminal `invalid_grant` clears the unusable workflow and requires reconnection.
 - A metadata-verified Unlisted video may be selected for the upcoming print flow. It is explicitly
   labeled as still requiring the anonymous playback check. `verifyChannelSelection` rechecks the
@@ -118,6 +125,11 @@ the joined-library migration adds a read-only security-invoker view. Generated p
 regenerated from the disposable local schema. SQL and direct-API checks cover ownership, retained
 entries after cleanup, and latest-job selection through this view; browser checks assert one list
 database request and preserve loading/error/expiry coverage.
+
+`npm run test:routing` runs without Docker using labeled synthetic backend responses. It covers
+direct `/videos` entry, reload, Back/Forward, leave confirmation, private-state clearing after
+sign-out, and discovery/pagination responses crossing workflow expiry. These browser mocks
+complement the SQL/direct-API isolation suite; they are not evidence of database authorization.
 
 For historical synthetic upload validation only, open the existing frontend with `?tools=1`.
 The YouTube callback also opens those tools so an in-flight staging consent still completes.

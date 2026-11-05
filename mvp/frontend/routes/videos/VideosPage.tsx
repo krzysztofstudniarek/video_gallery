@@ -89,6 +89,10 @@ function Videos({ owner }: { owner: string }) {
     if (!Number.isFinite(expiry)) return;
     const timer = setTimeout(() => {
       const at = Date.now();
+      if (channel?.expiresAt && Date.parse(channel.expiresAt) <= at) {
+        moreRequest.current?.abort();
+        setMoreLoading(false);
+      }
       setNow(at);
       setSelected((ids) =>
         ids.filter((id) =>
@@ -155,6 +159,10 @@ function Videos({ owner }: { owner: string }) {
         message="Leaving clears your current QR selection. Your saved videos are unchanged; reselect them when you return."
       />
       <p>Select verified videos for QR codes.</p>
+      <p>
+        Your selection stays in this tab only. Refreshing, reloading or leaving this screen clears
+        it. Downloaded QR files must be kept for reprinting; the app cannot recover them later.
+      </p>
       <button type="button" disabled aria-describedby="upload-availability">Upload videos</button>
       <p id="upload-availability">YouTube uploads are not available on this screen yet.</p>
       <button type="button" onClick={() => setRevision((value) => value + 1)}>
