@@ -65,6 +65,86 @@ async function signedIn(page: Page, path = "") {
   await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
 }
 
+test("channel discovery discards a response that arrives after workflow expiry", async ({ page }) => {
+  await page.clock.install();
+  const expiresAt = new Date(Date.now() + 60_000).toISOString();
+  let release!: () => void;
+  let started!: () => void;
+  const pending = new Promise<void>((resolve) => release = resolve);
+  const seen = new Promise<void>((resolve) => started = resolve);
+  await signedIn(page);
+  await page.route("**/functions/v1/channel-library", async (route) => {
+    started();
+    await pending;
+    await route.fulfill({
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": origin },
+      json: {
+        connected: true,
+        workflowId: owner,
+        expiresAt,
+        items: [{ id: "existing001", title: "Synthetic late discovery", processed: true }],
+        nextPageToken: "synthetic-expired-cursor",
+      },
+    });
+  });
+  await page.getByRole("link", { name: "Your videos", exact: true }).click();
+  await seen;
+  await page.clock.fastForward(60_001);
+  release();
+  await expect(page.getByRole("alert")).toHaveText(
+    "Could not load existing YouTube videos. Refresh to try again.",
+  );
+  await expect(page.locator("body")).not.toContainText("Synthetic late discovery");
+  await expect(page.getByRole("button", { name: "Load more YouTube videos" })).toHaveCount(0);
+});
+
+test("expiry cancels pending pagination and a late page cannot restore the cursor", async ({ page }) => {
+  await page.clock.install();
+  const expiresAt = new Date(Date.now() + 60_000).toISOString();
+  await signedIn(page);
+  let release!: () => void;
+  let started!: () => void;
+  const pending = new Promise<void>((resolve) => release = resolve);
+  const seen = new Promise<void>((resolve) => started = resolve);
+  await page.route("**/functions/v1/channel-library", async (route) => {
+    const more = !!route.request().postDataJSON().pageToken;
+    if (more) {
+      started();
+      await pending;
+    }
+    await route.fulfill({
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": origin },
+      json: {
+        connected: true,
+        workflowId: owner,
+        expiresAt,
+        items: [{
+          id: more ? "existing002" : "existing001",
+          title: more ? "Synthetic late page" : "Synthetic expiring selection",
+          processed: true,
+        }],
+        nextPageToken: "synthetic-expired-cursor",
+      },
+    });
+  });
+  await page.getByRole("link", { name: "Your videos", exact: true }).click();
+  await page.getByRole("checkbox", { name: "Select Synthetic expiring selection for QR code" })
+    .check();
+  await page.getByRole("button", { name: "Load more YouTube videos" }).click();
+  await seen;
+  await page.clock.fastForward(60_001);
+  await expect(page.getByText("0 videos selected for QR codes.")).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("Synthetic expiring selection");
+  release();
+  // Let the browser process the late response before checking it cannot repopulate navigation.
+  await page.clock.runFor(100);
+  await expect(page.getByRole("button", { name: /Load more YouTube videos|Loading more videos/ }))
+    .toHaveCount(0);
+  await expect(page.locator("body")).not.toContainText("Synthetic late page");
+});
+
 test("home is the default; direct routes, reload, Back/Forward and title/focus work", async ({ page }) => {
   await signedIn(page);
   await expect(page.getByRole("heading", { name: "Home", exact: true })).toBeVisible();
@@ -292,6 +372,28 @@ test("Back navigation protects selection and returning never restores the old se
   await page.getByRole("button", { name: "Leave screen", exact: true }).click();
   await expect(page).toHaveURL(home);
   await page.goForward();
+  await expect(page.getByText("0 videos selected for QR codes.")).toBeVisible();
+  const selection = page.getByRole("checkbox", {
+    name: "Select Synthetic Back selection for QR code",
+  });
+  await selection.check();
+  const navigationState = await page.evaluate(() =>
+    JSON.stringify({
+      url: location.href,
+      history: history.state,
+      local: { ...localStorage },
+      tab: { ...sessionStorage },
+    })
+  );
+  expect(navigationState).not.toContain("existing001");
+  expect(navigationState).not.toContain("Synthetic Back selection");
+  await page.getByRole("button", { name: "Refresh videos" }).click();
+  await expect(selection).not.toBeChecked();
+  await selection.check();
+  page.on("dialog", (dialog) => dialog.accept());
+  await page.reload();
+  await expect(page).toHaveURL(home + "videos");
+  await expect(selection).not.toBeChecked();
   await expect(page.getByText("0 videos selected for QR codes.")).toBeVisible();
 });
 

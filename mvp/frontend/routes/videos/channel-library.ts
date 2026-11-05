@@ -26,13 +26,23 @@ export async function loadChannelPage(
     signal,
   });
   if (error) throw new Error("Could not load existing YouTube videos. Refresh to try again.");
-  return data;
+  const page: ChannelPage = data;
+  // A response can cross the fixed deadline while in flight. Never retain its titles or cursor.
+  if (
+    page.connected && (!page.workflowId || !page.expiresAt ||
+      !Number.isFinite(Date.parse(page.expiresAt)) || Date.parse(page.expiresAt) <= Date.now() ||
+      (previous &&
+        (page.workflowId !== previous.workflowId || page.expiresAt !== previous.expiresAt)))
+  ) {
+    throw new Error("The YouTube connection expired. Refresh videos to check again.");
+  }
+  return page;
 }
 
 export function channelItems(page: ChannelPage): VideoItem[] {
   if (
     !page.connected || !page.workflowId || !page.expiresAt ||
-    Date.parse(page.expiresAt) <= Date.now()
+    !Number.isFinite(Date.parse(page.expiresAt)) || Date.parse(page.expiresAt) <= Date.now()
   ) return [];
   const workflowId = page.workflowId;
   return page.items.map((video) => ({
