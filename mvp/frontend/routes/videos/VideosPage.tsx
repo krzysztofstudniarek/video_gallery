@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { useAppAccess } from "../../app/App";
 import { useEffect, useRef, useState } from "react";
 import { client } from "../../auth/client";
@@ -171,8 +172,8 @@ function Videos({ owner }: { owner: string }) {
       {channelLoading && <p role="status">Checking connected YouTube channel…</p>}
       {channel?.connected === false && (
         <p>
-          Connect your YouTube channel to include its existing Unlisted videos. Channel connection
-          is not available on this screen yet.
+          <Link to="/account">Connect your YouTube channel</Link>{" "}
+          to include its existing Unlisted videos.
         </p>
       )}
       {channelError && <p role="alert">{channelError}</p>}

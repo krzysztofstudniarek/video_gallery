@@ -428,3 +428,56 @@ test("a delayed consent callback cannot restore a session signed out in another 
   await expect(page.getByRole("button", { name: "Sign out", exact: true })).toHaveCount(0);
   await other.close();
 });
+
+test("Account connects workflow consent and returns to Account without storing provider data", async ({ page }) => {
+  await signedIn(page);
+  await page.route("**/functions/v1/youtube", async (route) => {
+    const action = route.request().postDataJSON().action;
+    await route.fulfill({
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": origin },
+      json: action === "connect"
+        ? { authorization_url: "https://accounts.google.com/synthetic" }
+        : { connected: false, channel: null, expiresAt: null },
+    });
+  });
+  await page.getByRole("link", { name: "Account", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Connect YouTube", exact: true })).toBeEnabled();
+  await page.route(
+    "https://accounts.google.com/**",
+    (route) => route.fulfill({ contentType: "text/html", body: "Synthetic consent" }),
+  );
+  await page.getByRole("button", { name: "Connect YouTube", exact: true }).click();
+  await expect(page).toHaveURL("https://accounts.google.com/synthetic");
+  await page.goto(home + "?youtube_callback=1&error=access_denied");
+  await expect(page).toHaveURL(home + "account");
+  await expect(page.getByRole("status").filter({ hasText: "YouTube consent was declined" }))
+    .toBeVisible();
+  expect(await page.evaluate(() => sessionStorage.getItem("videoalbum.return"))).toBeNull();
+});
+
+test("Account reports local disconnect separately from pending Google revocation", async ({ page }) => {
+  await signedIn(page);
+  await page.route("**/functions/v1/youtube", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": origin },
+      json: route.request().postDataJSON().action === "connection"
+        ? {
+          connected: true,
+          channel: { id: "synthetic-channel", title: "Workflow destination" },
+          expiresAt: new Date(Date.now() + 86400000).toISOString(),
+        }
+        : { disconnected: true, provider_revocation_pending: true },
+    });
+  });
+  await page.getByRole("link", { name: "Account", exact: true }).click();
+  await expect(page.locator("body")).toContainText("Workflow destination");
+  await page.getByRole("button", { name: "Disconnect / retry Google revocation", exact: true })
+    .click();
+  await expect(page.locator("body")).toContainText(
+    "Disconnected locally. Google access revocation is pending",
+  );
+  await expect(page.locator("body")).not.toContainText("Workflow destination");
+  await expect(page.getByRole("button", { name: "Connect YouTube", exact: true })).toBeEnabled();
+});

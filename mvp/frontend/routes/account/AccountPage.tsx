@@ -1,13 +1,23 @@
+import { YoutubeConnection } from "./YoutubeConnection";
 import { Link } from "react-router";
 import { useAppAccess } from "../../app/App";
 
 export function AccountPage() {
-  const { accountAvailable, confirmDelete, setConfirmDelete, busy, retryDelete, onDelete } =
-    useAppAccess();
+  const {
+    owner,
+    canAccess,
+    accountAvailable,
+    confirmDelete,
+    setConfirmDelete,
+    busy,
+    retryDelete,
+    onDelete,
+  } = useAppAccess();
   if (!accountAvailable) return null;
   return (
     <section aria-labelledby="account-title">
       <h2 id="account-title">Account</h2>
+      {canAccess && owner && <YoutubeConnection key={owner} owner={owner} />}
       <p>
         <Link to="/tools">Open YouTube validation tools (test accounts only)</Link>
       </p>

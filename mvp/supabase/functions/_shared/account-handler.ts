@@ -13,7 +13,12 @@ type Revocation = {
   workflow_id: string | null;
 };
 
-async function revokePending(admin: SupabaseClient, env: Env, send: typeof fetch, owner?: string) {
+export async function revokePending(
+  admin: SupabaseClient,
+  env: Env,
+  send: typeof fetch,
+  owner?: string,
+) {
   const { data, error } = await admin.rpc("pending_provider_revocations", {
     p_owner: owner ?? null,
   });

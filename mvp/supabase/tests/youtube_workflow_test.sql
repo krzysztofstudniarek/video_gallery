@@ -1,0 +1,30 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select no_plan();
+insert into auth.users(id) values ('00000000-0000-4000-8000-000000000014'),('00000000-0000-4000-8000-000000000015');
+insert into public.profiles(owner_id) values ('00000000-0000-4000-8000-000000000014');
+select ok(not has_function_privilege(r,p.oid,'execute'),p.proname||' denies '||r)
+from pg_proc p join pg_namespace n on n.oid=p.pronamespace,unnest(array['anon','authenticated']) r
+where n.nspname='public' and p.proname in ('start_youtube_workflow','consume_youtube_workflow','save_youtube_workflow','disconnect_youtube_workflows');
+select public.start_youtube_workflow('00000000-0000-4000-8000-000000000014',repeat('a',64),'encrypted-verifier','test-key','10000000-0000-4000-8000-000000000014');
+select is((select count(*)::int from public.consume_youtube_workflow('00000000-0000-4000-8000-000000000015',repeat('a',64))),0,'wrong owner cannot consume consent');
+select is((select count(*)::int from public.consume_youtube_workflow('00000000-0000-4000-8000-000000000014',repeat('a',64))),1,'owner consumes once');
+select is((select count(*)::int from public.consume_youtube_workflow('00000000-0000-4000-8000-000000000014',repeat('a',64))),0,'callback replay rejected');
+select public.save_youtube_workflow('00000000-0000-4000-8000-000000000014','10000000-0000-4000-8000-000000000014','encrypted-refresh','test-key','synthetic-channel','Synthetic title');
+select is((select channel_title from public.channel_library_context('00000000-0000-4000-8000-000000000014')),'Synthetic title','library uses the consent destination');
+select throws_ok($$select public.start_youtube_workflow('00000000-0000-4000-8000-000000000014',repeat('b',64),'cipher','test-key','20000000-0000-4000-8000-000000000014')$$,'23514',null,'connected channel must disconnect before new consent');
+select public.disconnect_youtube_workflows('00000000-0000-4000-8000-000000000014');
+select is((select count(*)::int from public.channel_library_context('00000000-0000-4000-8000-000000000014')),0,'disconnect removes library capabilities immediately');
+select is((select count(*)::int from videoalbum_private.workflow_credentials where owner_id='00000000-0000-4000-8000-000000000014'),0,'active credential erased');
+select is((select count(*)::int from videoalbum_private.provider_revocations where owner_id='00000000-0000-4000-8000-000000000014'),1,'bounded retry is queued');
+select ok((select expires_at<=clock_timestamp()+interval '1 day' from videoalbum_private.provider_revocations where owner_id='00000000-0000-4000-8000-000000000014'),'revocation queue is bounded to at most one day');
+select throws_ok($$select public.save_youtube_workflow('00000000-0000-4000-8000-000000000014','10000000-0000-4000-8000-000000000014','late-refresh','test-key','synthetic-channel','Synthetic')$$,'42501',null,'in-flight consent cannot resurrect disconnected workflow');
+select public.finish_provider_revocation(id) from videoalbum_private.provider_revocations where owner_id='00000000-0000-4000-8000-000000000014';
+select public.start_youtube_workflow('00000000-0000-4000-8000-000000000014',repeat('c',64),'cipher','test-key','30000000-0000-4000-8000-000000000014');
+select public.purge_expired_upload_data(clock_timestamp()+interval '8 days');
+select is((select count(*)::int from videoalbum_private.oauth_states where owner_id='00000000-0000-4000-8000-000000000014'),0,'cleanup erases pending consent');
+select is((select count(*)::int from public.consume_youtube_workflow('00000000-0000-4000-8000-000000000014',repeat('c',64))),0,'expired callback cannot recreate workflow');
+select is((select count(*)::int from public.albums where owner_id='00000000-0000-4000-8000-000000000014'),1,'durable user album survives temporary cleanup');
+select is((select count(*)::int from cron.job where jobname='youtube-workflow-expiry' and active),1,'expiry scheduler is installed');
+select * from finish();
+rollback;

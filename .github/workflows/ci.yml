@@ -50,7 +50,13 @@ jobs:
         run: npm run reset
       - run: npm run test:db
       - name: Detect generated database type drift
-        run: npm run types:db:check
+        run: |
+          if ! npm run types:db:check; then
+            # Public schema declarations only; no database rows or credentials.
+            npm run types:db
+            git diff -- frontend/auth/database.types.ts
+            exit 1
+          fi
       - name: Serve local Edge Functions with example configuration
         run: |
           ./node_modules/.bin/supabase functions serve --env-file supabase/.env.example > "$RUNNER_TEMP/supabase-functions.log" 2>&1 &

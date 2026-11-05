@@ -1,5 +1,9 @@
 # YouTube consent and direct-upload compatibility probe
 
+For the routed Account connection and #14 implementation, use
+[YOUTUBE-WORKFLOWS.md](YOUTUBE-WORKFLOWS.md). The setup and lifecycle below are historical probe
+instructions, not the current shared-environment configuration.
+
 Open the frontend with `?tools=1` to show these historical validation tools. The normal signed-in
 screen is the [minimal video list](VIDEOS.md); production uploads remain #15. YouTube consent
 callbacks also show the tools so an in-flight probe can complete.
