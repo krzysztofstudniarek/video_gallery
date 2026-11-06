@@ -5,12 +5,13 @@ import { consentConfig, type Env, runtimeConfig } from "./youtube/config.ts";
 import { safeError } from "./youtube/errors.ts";
 import { corsHeaders, readJson } from "./youtube/http.ts";
 import { parseAction } from "./youtube/inputs.ts";
+import { workflowAction } from "./youtube/workflow.ts";
 import { YoutubeRepository } from "./youtube/repository.ts";
 
 export function youtubeHandler(env: Env, send: typeof fetch = fetch) {
   // Validate deployment configuration at startup, including explicit local origins.
   const config = runtimeConfig(env);
-  const headers = corsHeaders(config.origin);
+  const headers = { ...corsHeaders(config.origin), "Cache-Control": "no-store" };
   const reply = (body: unknown, status = 200) => Response.json(body, { status, headers });
   return async (request: Request) => {
     if (request.headers.get("Origin") && request.headers.get("Origin") !== config.origin) {
@@ -21,7 +22,16 @@ export function youtubeHandler(env: Env, send: typeof fetch = fetch) {
     try {
       const options = { auth: { persistSession: false }, global: { fetch: send } };
       const { user } = await requireUser(request, config, send);
-      const input = parseAction(await readJson(request));
+      const body = await readJson(request) as Record<string, unknown>;
+      const admin = createClient(config.supabaseUrl, config.serviceKey, options);
+      if (
+        body && (["connect", "connection", "workflow_disconnect"].includes(String(body.action)) ||
+          (body.action === "complete" && typeof body.state === "string" &&
+            body.state.startsWith("w_")))
+      ) {
+        return reply(await workflowAction(body, admin, user.id, env, config.origin, send));
+      }
+      const input = parseAction(body);
       const repository = new YoutubeRepository(
         createClient(config.supabaseUrl, config.serviceKey, options),
         user.id,

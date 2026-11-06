@@ -313,6 +313,7 @@ export type Database = {
         Args: { "p_owner": string; "p_workflow"?: string };
         Returns: {
           "channel_id": string;
+          "channel_title": string;
           "expires_at": string;
           "key_id": string;
           "refresh_cipher": string;
@@ -326,7 +327,16 @@ export type Database = {
           "verifier_cipher": string;
         }[];
       };
+      "consume_youtube_workflow": {
+        Args: { "p_hash": string; "p_owner": string };
+        Returns: {
+          "key_id": string;
+          "verifier_cipher": string;
+          "workflow_id": string;
+        }[];
+      };
       "current_app_session": { Args: Record<PropertyKey, never>; Returns: Json };
+      "disconnect_youtube_workflows": { Args: { "p_owner": string }; Returns: undefined };
       "ensure_app_profile": { Args: Record<PropertyKey, never>; Returns: undefined };
       "finish_account_deletion": { Args: { "p_owner": string }; Returns: undefined };
       "finish_provider_revocation": { Args: { "p_id": string }; Returns: undefined };
@@ -384,6 +394,27 @@ export type Database = {
           "p_workflow": string;
         };
         Returns: boolean;
+      };
+      "save_youtube_workflow": {
+        Args: {
+          "p_channel": string;
+          "p_cipher": string;
+          "p_key_id": string;
+          "p_owner": string;
+          "p_title": string;
+          "p_workflow": string;
+        };
+        Returns: undefined;
+      };
+      "start_youtube_workflow": {
+        Args: {
+          "p_cipher": string;
+          "p_hash": string;
+          "p_key_id": string;
+          "p_owner": string;
+          "p_workflow": string;
+        };
+        Returns: string;
       };
       "yt_probe_clear_job": { Args: { "p_owner": string }; Returns: undefined };
       "yt_probe_consume": {

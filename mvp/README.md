@@ -342,3 +342,10 @@ with `PLAYWRIGHT_CHANNEL=chrome`). Check the legacy asset base with
 behavior and are not live Google/YouTube or RLS evidence. Hosted staging health/CORS and anonymous
 API boundaries are checked separately. Database-reset and fixture-deletion scripts continue to
 target disposable CI/local resources only, never the hosted staging project.
+
+## Workflow YouTube connection (#14)
+
+Account now starts workflow-scoped YouTube consent and shows the destination channel.
+Your videos uses those same temporary credentials for existing Unlisted discovery.
+See [workflow authorization, key rotation and approval evidence](YOUTUBE-WORKFLOWS.md)
+for configuration, disconnect/expiry behavior, the #15 visibility contract and remaining live checks.
