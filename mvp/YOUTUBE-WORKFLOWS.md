@@ -110,10 +110,10 @@ submission IDs are **not verified by this code change**. No submission was sent.
 
 ## Remaining live acceptance evidence
 
-The owner-confirmed 4 November routed consent and reload persistence remains valid historical
-evidence for the shared setup. After deploying this migration/function/UI and configuring the key
-ring, verify the workflow-backed connection on Account and existing videos on Your videos. Test wrong
-channel/disconnect, denied consent, revoked grant, callback replay and expiry with synthetic media.
+The 6 November workflow-backed consent, library and disconnect/reconnect results are recorded below.
+Remaining live cases include choosing the wrong channel, denied consent, externally revoked grants,
+callback replay, actual expiry/cleanup and revocation failure/retry. Synthetic tests cover several
+of these paths; the successful live sequence does not establish every failure case.
 Under #15, request each visibility on the actual account/project, verify returned effective status
 and signed-out playback where applicable, and record only sanitized booleans/statuses. If effective
 visibility differs, block QR readiness and investigate provider restrictions; no automatic privacy
@@ -134,3 +134,28 @@ nine Node tests, 53 Deno tests, migration application and reset, 227 SQL/RLS ass
 files, generated database type drift checking, two-user Auth/Edge integration, 14 routing/browser
 tests and 17 additional browser tests. Provider responses in automated tests are synthetic; this is
 not hosted Google evidence. No shared hosted migration, reset, fixture load or deployment was run.
+
+
+## Shared-environment live validation — 6 November 2026
+
+PR #39 merged as `fee26fc44f04886d915d82b439d8d9148b404328`. Its post-merge CI passed.
+[Backend deployment 42195584122](https://github.com/krzysztofstudniarek/video_gallery/actions/runs/42195584122)
+successfully applied the migration, deployed the Edge Functions and passed the hosted smoke checks.
+GitHub also reported successful Vercel deployment of the merged frontend. The owner confirmed adding
+the two workflow key-ring settings privately to the existing shared Supabase project. Existing Google
+client credentials were reused.
+
+On `https://video-gallery-flax.vercel.app`, the owner reported:
+
+- Account showed the connection expiry as 13 November 2026, 10:33:10, and retained it after reload.
+  This verifies displayed deadline persistence, not erasure at that future deadline.
+- Your videos loaded the connected channel's videos correctly.
+- In response to the disconnect/reconnect checklist, “everything works”: disconnect, return to the
+  video list without the channel videos, reauthorization, and restored channel discovery were
+  owner-confirmed. The exact revocation-status message was not separately recorded; no independent
+  claim about Google's retained grant state is made.
+
+These are owner-reported live results, separate from automated tests. No credentials, callback
+parameters, personal channel identifiers, private video links or media are recorded. The shared
+hosted environment was not reset or populated with test fixtures. Current quota/approval evidence,
+backup erasure and actual-project upload visibility checks remain open under #14/#15/#10.
