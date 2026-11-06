@@ -105,15 +105,17 @@ The owner's 22 October 2026 console evidence records 100 uploads/day, 100 upload
 other units/day for the existing project. The app admission decision remains 20 attempts/account and
 60/project per Pacific day. At 100 uploads/day this leaves 40 calls of headroom. Before launch,
 recheck actual allocations and shared consumers; retain at least 20% provider headroom if lower.
-Current console allocations, publishing/verification status, applicable audit findings and approval
-submission IDs are **not verified by this code change**. No submission was sent.
+The 6 November owner review below reconfirms these allocations and records the current Testing
+configuration and Verification Center message. No submission was sent. Public-launch verification and
+any separately required YouTube compliance review remain distinct from this pilot quota check.
 
 ## Remaining live acceptance evidence
 
-The 6 November workflow-backed consent, library and disconnect/reconnect results are recorded below.
-Remaining live cases include choosing the wrong channel, denied consent, externally revoked grants,
-callback replay, actual expiry/cleanup and revocation failure/retry. Synthetic tests cover several
-of these paths; the successful live sequence does not establish every failure case.
+The 6 November owner results below include connection/disconnect, externally revoked access, denied
+consent and history navigation. Hosted scheduler success and zero overdue counts are point-in-time
+observations, not proof of every future deletion deadline. Wrong-channel handling, expiry,
+missing scopes and provider-failure handling also have synthetic coverage; successful live cases do
+not establish every failure scenario or provider-wide erasure.
 Under #15, request each visibility on the actual account/project, verify returned effective status
 and signed-out playback where applicable, and record only sanitized booleans/statuses. If effective
 visibility differs, block QR readiness and investigate provider restrictions; no automatic privacy
@@ -157,5 +159,55 @@ On `https://video-gallery-flax.vercel.app`, the owner reported:
 
 These are owner-reported live results, separate from automated tests. No credentials, callback
 parameters, personal channel identifiers, private video links or media are recorded. The shared
-hosted environment was not reset or populated with test fixtures. Current quota/approval evidence,
-backup erasure and actual-project upload visibility checks remain open under #14/#15/#10.
+hosted environment was not reset or populated with test fixtures. The subsequent pilot configuration
+review is recorded below; backup readiness and actual-project upload visibility remain #10/#15 work.
+
+
+## Additional pilot readiness checks — 6 November 2026
+
+Evidence below is owner-reported from the existing `videoalbum-staging` Google project and shared
+Supabase dashboard. No credentials or personal provider data were collected.
+
+### Google configuration and quota
+
+- Audience: External; publishing status: Testing. The owner chose to retain this configuration for
+  the current invite-only pilot. Listed test users and Google's seven-day consent/refresh-token
+  expiry apply to the YouTube scopes independently of the app workflow deadline.
+- Verification Center displayed: “Verification is not required since your app is configured with a
+  Testing publishing status.” This records the current Testing exemption, not public-launch approval.
+- Data Access screenshot showed `youtube.readonly` and `youtube.upload` as sensitive scopes.
+- Quotas were reconfirmed as 100 video uploads/day, 100 video uploads/minute and 10,000 general
+  units/day. The owner confirmed this Cloud project is used only by VideoAlbum. The planned
+  60 upload initiations/day leaves 40 calls of daily headroom; historical validation tools share it.
+  Enforcing that admission budget is upload work in #15, not proven by viewing quota allocations.
+- No quota extension is needed for the selected pilot allowance alone. Applicable separately
+  requested YouTube audits and any requirements for a public release must still be checked; Testing
+  status does not settle YouTube compliance or effective video visibility.
+
+### Scheduler and current expired records
+
+The owner supplied five `youtube-workflow-expiry` cron executions at one-minute intervals from
+10:04 through 10:08 UTC. All showed `active=true`, schedule `* * * * *`, and `status=succeeded`.
+A read-only aggregate query then returned zero overdue records in `upload_workflows`, `oauth_states`,
+`upload_sessions` and `provider_revocations`. This establishes current scheduler operation and no
+observed overdue records, without changing workflow deadlines or loading hosted fixtures.
+
+The Supabase Scheduled Backups page showed that the current Free plan does not include project
+backups. The owner explicitly deferred backup setup and restore testing to before production under
+#10, with #11 retaining the launch gate. No upgrade, backup configuration or purchase was performed.
+The screenshot alone does not establish absence of manual, PITR or provider-internal copies; backup
+readiness and original-deadline erasure are not marked complete.
+
+### Revoked grants, denied consent and browser history
+
+- After removing the app's authorization in Google and returning to VideoAlbum, the owner reported
+  that the channel connection was lost. This validates the externally revoked-access path at the UI.
+- Cancelling Google consent returned the exact message “YouTube consent was declined.”
+- Asked to check disconnected state after reload, reconnect normally, and use Back/Forward without
+  restarting consent or encountering callback errors, the owner confirmed everything worked as
+  intended. This is owner-reported navigation evidence, not an independent trace of callback requests.
+
+Remaining cross-issue work: actual-project requested/effective upload visibility and QR blocking in
+#15; backups/restore, availability during inactivity/outages, operational retry monitoring and
+provider-retention guarantees in #10; reassessment of OAuth publishing/verification before broader
+access. No backup prerequisite has been silently waived and #14 is not closed by this evidence.
