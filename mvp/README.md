@@ -349,3 +349,9 @@ Account now starts workflow-scoped YouTube consent and shows the destination cha
 Your videos uses those same temporary credentials for existing Unlisted discovery.
 See [workflow authorization, key rotation and approval evidence](YOUTUBE-WORKFLOWS.md)
 for configuration, disconnect/expiry behavior, the #15 visibility contract and remaining live checks.
+
+## Production upload work
+
+See [upload coordination, routed UI and remaining release gates](UPLOADS.md) for issue #15.
+A completed upload is distinct from QR eligibility; live browser/project verification and the
+#7/#8 download validation and trusted verifier operation remain required.

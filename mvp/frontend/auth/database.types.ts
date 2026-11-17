@@ -308,7 +308,12 @@ export type Database = {
       };
     };
     Functions: {
+      "acknowledge_upload_download": {
+        Args: { "p_batch": string; "p_kind": string; "p_owner": string; "p_workflow": string };
+        Returns: boolean;
+      };
       "begin_account_deletion": { Args: { "p_owner": string }; Returns: undefined };
+      "cancel_upload_job": { Args: { "p_job": string; "p_owner": string }; Returns: boolean };
       "channel_library_context": {
         Args: { "p_owner": string; "p_workflow"?: string };
         Returns: {
@@ -319,6 +324,15 @@ export type Database = {
           "refresh_cipher": string;
           "workflow_id": string;
         }[];
+      };
+      "claim_upload_dispatch": {
+        Args: { "p_job": string; "p_lease": string; "p_owner": string };
+        Returns: string;
+      };
+      "claim_upload_playback": { Args: { "p_claim": string }; Returns: Json };
+      "complete_upload_delivery": {
+        Args: { "p_batch": string; "p_owner": string; "p_workflow": string };
+        Returns: boolean;
       };
       "consume_upload_oauth": {
         Args: { "p_hash": string; "p_owner": string; "p_workflow": string };
@@ -335,11 +349,35 @@ export type Database = {
           "workflow_id": string;
         }[];
       };
+      "create_upload_job": {
+        Args: {
+          "p_caption": string;
+          "p_description": string;
+          "p_hash": string;
+          "p_key": string;
+          "p_kids": boolean;
+          "p_owner": string;
+          "p_public": boolean;
+          "p_size": number;
+          "p_title": string;
+          "p_visibility": string;
+          "p_workflow": string;
+        };
+        Returns: string;
+      };
       "current_app_session": { Args: Record<PropertyKey, never>; Returns: Json };
+      "current_upload_destination": {
+        Args: { "p_job": string; "p_owner": string; "p_video": string; "p_workflow": string };
+        Returns: string;
+      };
       "disconnect_youtube_workflows": { Args: { "p_owner": string }; Returns: undefined };
       "ensure_app_profile": { Args: Record<PropertyKey, never>; Returns: undefined };
       "finish_account_deletion": { Args: { "p_owner": string }; Returns: undefined };
       "finish_provider_revocation": { Args: { "p_id": string }; Returns: undefined };
+      "finish_upload_playback": {
+        Args: { "p_claim": string; "p_passed": boolean };
+        Returns: boolean;
+      };
       "finish_upload_workflow": {
         Args: { "p_owner": string; "p_workflow": string };
         Returns: boolean;
@@ -366,7 +404,25 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      "prepare_upload_downloads": {
+        Args: { "p_owner": string; "p_workflow": string };
+        Returns: Json;
+      };
       "purge_expired_upload_data": { Args: { "p_before"?: string }; Returns: undefined };
+      "record_upload_result": {
+        Args: {
+          "p_channel": boolean;
+          "p_duration": number;
+          "p_failure"?: string;
+          "p_job": string;
+          "p_owner": string;
+          "p_processing": string;
+          "p_size": number;
+          "p_video": string;
+          "p_visibility": string;
+        };
+        Returns: boolean;
+      };
       "request_upload": {
         Args: {
           "p_confirm_public"?: boolean;
@@ -379,6 +435,7 @@ export type Database = {
         };
         Returns: string;
       };
+      "request_upload_playback": { Args: { "p_job": string; "p_owner": string }; Returns: boolean };
       "resolve_spike_share": {
         Args: { "token": string };
         Returns: {
@@ -392,6 +449,16 @@ export type Database = {
           "p_owner": string;
           "p_previous_cipher": string;
           "p_workflow": string;
+        };
+        Returns: boolean;
+      };
+      "save_upload_session": {
+        Args: {
+          "p_cipher": string;
+          "p_job": string;
+          "p_key_id": string;
+          "p_lease": string;
+          "p_owner": string;
         };
         Returns: boolean;
       };
@@ -415,6 +482,21 @@ export type Database = {
           "p_workflow": string;
         };
         Returns: string;
+      };
+      "upload_delivery_context": {
+        Args: { "p_owner": string; "p_workflow": string };
+        Returns: Json;
+      };
+      "upload_delivery_receipt": {
+        Args: { "p_owner": string; "p_workflow": string };
+        Returns: boolean;
+      };
+      "upload_job_context": { Args: { "p_job": string; "p_owner": string }; Returns: Json };
+      "upload_job_receipt": { Args: { "p_job": string; "p_owner": string }; Returns: Json };
+      "upload_poll_claim": { Args: { "p_job": string; "p_owner": string }; Returns: boolean };
+      "upload_transfer_permit": {
+        Args: { "p_acquire"?: boolean; "p_job": string; "p_lease": string; "p_owner": string };
+        Returns: boolean;
       };
       "yt_probe_clear_job": { Args: { "p_owner": string }; Returns: undefined };
       "yt_probe_consume": {

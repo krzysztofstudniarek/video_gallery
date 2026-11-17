@@ -1,11 +1,16 @@
 export type Flow = "auth" | "youtube";
 export const returnKey = "videoalbum.return";
 const lifetime = 10 * 60 * 1000;
-const paths = new Set(["/", "/videos", "/account", "/tools"]);
+const paths = new Set(["/", "/videos", "/account", "/tools", "/uploads"]);
 
 // Only existing app screens are return targets. No query, fragment or provider data is accepted.
 export function safePath(value: unknown): string | null {
-  return typeof value === "string" && paths.has(value) ? value : null;
+  return typeof value === "string" &&
+      (paths.has(value) ||
+        /^\/workflows\/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\/print$/i.test(value) ||
+        /^\/uploads\/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(value))
+    ? value
+    : null;
 }
 export function rememberReturn(storage: Storage, flow: Flow, path: string, owner?: string) {
   storage.removeItem(returnKey);

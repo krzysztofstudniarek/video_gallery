@@ -23,7 +23,7 @@ export function sessionUrl(value: string) {
   if (
     url.protocol !== "https:" || url.hostname !== "www.googleapis.com" ||
     url.username || url.password || url.port ||
-    !url.pathname.startsWith("/upload/youtube/v3/videos")
+    url.pathname !== "/upload/youtube/v3/videos"
   ) throw new Error("invalid_session");
   return url.href;
 }

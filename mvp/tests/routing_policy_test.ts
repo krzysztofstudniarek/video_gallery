@@ -26,7 +26,16 @@ function storage(): Storage {
   };
 }
 Deno.test("only existing internal screens can be retained as login return targets", () => {
-  for (const path of ["/", "/videos", "/account", "/tools"]) assert(safePath(path) === path);
+  for (
+    const path of [
+      "/",
+      "/videos",
+      "/account",
+      "/tools",
+      "/uploads",
+      "/uploads/00000000-0000-4000-8000-000000000015",
+    ]
+  ) assert(safePath(path) === path);
   for (
     const path of [
       "//evil.test",
@@ -37,6 +46,8 @@ Deno.test("only existing internal screens can be retained as login return target
       "/videos/../account",
       "\\\\evil.test",
       "/unknown",
+      "/uploads/synthetic15",
+      "/uploads/00000000-0000-4000-8000-000000000015?session=secret",
       null,
     ]
   ) assert(safePath(path) === null);

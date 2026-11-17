@@ -12,9 +12,9 @@ export function corsHeaders(origin: string) {
     "Vary": "Origin",
   };
 }
-export async function readJson(request: Request): Promise<unknown> {
+export async function readJson(request: Request, maxBytes = MAX_REQUEST_BYTES): Promise<unknown> {
   const declared = request.headers.get("Content-Length");
-  if (declared !== null && Number(declared) > MAX_REQUEST_BYTES) {
+  if (declared !== null && Number(declared) > maxBytes) {
     await request.body?.cancel();
     throw new ActionError("request_too_large", 413);
   }
@@ -27,7 +27,7 @@ export async function readJson(request: Request): Promise<unknown> {
       const { done, value } = await reader.read();
       if (done) break;
       bytes += value.byteLength;
-      if (bytes > MAX_REQUEST_BYTES) {
+      if (bytes > maxBytes) {
         await reader.cancel();
         throw new ActionError("request_too_large", 413);
       }

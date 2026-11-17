@@ -2,6 +2,7 @@
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { checkProductionSchema } from "./schema-local.mjs";
+import { checkUploads } from "./uploads-local.mjs";
 import { checkAuth } from "./auth-local.mjs";
 import { createClient } from "@supabase/supabase-js";
 const config = JSON.parse(
@@ -103,12 +104,14 @@ try {
   assert((await share()).status === 404, "Disabled share resolved");
   await checkProductionSchema({ clients, admin, anon, users, url, anonKey: config.ANON_KEY });
   await checkAuth({ config, admin });
+  await checkUploads({ config, admin });
   console.log(
     JSON.stringify({
       local_integration: "passed",
       users: 2,
       production_schema: "passed",
       auth_lifecycle: "passed",
+      upload_lifecycle: "passed",
       first_request_ms: timings[0],
       warm_samples_ms: timings.slice(1),
     }),

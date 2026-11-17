@@ -12,6 +12,7 @@ export function browserPolicy(backend, development = false) {
     "script-src 'self'",
     "style-src 'self'",
     "img-src 'self'",
+    "media-src blob:",
     `connect-src 'self' ${url.origin} https://www.googleapis.com${
       development ? " ws://127.0.0.1:* ws://localhost:*" : ""
     }`,
