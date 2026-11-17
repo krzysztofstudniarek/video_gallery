@@ -16,7 +16,22 @@ async function fixture(title = "Synthetic album") {
   const workflow = await admin.from("upload_workflows")
     .insert({ owner_id: user.id, album_id: album.data!.id }).select().single();
   expect(workflow.error).toBeNull();
-  return { user, album: album.data!, workflow: workflow.data! };
+  const connected = await admin.rpc("save_youtube_workflow", {
+    p_owner: user.id,
+    p_workflow: workflow.data!.id,
+    p_cipher: "synthetic-unused-refresh",
+    p_key_id: "synthetic-unused",
+    p_channel: "synthetic-channel",
+    p_title: "Synthetic",
+  });
+  expect(connected.error).toBeNull();
+  return {
+    user,
+    album: album.data!,
+    workflow: workflow.data!,
+    workflows: [workflow.data!.id],
+    jobCount: 0,
+  };
 }
 
 async function entry(
@@ -25,25 +40,56 @@ async function entry(
   patch: Partial<Database["public"]["Tables"]["upload_jobs"]["Insert"]> | null,
   order = 0,
 ) {
-  const video = await admin.from("videos").insert({
-    owner_id: data.user.id,
-    album_id: data.album.id,
-    caption,
-    sort_order: order,
-  }).select().single();
-  expect(video.error).toBeNull();
-  if (!patch) return { video: video.data!, choice: null };
+  if (!patch) {
+    const video = await admin.from("videos").insert({
+      owner_id: data.user.id,
+      album_id: data.album.id,
+      caption,
+      sort_order: order,
+    }).select().single();
+    expect(video.error).toBeNull();
+    return { video: video.data!, choice: null };
+  }
+  if (data.jobCount > 0 && data.jobCount % 10 === 0) {
+    const next = await admin.from("upload_workflows").insert({
+      owner_id: data.user.id,
+      album_id: data.album.id,
+    }).select().single();
+    expect(next.error).toBeNull();
+    const connected = await admin.rpc("save_youtube_workflow", {
+      p_owner: data.user.id,
+      p_workflow: next.data!.id,
+      p_cipher: "synthetic-unused-refresh",
+      p_key_id: "synthetic-unused",
+      p_channel: "synthetic-channel",
+      p_title: "Synthetic",
+    });
+    expect(connected.error).toBeNull();
+    data.workflows.push(next.data!.id);
+  }
+  const workflowId = data.workflows.at(-1)!;
+  const requested = patch.requested_visibility ?? "unlisted";
+  const reserved = await admin.rpc("create_upload_job", {
+    p_owner: data.user.id,
+    p_workflow: workflowId,
+    p_key: randomUUID(),
+    p_title: "Synthetic fixture — no real upload",
+    p_description: "",
+    p_caption: caption,
+    p_visibility: requested,
+    p_public: requested === "public",
+    p_size: 1024,
+    p_hash: "a".repeat(64),
+    p_kids: false,
+  });
+  expect(reserved.error).toBeNull();
+  data.jobCount++;
   const now = new Date().toISOString();
-  const job = await admin.from("upload_jobs").insert({
-    owner_id: data.user.id,
-    album_id: data.album.id,
-    video_id: video.data!.id,
-    workflow_id: data.workflow.id,
-    idempotency_key: randomUUID(),
-    upload_title: "Synthetic fixture — no real upload",
+  // Request/confirmation fields are immutable; only trusted provider-state fixtures are patched.
+  const { requested_visibility: _visibility, public_confirmed_at: _confirmed, ...state } = patch;
+  const job = await admin.from("upload_jobs").update({
     state: "uploaded",
     provider_video_id: "synthetic01",
-    requested_visibility: "unlisted",
     effective_visibility: "unlisted",
     processing_status: "succeeded",
     verified_at: now,
@@ -51,12 +97,17 @@ async function entry(
     anonymous_playback_verified_at: now,
     verified_size_bytes: 1024,
     verified_duration_seconds: 1,
-    ...patch,
-  }).select().single();
+    ...state,
+  }).eq("id", reserved.data!).select().single();
   expect(job.error).toBeNull();
+  const video = await admin.from("videos").update({ sort_order: order }).eq(
+    "id",
+    job.data!.video_id,
+  ).select().single();
+  expect(video.error).toBeNull();
   return {
     video: video.data!,
-    choice: { videoId: video.data!.id, jobId: job.data!.id, workflowId: data.workflow.id },
+    choice: { videoId: video.data!.id, jobId: job.data!.id, workflowId },
   };
 }
 
@@ -84,6 +135,18 @@ async function resolve(page: Page, owner: string, choices: QrChoice[]) {
   }, { owner, choices });
 }
 
+test.beforeEach(async ({ page }) => {
+  // Display tests use coordinator-backed jobs; channel discovery remains a separate mocked source.
+  await page.route(
+    "**/functions/v1/channel-library",
+    (route) =>
+      route.fulfill({
+        contentType: "application/json",
+        headers: { "Access-Control-Allow-Origin": "http://127.0.0.1:5173" },
+        json: { connected: false, items: [], nextPageToken: null },
+      }),
+  );
+});
 test.afterEach(async () => {
   for (const owner of owners.splice(0)) {
     const removed = await admin.auth.admin.deleteUser(owner);
@@ -130,7 +193,10 @@ test("minimal list selects only trusted eligible uploads; order is deterministic
   await signIn(page, data.user);
   const checkboxes = page.getByRole("region", { name: "Your videos" }).getByRole("checkbox");
   await expect(checkboxes).toHaveCount(12);
-  await expect(page.getByRole("button", { name: "Upload videos" })).toBeDisabled();
+  await expect(page.getByRole("link", { name: "Upload videos", exact: true })).toHaveAttribute(
+    "href",
+    "/uploads",
+  );
   await expect(page.getByRole("heading", { name: "Compatibility tools" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /album|caption|rename|reorder/i })).toHaveCount(0);
   await expect(checkboxes.first()).toHaveAccessibleName(

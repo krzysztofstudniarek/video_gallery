@@ -10,6 +10,7 @@ import {
   useNavigate,
   useOutletContext,
 } from "react-router";
+import { stopProviderWork } from "../auth/provider-stop";
 import { rememberReturn, returnKey } from "../auth/routing-policy";
 
 type Account = { owner: string; email?: string; deleting: boolean };
@@ -159,6 +160,7 @@ export function App() {
 
   async function deleteAccount() {
     if (!confirmDelete || busy || !session) return;
+    stopProviderWork();
     const deletingSession = session;
     setLocked(true);
     setBusy(true);
@@ -220,6 +222,7 @@ export function App() {
               type="button"
               disabled={busy}
               onClick={() => {
+                stopProviderWork();
                 setLocked(true);
                 setBusy(true);
                 void leaveAccount("Signed out of this browser.");

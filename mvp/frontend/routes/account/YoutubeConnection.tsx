@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { client } from "../../auth/client";
+import { stopProviderWork } from "../../auth/provider-stop";
 import { rememberReturn } from "../../auth/routing-policy";
 
 type Connection = {
@@ -62,6 +63,7 @@ export function YoutubeConnection({ owner }: { owner: string }) {
     }
   }
   async function disconnect() {
+    stopProviderWork();
     setBusy(true);
     setMessage("");
     try {

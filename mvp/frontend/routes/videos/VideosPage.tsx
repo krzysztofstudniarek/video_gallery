@@ -164,8 +164,9 @@ function Videos({ owner }: { owner: string }) {
         Your selection stays in this tab only. Refreshing, reloading or leaving this screen clears
         it. Downloaded QR files must be kept for reprinting; the app cannot recover them later.
       </p>
-      <button type="button" disabled aria-describedby="upload-availability">Upload videos</button>
-      <p id="upload-availability">YouTube uploads are not available on this screen yet.</p>
+      <p>
+        <Link to="/uploads">Upload videos</Link>
+      </p>
       <button type="button" onClick={() => setRevision((value) => value + 1)}>
         Refresh videos
       </button>
@@ -217,6 +218,11 @@ function Videos({ owner }: { owner: string }) {
                   </label>{" "}
                   <small>({item.albumTitle})</small>
                   <p>{live ? item.status : "No active upload — QR unavailable"}</p>
+                  {item.choice && "jobId" in item.choice && (
+                    <Link to={`/workflows/${item.choice.workflowId}/print`}>
+                      Verify and download workflow
+                    </Link>
+                  )}
                 </li>
               );
             })}

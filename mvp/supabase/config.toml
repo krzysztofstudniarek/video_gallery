@@ -50,3 +50,7 @@ verify_jwt = false
 # Live Auth/session verification precedes the owner-bound credential lookup.
 [functions.channel-library]
 verify_jwt = false
+
+# Production upload metadata only; media transfers directly from the browser to YouTube.
+[functions.uploads]
+verify_jwt = false

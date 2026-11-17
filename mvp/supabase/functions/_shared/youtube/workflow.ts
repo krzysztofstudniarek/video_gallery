@@ -23,6 +23,7 @@ export async function workflowAction(
     const row = (await rpc("channel_library_context"))?.[0];
     return {
       connected: !!row,
+      workflowId: row?.workflow_id ?? null,
       channel: row ? { id: row.channel_id, title: row.channel_title } : null,
       expiresAt: row?.expires_at ?? null,
     };

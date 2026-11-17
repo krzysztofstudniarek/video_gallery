@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { checkAnonymousPlayback } from "../scripts/playback-worker.mjs";
 
 const origin = "http://127.0.0.1:5174";
 const base = process.env.ROUTING_BASE_PATH || "/";
@@ -480,4 +481,396 @@ test("Account reports local disconnect separately from pending Google revocation
   );
   await expect(page.locator("body")).not.toContainText("Workflow destination");
   await expect(page.getByRole("button", { name: "Connect YouTube", exact: true })).toBeEnabled();
+});
+
+async function uploadBackend(page: Page) {
+  await page.route("**/functions/v1/youtube", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": origin },
+      json: {
+        connected: true,
+        workflowId: owner,
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      },
+    }));
+}
+test("upload Public warning is modal, preserves prior visibility on Cancel/Escape and never initiates uploads", async ({ page }) => {
+  await signedIn(page);
+  await uploadBackend(page);
+  const actions: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().endsWith("/uploads") && request.method() === "POST") {
+      actions.push(request.postDataJSON().action);
+    }
+  });
+  await page.getByRole("link", { name: "Upload a video to YouTube" }).click();
+  const selector = page.getByLabel("YouTube visibility");
+  await expect(selector).toHaveValue("unlisted");
+  await selector.selectOption("private");
+  await selector.selectOption("public");
+  const modal = page.getByRole("dialog", { name: "Use Public visibility?" });
+  await expect(modal).toBeVisible();
+  await expect(modal).toContainText(
+    "Public videos can be found and watched by anyone on YouTube and may appear in search results or on your channel.",
+  );
+  await expect(page.getByRole("button", { name: "Cancel", exact: true })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(modal).not.toBeVisible();
+  await expect(selector).toHaveValue("private");
+  await expect(selector).toBeFocused();
+  await selector.selectOption("public");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(selector).toHaveValue("private");
+  await selector.selectOption("public");
+  await page.getByRole("button", { name: "Use Public", exact: true }).click();
+  await expect(selector).toHaveValue("public");
+  expect(actions).toEqual([]);
+  await page.getByRole("link", { name: "Home", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Stay here" })).toBeVisible();
+  await page.getByRole("button", { name: "Leave screen", exact: true }).click();
+  await page.getByRole("link", { name: "Upload a video to YouTube" }).click();
+  await expect(selector).toHaveValue("unlisted");
+  expect(actions).toEqual([]);
+});
+
+test("upload bookmarks and restored navigation only read owner state, never initiate or reuse Public confirmation", async ({ page }) => {
+  await signedIn(page);
+  await uploadBackend(page);
+  const actions: string[] = [];
+  await page.route("**/functions/v1/uploads", (route) => {
+    const action = route.request().postDataJSON().action;
+    actions.push(action);
+    return route.fulfill({
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": origin },
+      json: {
+        jobId: owner,
+        workflowId: owner,
+        state: "transferring",
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
+        requestedVisibility: "public",
+        effectiveVisibility: null,
+        pollCount: 0,
+        qrEligible: false,
+        needsAnonymousPlayback: false,
+      },
+    });
+  });
+  await page.goto(home + `uploads/${owner}`);
+  await expect(page.getByText("Upload status: transferring.", { exact: false })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Resume same upload" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Start upload", exact: true })).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Resume same upload" })).toBeDisabled();
+  await page.getByRole("link", { name: "Home", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Home", exact: true })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("button", { name: "Resume same upload" })).toBeDisabled();
+  await expect(page).toHaveURL(home + `uploads/${owner}`);
+  await expect.poll(() => actions.length).toBeGreaterThanOrEqual(3);
+  expect(actions.every((action) => action === "status")).toBe(true);
+  const stored = await page.evaluate(() =>
+    JSON.stringify({
+      url: location.href,
+      history: history.state,
+      local: { ...localStorage },
+      tab: { ...sessionStorage },
+    })
+  );
+  expect(stored).not.toContain("requestedVisibility");
+  expect(stored).not.toContain("sessionUrl");
+});
+
+test("expired upload bookmark cannot recreate work and Private completion has no QR action", async ({ page }) => {
+  await signedIn(page);
+  await uploadBackend(page);
+  await page.route(
+    "**/functions/v1/uploads",
+    (route) =>
+      route.fulfill({
+        status: 409,
+        contentType: "application/json",
+        headers: { "Access-Control-Allow-Origin": origin },
+        json: { error: "workflow_unavailable" },
+      }),
+  );
+  await page.goto(home + `uploads/${owner}`);
+  await expect(
+    page.getByText(
+      "This upload is unavailable, expired or disconnected. Its bookmark cannot recreate it.",
+    ),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /Start upload|Resume same upload|Prepare upload/ }))
+    .toHaveCount(0);
+  await page.route(
+    "**/functions/v1/uploads",
+    (route) =>
+      route.fulfill({
+        contentType: "application/json",
+        headers: { "Access-Control-Allow-Origin": origin },
+        json: {
+          jobId: owner,
+          workflowId: owner,
+          state: "completed",
+          expiresAt: new Date(Date.now() + 86400000).toISOString(),
+          requestedVisibility: "private",
+          effectiveVisibility: "private",
+          pollCount: 1,
+          qrEligible: false,
+          needsAnonymousPlayback: false,
+        },
+      }),
+  );
+  await page.reload();
+  await expect(
+    page.getByText("Private upload completed. Private videos cannot be used for QR codes."),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /print|download|QR/i })).toHaveCount(0);
+});
+
+test("preparing a synthetic video saves metadata once and opens its app bookmark without dispatching", async ({ page }) => {
+  await signedIn(page);
+  await uploadBackend(page);
+  const actions: string[] = [];
+  await page.route("**/functions/v1/uploads", (route) => {
+    const body = route.request().postDataJSON();
+    actions.push(body.action);
+    if (body.action === "create") {
+      expect(body.title).toBe("Authored title");
+      expect(body.description).toBe("Authored description");
+      expect(body.caption).toBe("Independent caption");
+      expect(body.visibility).toBe("public");
+      expect(body.confirmPublic).toBe(true);
+    }
+    return route.fulfill({
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": origin },
+      json: {
+        jobId: owner,
+        workflowId: owner,
+        state: "queued",
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
+        requestedVisibility: "public",
+        effectiveVisibility: null,
+        pollCount: 0,
+        qrEligible: false,
+        needsAnonymousPlayback: false,
+      },
+    });
+  });
+  await page.getByRole("link", { name: "Upload a video to YouTube" }).click();
+  await page.getByLabel("YouTube title").fill("Authored title");
+  await page.getByLabel("YouTube description").fill("Authored description");
+  await page.getByLabel("Album caption").fill("Independent caption");
+  await page.getByLabel("YouTube visibility").selectOption("public");
+  await page.getByRole("button", { name: "Use Public", exact: true }).click();
+  await page.getByLabel("Is this video made for children?").selectOption("false");
+  await page.getByLabel("MP4 video", { exact: true }).setInputFiles(
+    "routing-e2e/fixtures/synthetic.mp4",
+  );
+  await page.getByRole("button", { name: "Prepare upload", exact: true }).click();
+  await expect(page).toHaveURL(home + `uploads/${owner}`);
+  await expect(page.getByRole("button", { name: "Start upload", exact: true })).toBeEnabled();
+  expect(actions).toEqual(["create", "status"]);
+  await expect(page.getByRole("button", { name: "Stay here" })).toHaveCount(0);
+  const stored = await page.evaluate(() =>
+    JSON.stringify({
+      url: location.href,
+      history: history.state,
+      local: { ...localStorage },
+      tab: { ...sessionStorage },
+    })
+  );
+  expect(stored).not.toContain("Authored description");
+  expect(stored).not.toContain("synthetic.mp4");
+});
+
+test("verified workflow offers all downloads, excludes navigation from print, and purges only after explicit completion", async ({ page }) => {
+  await signedIn(page);
+  const actions: string[] = [];
+  let completed = false;
+  const destination = "https://www.youtube.com/watch?v=synthetic61";
+  await page.route("**/functions/v1/uploads", (route) => {
+    const body = route.request().postDataJSON();
+    actions.push(body.action);
+    if (body.action === "finish") {
+      expect(body.confirmSaved).toBe(true);
+      completed = true;
+    }
+    return route.fulfill({
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": origin },
+      json: body.action === "delivery"
+        ? completed ? { completed: true, workflowId: owner } : {
+          workflowId: owner,
+          expiresAt: new Date(Date.now() + 86400000).toISOString(),
+          albumId: owner,
+          albumTitle: "Synthetic album",
+          preset: 1,
+          jobs: [{
+            jobId: owner,
+            caption: "Caption <script>alert(1)</script>",
+            state: "uploaded",
+            processing: "succeeded",
+            visibility: "unlisted",
+            qrEligible: true,
+          }],
+        }
+        : body.action === "downloads"
+        ? {
+          workflowId: owner,
+          batchId: owner,
+          expiresAt: new Date(Date.now() + 240000).toISOString(),
+          albumTitle: "Synthetic album",
+          preset: 3,
+          entries: [{
+            jobId: owner,
+            videoId: owner,
+            caption: "Caption <script>alert(1)</script>",
+            visibility: "unlisted",
+            qrEligible: true,
+            destination,
+          }],
+        }
+        : { acknowledged: true, completed: body.action === "finish" },
+    });
+  });
+  await page.goto(home + `workflows/${owner}/print`);
+  await page.getByLabel("QR style").selectOption("3");
+  await page.getByRole("checkbox", { name: /I have checked the intended/ }).check();
+  await page.getByRole("button", { name: "Prepare verified files" }).click();
+  const svg = page.locator(".qr-sheet svg");
+  await expect(svg).toHaveAttribute("width", "32mm");
+  await expect(svg.locator("path")).toHaveAttribute("fill", "#1d4b35");
+  await expect(page.getByRole("button", { name: "Finish workflow" })).toBeDisabled();
+  await page.emulateMedia({ media: "print" });
+  await expect(page.getByRole("navigation")).toBeHidden();
+  await expect(svg).toBeVisible();
+  await page.emulateMedia({ media: "screen" });
+  const sheetEvent = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download A4 sheet" }).click();
+  const sheet = await sheetEvent;
+  const stream = await sheet.createReadStream();
+  let html = "";
+  for await (const chunk of stream!) html += chunk.toString();
+  await sheet.delete();
+  expect(html).toContain("size:A4");
+  expect(html).toContain("&lt;script&gt;");
+  expect(html).not.toContain("<script>");
+  expect(html).not.toContain("upload_id");
+  const codeEvent = page.waitForEvent("download");
+  await page.getByRole("button", { name: /Download SVG 1/ }).click();
+  const code = await codeEvent;
+  expect(code.suggestedFilename()).toMatch(/\.svg$/);
+  await code.delete();
+  const linksEvent = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download captions and links" }).click();
+  const links = await linksEvent;
+  const jsonStream = await links.createReadStream();
+  let json = "";
+  for await (const chunk of jsonStream!) json += chunk.toString();
+  await links.delete();
+  expect(JSON.parse(json).entries[0].youtubeWatchUrl).toBe(destination);
+  expect(JSON.parse(json).version).toBe(1);
+  await expect(page.getByRole("button", { name: "Finish workflow" })).toBeDisabled();
+  await page.getByRole("checkbox", { name: /I have saved the offered files/ }).check();
+  await page.getByRole("button", { name: "Finish workflow" }).click();
+  await expect(page.getByText(/Workflow completed. Temporary links/)).toBeVisible();
+  expect(actions.filter((action) => action === "finish")).toHaveLength(1);
+  await expect(page.locator(".qr-sheet")).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByText(/Workflow completed. Temporary links/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Prepare verified files" })).toHaveCount(0);
+  const stored = await page.evaluate(() =>
+    JSON.stringify({
+      url: location.href,
+      history: history.state,
+      local: { ...localStorage },
+      tab: { ...sessionStorage },
+    })
+  );
+  expect(stored).not.toContain("synthetic61");
+});
+
+test("Private-only workflow exports owner links but never offers a QR code or print action", async ({ page }) => {
+  await signedIn(page);
+  await page.route(
+    "**/functions/v1/uploads",
+    (route) =>
+      route.fulfill({
+        contentType: "application/json",
+        headers: { "Access-Control-Allow-Origin": origin },
+        json: route.request().postDataJSON().action === "delivery"
+          ? {
+            workflowId: owner,
+            expiresAt: new Date(Date.now() + 86400000).toISOString(),
+            albumId: owner,
+            albumTitle: "Private fixture",
+            preset: 1,
+            jobs: [{
+              jobId: owner,
+              caption: "Private",
+              state: "uploaded",
+              processing: "succeeded",
+              visibility: "private",
+              qrEligible: false,
+            }],
+          }
+          : {
+            workflowId: owner,
+            batchId: owner,
+            expiresAt: new Date(Date.now() + 240000).toISOString(),
+            albumTitle: "Private fixture",
+            preset: 1,
+            entries: [{
+              jobId: owner,
+              videoId: owner,
+              caption: "Private",
+              visibility: "private",
+              qrEligible: false,
+              destination: "https://www.youtube.com/watch?v=synthetic61",
+            }],
+          },
+      }),
+  );
+  await page.goto(home + `workflows/${owner}/print`);
+  await page.getByRole("checkbox", { name: /I have checked the intended/ }).check();
+  await page.getByRole("button", { name: "Prepare verified files" }).click();
+  await expect(page.getByRole("button", { name: "Download captions and links" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Download A4 sheet|Download SVG|Print \/ Save/ }))
+    .toHaveCount(0);
+  await expect(page.locator(".qr-sheet svg")).toHaveCount(0);
+});
+
+test("trusted verifier opens a clean context and requires actual anonymous player progress", async ({ browser }) => {
+  let anonymous = false;
+  const isolated = {
+    newContext: async (options: Parameters<typeof browser.newContext>[0]) => {
+      const context = await browser.newContext(options);
+      anonymous = (await context.cookies()).length === 0;
+      await context.route("https://www.youtube.com/iframe_api", (route) =>
+        route.fulfill({
+          contentType: "application/javascript",
+          body:
+            `globalThis.YT={Player:class {constructor(id,options){setTimeout(options.events.onReady,0)}mute(){}playVideo(){}destroy(){}getPlayerState(){return 1}getVideoUrl(){return 'https://www.youtube.com/watch?v=synthetic61'}getCurrentTime(){return performance.now()/1000}}};onYouTubeIframeAPIReady();`,
+        }));
+      return context;
+    },
+  };
+  expect(await checkAnonymousPlayback(isolated, "https://example.test", "synthetic61")).toBe(true);
+  expect(anonymous).toBe(true);
+  const denied = {
+    newContext: async (options: Parameters<typeof browser.newContext>[0]) => {
+      const context = await browser.newContext(options);
+      await context.route("https://www.youtube.com/iframe_api", (route) =>
+        route.fulfill({
+          contentType: "application/javascript",
+          body:
+            `globalThis.YT={Player:class {constructor(id,options){setTimeout(options.events.onError,0)}destroy(){}}};onYouTubeIframeAPIReady();`,
+        }));
+      return context;
+    },
+  };
+  expect(await checkAnonymousPlayback(denied, "https://example.test", "synthetic61")).toBe(false);
 });
