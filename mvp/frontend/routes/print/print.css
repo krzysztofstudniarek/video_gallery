@@ -1,0 +1,45 @@
+.qr-sheet {
+  color: #111;
+  background: white;
+}
+.qr-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 56mm);
+  gap: 8mm;
+}
+.qr-grid article {
+  width: 56mm;
+  min-height: 52mm;
+  text-align: center;
+  break-inside: avoid;
+}
+.qr-grid svg {
+  width: 32mm;
+  height: 32mm;
+}
+.qr-grid p {
+  margin: 3mm;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+@page {
+  size: A4;
+  margin: 12mm;
+}
+@media print {
+  body {
+    margin: 0;
+    background: white;
+    color: #111;
+  }
+  main > :not(.print-screen),
+  .print-controls {
+    display: none !important;
+  }
+  .qr-sheet h2 {
+    font-size: 16pt;
+  }
+  .qr-grid {
+    font: 10pt sans-serif;
+  }
+}

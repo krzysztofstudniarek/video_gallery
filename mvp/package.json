@@ -14,7 +14,7 @@
     "test:browser": "playwright test",
     "stop": "supabase stop",
     "test": "node --test scripts/*.test.mjs && deno test --allow-env tests",
-    "check": "deno check supabase/functions/compatibility/index.ts supabase/functions/share/index.ts supabase/functions/health/index.ts supabase/functions/youtube/index.ts supabase/functions/account/index.ts supabase/functions/channel-library/index.ts && tsc --noEmit && tsc --noEmit -p tsconfig.tooling.json",
+    "check": "deno check supabase/functions/uploads/index.ts supabase/functions/compatibility/index.ts supabase/functions/share/index.ts supabase/functions/health/index.ts supabase/functions/youtube/index.ts supabase/functions/account/index.ts supabase/functions/channel-library/index.ts && tsc --noEmit && tsc --noEmit -p tsconfig.tooling.json",
     "deploy:backend": "node scripts/deploy.mjs",
     "smoke:staging": "node scripts/smoke.mjs",
     "dev": "vite --host 127.0.0.1",
@@ -27,10 +27,12 @@
     "hooks:install": "git config --local core.hooksPath .githooks",
     "types:db": "node scripts/database-types.mjs",
     "types:db:check": "node scripts/database-types.mjs --check",
+    "verify:playback": "node scripts/playback-worker.mjs",
     "test:routing": "node tests/routing-browser.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",
+    "qrcode": "1.5.4",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-router": "7.18.5"
@@ -38,6 +40,7 @@
   "devDependencies": {
     "@playwright/test": "1.64.1",
     "@types/node": "22.20.5",
+    "@types/qrcode": "1.5.6",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "deno": "2.9.6",

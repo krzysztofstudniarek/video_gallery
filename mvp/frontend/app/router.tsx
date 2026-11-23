@@ -1,4 +1,6 @@
 import { createBrowserRouter } from "react-router";
+import { PrintPage } from "../routes/print/PrintPage";
+import { UploadsPage } from "../routes/uploads/UploadsPage";
 import { App } from "./App";
 import { HomePage } from "../routes/home/HomePage";
 import { VideosPage } from "../routes/videos/VideosPage";
@@ -15,6 +17,18 @@ export const router = createBrowserRouter([{
       caseSensitive: true,
       element: <VideosPage />,
       handle: { title: "Your videos" },
+    },
+    {
+      path: "uploads/:jobId?",
+      caseSensitive: true,
+      element: <UploadsPage />,
+      handle: { title: "Upload to YouTube" },
+    },
+    {
+      path: "workflows/:workflowId/print",
+      caseSensitive: true,
+      element: <PrintPage />,
+      handle: { title: "Download and print" },
     },
     {
       path: "account",

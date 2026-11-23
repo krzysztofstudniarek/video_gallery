@@ -5,6 +5,7 @@ import { browserPolicy } from "./browser-policy.mjs";
 test("production policy confines scripts and connections without inline execution or dev sockets", () => {
   const policy = browserPolicy("https://project.supabase.co");
   assert.ok(policy.includes("script-src 'self'"));
+  assert.ok(policy.includes("media-src blob:"));
   assert.ok(
     policy.includes("connect-src 'self' https://project.supabase.co https://www.googleapis.com"),
   );

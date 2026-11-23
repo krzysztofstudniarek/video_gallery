@@ -81,31 +81,28 @@ export async function resolveQrSelection(
   }
   const uploads = choices.filter((choice): choice is UploadedQrChoice => !isChannelChoice(choice));
   const current = await loadVideoLibrary(client, owner, signal);
-  const { data, error } = await client.from("qr_ready_uploads")
-    .select("id,video_id,workflow_id,provider_video_id").eq("owner_id", owner)
-    .in("id", uploads.map((choice) => choice.jobId)).abortSignal(signal);
-  if (error) throw new Error("Could not verify the QR selection. Try again.");
-  return uploads.map((choice) => {
+  for (const choice of uploads) {
     const item = current.find((item) => item.id === choice.videoId);
     const live = item && availableChoice(item, Date.now());
     if (
       !live || isChannelChoice(live) || live.jobId !== choice.jobId ||
       live.workflowId !== choice.workflowId
-    ) {
-      throw new Error("A selected video is no longer ready for QR codes.");
-    }
-    const row = data.find((candidate) =>
-      candidate.id === choice.jobId && candidate.video_id === choice.videoId &&
-      candidate.workflow_id === choice.workflowId
+    ) throw new Error("A selected video is no longer ready for QR codes.");
+  }
+  const { data, error } = await client.functions.invoke("uploads", {
+    body: { action: "destinations", choices: uploads },
+    signal,
+  });
+  signal.throwIfAborted();
+  if (error || !Array.isArray(data?.entries) || data.entries.length !== uploads.length) {
+    throw new Error("A selected video needs fresh destination and playback verification.");
+  }
+  return uploads.map((choice) => {
+    const entry = data.entries.find((entry: UploadedQrChoice) =>
+      entry.jobId === choice.jobId && entry.videoId === choice.videoId &&
+      entry.workflowId === choice.workflowId
     );
-    if (!row?.provider_video_id) {
-      throw new Error("A selected video is no longer ready for QR codes.");
-    }
-    return {
-      ...choice,
-      destination: youtubeWatchDestination(
-        `https://www.youtube.com/watch?v=${row.provider_video_id}`,
-      ),
-    };
+    if (!entry) throw new Error("A selected video is no longer ready for QR codes.");
+    return { ...choice, destination: youtubeWatchDestination(entry.destination) };
   });
 }

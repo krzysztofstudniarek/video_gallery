@@ -60,12 +60,13 @@ export async function directUpload(
   paused: () => boolean,
   send: Transport = xhrTransport,
   signal?: AbortSignal,
+  chunkSize = 256 * 1024,
 ): Promise<string | null> {
   signal?.throwIfAborted();
   const target = new URL(url);
   if (
     target.protocol !== "https:" || target.hostname !== "www.googleapis.com" || target.username ||
-    target.password || target.port || !target.pathname.startsWith("/upload/youtube/v3/videos")
+    target.password || target.port || target.pathname !== "/upload/youtube/v3/videos"
   ) throw new Error("Invalid upload destination");
   const status = await send(url, null, `bytes */${file.size}`, () => {}, signal);
   signal?.throwIfAborted();
@@ -76,7 +77,11 @@ export async function directUpload(
     );
   }
   let offset = acknowledged(status.range, file.size);
-  const chunkSize = 256 * 1024;
+  if (
+    !Number.isSafeInteger(chunkSize) || chunkSize < 256 * 1024 || chunkSize % (256 * 1024) !== 0
+  ) {
+    throw new Error("Invalid chunk size");
+  }
   while (offset < file.size) {
     if (paused()) return null;
     const end = Math.min(offset + chunkSize, file.size);
