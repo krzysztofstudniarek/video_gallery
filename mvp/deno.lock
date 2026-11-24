@@ -653,6 +653,7 @@
         "npm:@types/react-dom@19.3.0",
         "npm:@types/react@19.3.0",
         "npm:deno@2.9.6",
+        "npm:jsqr@1.4.0",
         "npm:qrcode@1.5.4",
         "npm:react-dom@19.3.1",
         "npm:react-router@7.18.5",

@@ -116,12 +116,7 @@ function Uploads({ owner }: { owner: string }) {
   useEffect(() => {
     // A hidden/restored tab must stop and revalidate explicitly before another transfer.
     const pause = () => {
-      if (document.visibilityState === "hidden") {
-        request.current?.abort();
-        active.current = false;
-        setBusy(false);
-        setMessage("Upload paused. Check its status, then resume the same job.");
-      }
+      if (document.visibilityState === "hidden") pauseWork();
     };
     const unsubscribeStop = onProviderStop(() => {
       request.current?.abort();
@@ -146,7 +141,27 @@ function Uploads({ owner }: { owner: string }) {
       document.removeEventListener("visibilitychange", pause);
       subscription.unsubscribe();
     };
-  }, [owner]);
+  }, [owner, jobId]);
+  function pauseWork() {
+    if (!active.current) return;
+    request.current?.abort();
+    active.current = false;
+    setBusy(false);
+    setMessage(
+      "Paused. Check this job before resuming; no replacement upload will start automatically.",
+    );
+    if (!jobId) return;
+    // Dispatch may have succeeded even though its reply or first chunk was interrupted.
+    // Drop the stale queued/Start action, then read the same job without polling YouTube.
+    setStatus(null);
+    const controller = new AbortController();
+    request.current = controller;
+    void uploadCall({ action: "status", jobId }, controller.signal).then(setStatus).catch(
+      (error) => {
+        if (!controller.signal.aborted) setMessage(error.message);
+      },
+    );
+  }
   function begin() {
     request.current?.abort();
     const controller = new AbortController();
@@ -447,14 +462,7 @@ function Uploads({ owner }: { owner: string }) {
       {busy && (
         <button
           type="button"
-          onClick={() => {
-            request.current?.abort();
-            active.current = false;
-            setBusy(false);
-            setMessage(
-              "Paused. Check this job before resuming; no replacement upload will start automatically.",
-            );
-          }}
+          onClick={pauseWork}
         >
           Pause
         </button>
