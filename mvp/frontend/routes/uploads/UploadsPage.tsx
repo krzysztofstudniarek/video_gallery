@@ -289,7 +289,7 @@ function Uploads({ owner }: { owner: string }) {
     <section aria-labelledby="upload-title">
       <h2 id="upload-title">Upload to YouTube</h2>
       <NavigationGuard
-        when={!preparedJob &&
+        when={!preparedJob && status?.state !== "completed" && !cancelled &&
           (busy || !!file || !!pending.current || !!title || !!description || !!caption ||
             kids !== null || visibility !== "unlisted")}
         message="Leaving pauses this upload and clears unsaved inputs. Return to this job and choose the original file to resume. Any uploaded video remains in YouTube."

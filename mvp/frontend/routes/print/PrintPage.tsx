@@ -18,6 +18,7 @@ import "./print.css";
 
 type Delivery = {
   completed?: boolean;
+  savedBatchId?: string | null;
   workflowId: string;
   expiresAt: string;
   albumId: string;
@@ -30,6 +31,7 @@ type Delivery = {
     processing: string;
     visibility: string | null;
     qrEligible: boolean;
+    verifiedAt?: string;
   }[];
 };
 function Print({ owner }: { owner: string }) {
@@ -44,14 +46,23 @@ function Print({ owner }: { owner: string }) {
   const [individual, setIndividual] = useState<string[]>([]),
     [confirm, setConfirm] = useState(false),
     [finished, setFinished] = useState(false);
+  const [savedBatchId, setSavedBatchId] = useState<string | null>(null);
   const [checked, setChecked] = useState(false);
   const controller = useRef<AbortController | null>(null), active = useRef(false);
-  const reset = () => {
+  const clearPreview = () => {
     setBatch(null);
     setSaved({ sheet: false, individual: false, links: false });
     setIndividual([]);
     setConfirm(false);
   };
+  const reset = () => {
+    clearPreview();
+    setSavedBatchId(null);
+  };
+  function receiveDelivery(result: Delivery) {
+    setDelivery(result);
+    setSavedBatchId(result.savedBatchId ?? null);
+  }
   useEffect(() => {
     const current = new AbortController();
     controller.current = current;
@@ -68,7 +79,7 @@ function Print({ owner }: { owner: string }) {
         setFinished(true);
         return;
       }
-      setDelivery(result);
+      receiveDelivery(result);
       setStyle(result.preset);
     }).catch((error) => {
       if (!current.signal.aborted) setMessage(error.message);
@@ -85,17 +96,37 @@ function Print({ owner }: { owner: string }) {
     };
   }, [owner, workflowId]);
   useEffect(() => {
+    const readiness = delivery?.jobs.filter((job) => job.qrEligible && job.verifiedAt)
+      .map((job) => Date.parse(job.verifiedAt!) + 300_000) ?? [];
     const expiry = Math.min(
       ...[delivery?.expiresAt, batch?.expiresAt].filter((x): x is string => !!x).map(Date.parse),
+      ...readiness,
     );
     if (!Number.isFinite(expiry)) return;
     const timer = setTimeout(() => {
-      reset();
-      if (delivery && Date.parse(delivery.expiresAt) <= Date.now()) setDelivery(null);
-      setMessage("Verification or workflow time expired. Recheck before generating more files.");
+      clearPreview();
+      if (delivery && Date.parse(delivery.expiresAt) <= Date.now()) {
+        setDelivery(null);
+        setSavedBatchId(null);
+        setMessage("This workflow expired. Its bookmark cannot recreate purged work.");
+      } else {
+        setDelivery((current) =>
+          current && ({
+            ...current,
+            jobs: current.jobs.map((job) => ({
+              ...job,
+              qrEligible: job.qrEligible && !!job.verifiedAt &&
+                Date.parse(job.verifiedAt) + 300_000 > Date.now(),
+            })),
+          })
+        );
+        setMessage(
+          "Verification expired. Recheck before generating more files.",
+        );
+      }
     }, Math.max(0, expiry - Date.now()));
     return () => clearTimeout(timer);
-  }, [delivery?.expiresAt, batch?.expiresAt]);
+  }, [delivery, batch?.expiresAt]);
   async function perform(task: () => Promise<void>) {
     if (active.current || controller.current?.signal.aborted) return;
     active.current = true;
@@ -125,7 +156,7 @@ function Print({ owner }: { owner: string }) {
         );
       }
     }
-    setDelivery(await call<Delivery>({ action: "delivery" }));
+    receiveDelivery(await call<Delivery>({ action: "delivery" }));
     setMessage(
       "Provider checks completed. Public/Unlisted videos also need the signed-out playback verifier before files can be prepared. Refresh readiness to check its result.",
     );
@@ -141,12 +172,18 @@ function Print({ owner }: { owner: string }) {
     reset();
     setBatch(next);
   }
-  async function acknowledge(kind: string) {
+  async function acknowledge(kind: keyof typeof saved) {
     await call({ action: "downloaded", batchId: batch!.batchId, kind });
+    const next = { ...saved, [kind]: true };
+    setSaved(next);
+    if (
+      next.links && (!batch!.entries.some((entry) => entry.qrEligible) ||
+        (next.sheet && next.individual))
+    ) setSavedBatchId(batch!.batchId);
   }
   async function finish() {
-    if (!confirm || !batch) return;
-    await call({ action: "finish", batchId: batch.batchId, confirmSaved: true });
+    if (!confirm || !savedBatchId) return;
+    await call({ action: "finish", batchId: savedBatchId, confirmSaved: true });
     controller.current?.abort();
     reset();
     setDelivery(null);
@@ -154,7 +191,6 @@ function Print({ owner }: { owner: string }) {
     setBusy(false);
   }
   const qrEntries = batch?.entries.filter((entry) => entry.qrEligible) ?? [];
-  const allSaved = saved.links && (!qrEntries.length || (saved.sheet && saved.individual));
   return (
     <section className="print-screen">
       <div className="print-controls">
@@ -196,7 +232,7 @@ function Print({ owner }: { owner: string }) {
                 disabled={busy}
                 onClick={() =>
                   void perform(async () => {
-                    setDelivery(await call<Delivery>({ action: "delivery" }));
+                    receiveDelivery(await call<Delivery>({ action: "delivery" }));
                   })}
               >
                 Refresh readiness
@@ -263,7 +299,6 @@ function Print({ owner }: { owner: string }) {
                         "text/html",
                       );
                       await acknowledge("sheet");
-                      setSaved((s) => ({ ...s, sheet: true }));
                     })}
                 >
                   Download A4 sheet
@@ -293,7 +328,6 @@ function Print({ owner }: { owner: string }) {
                             setIndividual(ids);
                             if (ids.length === qrEntries.length) {
                               await acknowledge("individual");
-                              setSaved((s) => ({ ...s, individual: true }));
                             }
                           })}
                       >
@@ -316,16 +350,22 @@ function Print({ owner }: { owner: string }) {
                     "application/json",
                   );
                   await acknowledge("links");
-                  setSaved((s) => ({ ...s, links: true }));
                 })}
             >
               Download captions and links
             </button>
+          </>
+        )}
+        {(batch || savedBatchId) && (
+          <>
+            {!batch && (
+              <p>Your file downloads were acknowledged. Confirm below to finish this workflow.</p>
+            )}
             <p>
               <label>
                 <input
                   type="checkbox"
-                  disabled={!allSaved}
+                  disabled={!savedBatchId}
                   checked={confirm}
                   onChange={(e) => setConfirm(e.target.checked)}
                 />I have saved the offered files. Finish and remove temporary provider data now.
@@ -333,7 +373,7 @@ function Print({ owner }: { owner: string }) {
             </p>
             <button
               type="button"
-              disabled={busy || !allSaved || !confirm}
+              disabled={busy || !savedBatchId || !confirm}
               onClick={() => void perform(finish)}
             >
               Finish workflow

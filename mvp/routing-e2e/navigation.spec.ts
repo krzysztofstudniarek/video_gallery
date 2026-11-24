@@ -686,7 +686,8 @@ test("preparing a synthetic video saves metadata once and opens its app bookmark
   expect(stored).not.toContain("synthetic.mp4");
 });
 
-test("verified workflow offers all downloads, excludes navigation from print, and purges only after explicit completion", async ({ page }) => {
+test("saved downloads survive verification expiry and finish only after explicit confirmation", async ({ page }) => {
+  await page.clock.install();
   await signedIn(page);
   const actions: string[] = [];
   let completed = false;
@@ -774,6 +775,12 @@ test("verified workflow offers all downloads, excludes navigation from print, an
   expect(JSON.parse(json).entries[0].youtubeWatchUrl).toBe(destination);
   expect(JSON.parse(json).version).toBe(1);
   await expect(page.getByRole("button", { name: "Finish workflow" })).toBeDisabled();
+  await page.clock.fastForward(240_001);
+  await expect(page.locator(".qr-sheet")).toHaveCount(0);
+  await expect(page.getByText(/Ready for QR/)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Download A4 sheet" })).toHaveCount(0);
+  await expect(page.getByRole("checkbox", { name: /I have saved the offered files/ }))
+    .toBeEnabled();
   await page.getByRole("checkbox", { name: /I have saved the offered files/ }).check();
   await page.getByRole("button", { name: "Finish workflow" }).click();
   await expect(page.getByText(/Workflow completed. Temporary links/)).toBeVisible();
@@ -794,6 +801,7 @@ test("verified workflow offers all downloads, excludes navigation from print, an
 });
 
 test("Private-only workflow exports owner links but never offers a QR code or print action", async ({ page }) => {
+  await page.clock.install();
   await signedIn(page);
   await page.route(
     "**/functions/v1/uploads",
@@ -841,6 +849,9 @@ test("Private-only workflow exports owner links but never offers a QR code or pr
   await expect(page.getByRole("button", { name: /Download A4 sheet|Download SVG|Print \/ Save/ }))
     .toHaveCount(0);
   await expect(page.locator(".qr-sheet svg")).toHaveCount(0);
+  await page.clock.fastForward(240_001);
+  await expect(page.getByRole("button", { name: "Download captions and links" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Finish workflow" })).toHaveCount(0);
 });
 
 test("trusted verifier opens a clean context and requires actual anonymous player progress", async ({ browser }) => {
@@ -873,4 +884,104 @@ test("trusted verifier opens a clean context and requires actual anonymous playe
     },
   };
   expect(await checkAnonymousPlayback(denied, "https://example.test", "synthetic61")).toBe(false);
+});
+
+test("QR readiness expires without preparing files", async ({ page }) => {
+  await page.clock.install();
+  const verifiedAt = new Date().toISOString();
+  await signedIn(page);
+  await page.route("**/functions/v1/uploads", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": origin },
+      json: {
+        workflowId: owner,
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
+        albumId: owner,
+        albumTitle: "Expiry test",
+        preset: 1,
+        jobs: [{
+          jobId: owner,
+          caption: "Fresh code",
+          state: "uploaded",
+          processing: "succeeded",
+          visibility: "unlisted",
+          qrEligible: true,
+          verifiedAt,
+        }],
+      },
+    }));
+  await page.goto(home + `workflows/${owner}/print`);
+  await expect(page.getByText(/Ready for QR/)).toBeVisible();
+  await page.clock.fastForward(300_001);
+  await expect(page.getByText(/Ready for QR/)).toHaveCount(0);
+  await expect(page.getByText(/uploaded — verification required/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Finish workflow" })).toHaveCount(0);
+});
+
+test("reload restores only saved completion and workflow expiry removes it", async ({ page }) => {
+  await page.clock.install();
+  const expiresAt = new Date(Date.now() + 60_000).toISOString();
+  await signedIn(page);
+  let finishes = 0;
+  await page.route("**/functions/v1/uploads", (route) => {
+    if (route.request().postDataJSON().action === "finish") finishes++;
+    return route.fulfill({
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": origin },
+      json: {
+        workflowId: owner,
+        expiresAt,
+        albumId: owner,
+        albumTitle: "Saved receipt",
+        preset: 1,
+        savedBatchId: owner,
+        jobs: [],
+      },
+    });
+  });
+  await page.goto(home + `workflows/${owner}/print`);
+  await expect(page.getByRole("checkbox", { name: /I have saved the offered files/ }))
+    .toBeEnabled();
+  await expect(page.getByRole("button", { name: "Finish workflow" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Download A4 sheet" })).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("checkbox", { name: /I have saved the offered files/ }))
+    .toBeEnabled();
+  await page.clock.fastForward(60_001);
+  await expect(page.getByRole("button", { name: "Finish workflow" })).toHaveCount(0);
+  expect(finishes).toBe(0);
+});
+
+test("a selected resume file guards active work but completed upload navigation is immediate", async ({ page }) => {
+  await signedIn(page);
+  await uploadBackend(page);
+  await page.route("**/functions/v1/uploads", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": origin },
+      json: {
+        jobId: owner,
+        workflowId: owner,
+        state: route.request().postDataJSON().action === "reconcile" ? "completed" : "transferring",
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
+        requestedVisibility: "unlisted",
+        effectiveVisibility: "unlisted",
+        pollCount: 1,
+        qrEligible: false,
+        needsAnonymousPlayback: true,
+      },
+    }));
+  await page.goto(home + `uploads/${owner}`);
+  await page.getByLabel("Reselect the original MP4 file").setInputFiles(
+    "routing-e2e/fixtures/synthetic.mp4",
+  );
+  await page.getByRole("link", { name: "Home", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Stay here" })).toBeVisible();
+  await page.getByRole("button", { name: "Stay here" }).click();
+  await page.getByRole("button", { name: "Check processing / recover completion" }).click();
+  await expect(page.getByText(/Upload status: completed/)).toBeVisible();
+  await page.getByRole("link", { name: "Home", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Home", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Stay here" })).toHaveCount(0);
 });
