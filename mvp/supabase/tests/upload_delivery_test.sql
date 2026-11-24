@@ -47,14 +47,31 @@ select ok(public.acknowledge_upload_download(owner_id,workflow_id,(select (paylo
 select ok(not public.complete_upload_delivery(owner_id,workflow_id,(select (payload->>'batchId')::uuid from batch)),'links alone cannot purge QR workflow') from fixture;
 select public.acknowledge_upload_download(owner_id,workflow_id,(select (payload->>'batchId')::uuid from batch),'sheet') from fixture;
 select public.acknowledge_upload_download(owner_id,workflow_id,(select (payload->>'batchId')::uuid from batch),'individual') from fixture;
+select is(public.upload_delivery_context(owner_id,workflow_id)->>'savedBatchId',(select payload->>'batchId' from batch),'all receipts restore completion on reload') from fixture;
+update videoalbum_private.workflow_downloads set expires_at=clock_timestamp()-interval '1 second';
+select is(public.upload_delivery_context(owner_id,workflow_id)->>'savedBatchId',(select payload->>'batchId' from batch),'saved receipt survives download expiry') from fixture;
+select ok(not public.complete_upload_delivery('00000000-0000-4000-8000-000000000062',workflow_id,(select (payload->>'batchId')::uuid from batch)),'expired completion cannot cross owners') from fixture;
 update public.videos set caption='Changed caption';
 select ok(not public.complete_upload_delivery(owner_id,workflow_id,(select (payload->>'batchId')::uuid from batch)),'changed caption invalidates downloaded snapshot') from fixture;
 update batch set payload=(select public.prepare_upload_downloads(owner_id,workflow_id) from fixture);
 update videoalbum_private.workflow_downloads set expires_at=clock_timestamp()-interval '1 second';
 select ok(not public.acknowledge_upload_download(owner_id,workflow_id,(select (payload->>'batchId')::uuid from batch),'links'),'expired batch cannot acknowledge') from fixture;
+select ok(not public.complete_upload_delivery(owner_id,workflow_id,(select (payload->>'batchId')::uuid from batch)),'expired partial receipt cannot finish') from fixture;
+select ok((public.upload_delivery_context(owner_id,workflow_id)->>'savedBatchId') is null,'partial receipt cannot restore finish') from fixture;
 update batch set payload=(select public.prepare_upload_downloads(owner_id,workflow_id) from fixture);
 select public.acknowledge_upload_download(owner_id,workflow_id,(select (payload->>'batchId')::uuid from batch),kind)
  from fixture,unnest(array['sheet','individual','links']) kind;
+update videoalbum_private.workflow_downloads set expires_at=clock_timestamp()-interval '1 second';
+select ok(not public.complete_upload_delivery(owner_id,workflow_id,'90000000-0000-4000-8000-000000000061'),'unknown batch cannot finish') from fixture;
+-- Advance fixture age as test superuser; production deadlines remain immutable.
+create temporary table original_deadline as select created_at,expires_at from public.upload_workflows;
+alter table public.upload_workflows disable trigger workflow_deadline;
+update public.upload_workflows set created_at=now()-interval '8 days',expires_at=now()-interval '1 day';
+alter table public.upload_workflows enable trigger workflow_deadline;
+select ok(not public.complete_upload_delivery(owner_id,workflow_id,(select (payload->>'batchId')::uuid from batch)),'saved files do not bypass workflow expiry') from fixture;
+alter table public.upload_workflows disable trigger workflow_deadline;
+update public.upload_workflows set (created_at,expires_at)=(select created_at,expires_at from original_deadline);
+alter table public.upload_workflows enable trigger workflow_deadline;
 select ok(public.complete_upload_delivery(owner_id,workflow_id,(select (payload->>'batchId')::uuid from batch)),'explicit completion after all receipts purges workflow') from fixture;
 select is((select count(*)::int from public.upload_jobs),0,'temporary jobs purged');
 select is((select count(*)::int from videoalbum_private.workflow_credentials),0,'temporary credentials purged');

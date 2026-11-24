@@ -177,7 +177,11 @@ provider/QR archive in browser storage or the backend. Private links may appear 
 sensitive JSON export but never in QR/print output. The chosen preset is saved in lasting app data.
 
 Before **Finish workflow**, the backend requires the batch's download acknowledgements and explicit
-saved-files confirmation. Batch snapshots include jobs, captions/order and album style, so edits or
+saved-files confirmation. Once all required downloads were acknowledged while the batch was fresh,
+completion remains available after the five-minute verification deadline, including after reload,
+until the original workflow expires. Expired evidence still cannot generate or acknowledge new
+files; its preview and QR-ready labels clear automatically. Partial download receipts cannot finish.
+Batch snapshots include jobs, captions/order and album style, so edits or
 new verification invalidate earlier acknowledgements. Successful completion erases temporary jobs,
 credentials, playback checks and download state while preserving captions and a provider-free receipt.
 Reloading a finished bookmark displays completion and cannot regenerate destinations. The video-list
