@@ -1,10 +1,15 @@
 # Production upload implementation — issue #15
 
-This branch implements the owner-scoped upload coordinator, routed transfer UI, trusted playback
-queue, direct-destination handoff and download/completion flow. **Issue #15 remains open.** Disposable
-PostgreSQL migrations, RLS/quota tests, generated types and local Auth/Edge integration were validated
-on 17 November. Actual-project uploads, deployed browser recovery, verifier operation and physical
-printed scans remain unverified. Unit and browser fixtures do not establish live provider readiness.
+The owner-scoped upload coordinator, routed transfer UI, trusted playback queue and download/
+completion flow shipped in PR #42; Issue #15 is closed. PR #43 fixed saved-download completion after
+verification expiry and stale workflow UI. On 24 November the owner confirmed a real synthetic
+Unlisted upload, trusted anonymous playback, all downloads, explicit completion and a working saved
+QR scan afterward. Public/Private provider uploads, real resumable recovery and the four-style
+physical-device matrix are still separate live gates. See the current
+[acceptance evidence and remaining test sequence](../docs/ISSUE-15-ACCEPTANCE.md).
+
+Historical local validation below remains synthetic provider evidence; it must not be confused with
+live YouTube or physical camera results.
 
 ## User flow
 
@@ -116,7 +121,7 @@ ambiguous dispatch, session binding, original-file checks, cancellation/disconne
 provider privacy/size/duration failures, Private completion and route/modal behavior. The checked-in
 2,223-byte MP4 fixture is a generated one-second blue frame, with no personal media or audio.
 
-Before enabling this as the finished #15 flow:
+Remaining release checks (see the acceptance record for the completed Unlisted path):
 
 - The disposable local database checks passed on 17 November (evidence below). Hosted rollout
   remains separate; never reset or load fixtures in the shared hosted environment.

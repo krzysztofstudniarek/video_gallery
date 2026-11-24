@@ -18,7 +18,7 @@ const notices: Record<string, string> = {
   download_batch_expired:
     "The download batch expired or its entries changed. Verify and prepare a new batch.",
   downloads_required_or_changed:
-    "Save all offered downloads and confirm before finishing. If entries changed or verification expired, prepare new files.",
+    "Save all offered downloads and confirm before finishing. If entries changed, prepare new files.",
   playback_budget_or_not_ready:
     "This video is not ready for playback verification, or its bounded verification allowance is used.",
   account_daily_quota:
