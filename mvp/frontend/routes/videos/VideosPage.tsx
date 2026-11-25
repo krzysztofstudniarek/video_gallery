@@ -3,9 +3,16 @@ import { useAppAccess } from "../../app/App";
 import { useEffect, useRef, useState } from "react";
 import { client } from "../../auth/client";
 import { NavigationGuard } from "../../app/NavigationGuard";
+import { onProviderStop } from "../../auth/provider-stop";
+import { ChannelQrDownloads } from "../print/ChannelQrDownloads";
 import { channelItems, type ChannelPage, loadChannelPage } from "./channel-library";
 import { loadVideoLibrary } from "./video-library";
-import { availableChoice, selectedChoices, type VideoItem } from "./video-selection";
+import {
+  availableChoice,
+  isChannelChoice,
+  selectedChoices,
+  type VideoItem,
+} from "./video-selection";
 
 function Videos({ owner }: { owner: string }) {
   const [items, setItems] = useState<VideoItem[] | null>(null);
@@ -31,6 +38,17 @@ function Videos({ owner }: { owner: string }) {
     setChannelRows([]);
     setChannelError("");
     setChannelLoading(true);
+    const stop = onProviderStop(() => {
+      controller.abort();
+      moreRequest.current?.abort();
+      setSelected([]);
+      setItems([]);
+      setChannelRows([]);
+      setChannel(null);
+      setChannelLoading(false);
+      setMoreLoading(false);
+      setChannelError("YouTube work stopped. Refresh videos to check access again.");
+    });
     void loadVideoLibrary(client, owner, controller.signal).then((rows) => {
       if (!controller.signal.aborted) {
         setNow(Date.now());
@@ -52,6 +70,7 @@ function Videos({ owner }: { owner: string }) {
       if (!controller.signal.aborted) setChannelLoading(false);
     });
     return () => {
+      stop();
       controller.abort();
       moreRequest.current?.abort();
     };
@@ -60,16 +79,21 @@ function Videos({ owner }: { owner: string }) {
   useEffect(() => {
     // Reload temporary channel data when returning to the page.
     const refresh = () => setRevision((value) => value + 1);
+    const focus = () => {
+      // A native Save/Print dialog can return focus between the offered downloads. Preserve
+      // that selection; each file action revalidates it. Returning from a hidden tab still resets.
+      if (!selected.some((id) => id.startsWith("channel:"))) refresh();
+    };
     const visible = () => {
       if (document.visibilityState === "visible") refresh();
     };
-    globalThis.addEventListener("focus", refresh);
+    globalThis.addEventListener("focus", focus);
     document.addEventListener("visibilitychange", visible);
     return () => {
-      globalThis.removeEventListener("focus", refresh);
+      globalThis.removeEventListener("focus", focus);
       document.removeEventListener("visibilitychange", visible);
     };
-  }, []);
+  }, [selected]);
 
   const uploadedIds = new Set(
     (items ?? []).flatMap((item) => item.providerId ? [item.providerId] : []),
@@ -152,93 +176,103 @@ function Videos({ owner }: { owner: string }) {
   }
 
   const choices = selectedChoices(rows, selected, now);
+  const channelChoices = choices.filter(isChannelChoice);
   return (
-    <section aria-labelledby="videos-title">
-      <h2 id="videos-title">Your videos</h2>
-      <NavigationGuard
-        when={choices.length > 0}
-        message="Leaving clears your current QR selection. Your saved videos are unchanged; reselect them when you return."
-      />
-      <p>Select verified videos for QR codes.</p>
-      <p>
-        Your selection stays in this tab only. Refreshing, reloading or leaving this screen clears
-        it. Downloaded QR files must be kept for reprinting; the app cannot recover them later.
-      </p>
-      <p>
-        <Link to="/uploads">Upload videos</Link>
-      </p>
-      <button type="button" onClick={() => setRevision((value) => value + 1)}>
-        Refresh videos
-      </button>
-      {channelLoading && <p role="status">Checking connected YouTube channel…</p>}
-      {channel?.connected === false && (
+    <section className="print-screen" aria-labelledby="videos-title">
+      <div className="print-controls">
+        <h2 id="videos-title">Your videos</h2>
+        <NavigationGuard
+          when={choices.length > 0}
+          message="Leaving clears your current QR selection. Your saved videos are unchanged; reselect them when you return."
+        />
+        <p>Select verified videos for QR codes.</p>
         <p>
-          <Link to="/account">Connect your YouTube channel</Link>{" "}
-          to include its existing Unlisted videos.
+          Your selection stays in this tab only. Refreshing, reloading or leaving this screen clears
+          it. Downloaded QR files must be kept for reprinting; the app cannot recover them later.
         </p>
-      )}
-      {channelError && <p role="alert">{channelError}</p>}
-      {error
-        ? <p role="alert">{error}</p>
-        : items === null || (channelLoading && rows.length === 0)
-        ? <p role="status">Loading videos…</p>
-        : rows.length === 0
-        ? (
-          <p>
-            {channel?.connected
-              ? channel.nextPageToken
-                ? "No Unlisted videos on this page. Load more to continue."
-                : "No Unlisted videos found on this channel."
-              : "No videos yet. Uploaded videos will appear here."}
-          </p>
-        )
-        : (
-          <ul>
-            {rows.map((item, index) => {
-              const label = item.caption || `Video ${index + 1}`;
-              const available = availableChoice(item, now) !== null;
-              const live = item.expiresAt !== null && item.expiresAt > now;
-              return (
-                <li key={item.id}>
-                  <label>
-                    <input
-                      type="checkbox"
-                      aria-label={`Select ${label} for QR code`}
-                      disabled={!available}
-                      checked={available && selected.includes(item.id)}
-                      onChange={(event) => {
-                        setSelected((ids) =>
-                          event.target.checked
-                            ? [...ids, item.id]
-                            : ids.filter((id) => id !== item.id)
-                        );
-                      }}
-                    />{" "}
-                    {label}
-                  </label>{" "}
-                  <small>({item.albumTitle})</small>
-                  <p>{live ? item.status : "No active upload — QR unavailable"}</p>
-                  {item.choice && "jobId" in item.choice && (
-                    <Link to={`/workflows/${item.choice.workflowId}/print`}>
-                      Verify and download workflow
-                    </Link>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      <p role="status">
-        {choices.length} {choices.length === 1 ? "video" : "videos"} selected for QR codes.
-      </p>
-      {channel?.nextPageToken && (
-        <button
-          type="button"
-          disabled={moreLoading}
-          onClick={() => void loadMore()}
-        >
-          {moreLoading ? "Loading more videos…" : "Load more YouTube videos"}
+        <p>
+          <Link to="/uploads">Upload videos</Link>
+        </p>
+        <button type="button" onClick={() => setRevision((value) => value + 1)}>
+          Refresh videos
         </button>
+        {channelLoading && <p role="status">Checking connected YouTube channel…</p>}
+        {channel?.connected === false && (
+          <p>
+            <Link to="/account">Connect your YouTube channel</Link>{" "}
+            to include its existing Unlisted videos.
+          </p>
+        )}
+        {channelError && <p role="alert">{channelError}</p>}
+        {error
+          ? <p role="alert">{error}</p>
+          : items === null || (channelLoading && rows.length === 0)
+          ? <p role="status">Loading videos…</p>
+          : rows.length === 0
+          ? (
+            <p>
+              {channel?.connected
+                ? channel.nextPageToken
+                  ? "No Unlisted videos on this page. Load more to continue."
+                  : "No Unlisted videos found on this channel."
+                : "No videos yet. Uploaded videos will appear here."}
+            </p>
+          )
+          : (
+            <ul>
+              {rows.map((item, index) => {
+                const label = item.caption || `Video ${index + 1}`;
+                const available = availableChoice(item, now) !== null;
+                const live = item.expiresAt !== null && item.expiresAt > now;
+                return (
+                  <li key={item.id}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${label} for QR code`}
+                        disabled={!available}
+                        checked={available && selected.includes(item.id)}
+                        onChange={(event) => {
+                          setSelected((ids) =>
+                            event.target.checked
+                              ? [...ids, item.id]
+                              : ids.filter((id) => id !== item.id)
+                          );
+                        }}
+                      />{" "}
+                      {label}
+                    </label>{" "}
+                    <small>({item.albumTitle})</small>
+                    <p>{live ? item.status : "No active upload — QR unavailable"}</p>
+                    {item.choice && "jobId" in item.choice && (
+                      <Link to={`/workflows/${item.choice.workflowId}/print`}>
+                        Verify and download workflow
+                      </Link>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        <p role="status">
+          {choices.length} {choices.length === 1 ? "video" : "videos"} selected for QR codes.
+        </p>
+        {channel?.nextPageToken && (
+          <button
+            type="button"
+            disabled={moreLoading}
+            onClick={() => void loadMore()}
+          >
+            {moreLoading ? "Loading more videos…" : "Load more YouTube videos"}
+          </button>
+        )}
+      </div>
+      {channelChoices.length > 0 && channel?.expiresAt && (
+        <ChannelQrDownloads
+          key={JSON.stringify(channelChoices)}
+          choices={channelChoices}
+          expiresAt={Date.parse(channel.expiresAt)}
+        />
       )}
     </section>
   );

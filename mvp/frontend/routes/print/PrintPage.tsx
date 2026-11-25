@@ -11,9 +11,9 @@ import {
   downloadFile,
   presets,
   printableSheet,
-  qrGeometry,
   qrSvg,
 } from "./artifacts";
+import { QrPreview } from "./QrPreview";
 import "./print.css";
 
 type Delivery = {
@@ -404,21 +404,4 @@ function Print({ owner }: { owner: string }) {
 export function PrintPage() {
   const { owner, canAccess } = useAppAccess();
   return owner && canAccess ? <Print key={owner} owner={owner} /> : null;
-}
-
-function QrPreview({ destination, preset }: { destination: string; preset: number }) {
-  const { view, path, ink } = qrGeometry(destination, preset);
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="32mm"
-      height="32mm"
-      viewBox={`0 0 ${view} ${view}`}
-      role="img"
-      aria-label="YouTube video QR code"
-    >
-      <rect width={view} height={view} fill="#ffffff" />
-      <path d={path} fill={ink} shapeRendering="crispEdges" />
-    </svg>
-  );
 }

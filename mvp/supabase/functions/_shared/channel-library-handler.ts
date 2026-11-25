@@ -30,7 +30,7 @@ export function channelLibraryHandler(env: Env, send: typeof fetch = fetch) {
       const input = await readJson(request) as Record<string, unknown>;
       if (
         !input || typeof input !== "object" || Array.isArray(input) ||
-        !["list", "verify"].includes(String(input.action)) ||
+        !["list", "verify", "destinations"].includes(String(input.action)) ||
         (input.workflowId !== undefined &&
           (typeof input.workflowId !== "string" || input.workflowId.length !== 36 ||
             !uuid.test(input.workflowId))) ||
@@ -39,7 +39,7 @@ export function channelLibraryHandler(env: Env, send: typeof fetch = fetch) {
       ) {
         throw new ActionError("invalid_request", 400);
       }
-      const verify = input.action === "verify";
+      const verify = input.action === "verify" || input.action === "destinations";
       if (input.pageToken !== undefined && typeof input.workflowId !== "string") {
         throw new ActionError("invalid_request", 400);
       }
@@ -145,6 +145,25 @@ export function channelLibraryHandler(env: Env, send: typeof fetch = fetch) {
       const live = await context(connection.workflow_id);
       if (!live || live.channel_id !== connection.channel_id) {
         throw new ActionError("channel_connection_expired", 409);
+      }
+      if (input.action === "destinations") {
+        // IDs/titles come only from this owner's freshly verified channel. Never accept a URL
+        // or caption from the caller, and never store this temporary download document.
+        const items = (result as { items: { id: string; title: string }[] }).items;
+        return reply({
+          workflowId: connection.workflow_id,
+          expiresAt: new Date(Math.min(
+            Date.parse(live.expires_at),
+            Date.now() + 5 * 60 * 1000,
+          )).toISOString(),
+          entries: items.map((item) => ({
+            id: item.id,
+            caption: item.title,
+            visibility: "unlisted",
+            qrEligible: true,
+            destination: `https://www.youtube.com/watch?v=${item.id}`,
+          })),
+        });
       }
       return reply({
         connected: true,

@@ -1,5 +1,13 @@
 import { client } from "../../auth/client";
 import type { ChannelQrChoice, VideoItem } from "./video-selection";
+import { youtubeWatchDestination } from "./video-selection";
+import type { PrintableEntry } from "../print/artifacts";
+
+export type ChannelDestinations = {
+  workflowId: string;
+  expiresAt: string;
+  entries: (PrintableEntry & { id: string })[];
+};
 
 export type ChannelPage = {
   connected: boolean;
@@ -50,7 +58,7 @@ export function channelItems(page: ChannelPage): VideoItem[] {
     caption: video.title,
     albumTitle: "Existing Unlisted video on YouTube",
     status: video.processed
-      ? "Unlisted — playback check required before QR download"
+      ? "Unlisted — ready to verify for QR download"
       : "Processing — QR unavailable",
     expiresAt: Date.parse(page.expiresAt!),
     source: "channel",
@@ -66,22 +74,29 @@ export async function verifyChannelSelection(
 ) {
   const workflowId = choices[0]?.workflowId;
   if (
-    !workflowId || choices.some((choice) => choice.workflowId !== workflowId)
+    !workflowId || !choices.length || choices.length > 50 ||
+    new Set(choices.map((choice) => choice.videoId)).size !== choices.length ||
+    choices.some((choice) => choice.workflowId !== workflowId)
   ) {
-    throw new Error("Select videos from one active channel connection.");
+    throw new Error("Select up to 50 distinct videos from one active channel connection.");
   }
-  const batches = [];
-  for (let index = 0; index < choices.length; index += 50) {
-    const { data, error } = await libraryClient.functions.invoke("channel-library", {
-      body: {
-        action: "verify",
-        workflowId,
-        videoIds: choices.slice(index, index + 50).map((choice) => choice.videoId),
-      },
-      signal,
-    });
-    if (error) throw new Error("A selected YouTube video is no longer available. Refresh videos.");
-    batches.push(data);
-  }
-  return { batches, requiresAnonymousPlaybackCheck: true as const };
+  signal.throwIfAborted();
+  const { data, error } = await libraryClient.functions.invoke("channel-library", {
+    body: { action: "destinations", workflowId, videoIds: choices.map((choice) => choice.videoId) },
+    signal,
+  });
+  signal.throwIfAborted();
+  const result = data as ChannelDestinations | null;
+  if (
+    error || !result || result.workflowId !== workflowId ||
+    !Number.isFinite(Date.parse(result.expiresAt)) || Date.parse(result.expiresAt) <= Date.now() ||
+    !Array.isArray(result.entries) || result.entries.length !== choices.length ||
+    result.entries.some((entry, index) =>
+      entry.id !== choices[index].videoId || typeof entry.caption !== "string" ||
+      entry.visibility !== "unlisted" || entry.qrEligible !== true ||
+      youtubeWatchDestination(entry.destination) !==
+        `https://www.youtube.com/watch?v=${choices[index].videoId}`
+    )
+  ) throw new Error("A selected YouTube video is no longer available. Refresh videos.");
+  return result;
 }

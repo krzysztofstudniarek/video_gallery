@@ -7,15 +7,19 @@ export const presets = [
   { id: 3, name: "Botanical Green", ink: "#1d4b35" },
   { id: 4, name: "Navy Minimal", ink: "#17324f" },
 ] as const;
-export type DownloadEntry = {
-  videoId: string;
-  jobId: string;
+export type PrintableEntry = {
   caption: string;
   visibility: string;
   qrEligible: boolean;
   destination: string;
 };
-export type DownloadBatch = {
+export type PrintableDocument = {
+  albumTitle: string;
+  preset: number;
+  entries: PrintableEntry[];
+};
+export type DownloadEntry = PrintableEntry & { videoId: string; jobId: string };
+export type DownloadBatch = Omit<PrintableDocument, "entries"> & {
   workflowId: string;
   batchId: string;
   expiresAt: string;
@@ -47,7 +51,7 @@ export function qrSvg(destination: string, presetId: number) {
   const { view, path, ink } = qrGeometry(destination, presetId);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="32mm" height="32mm" viewBox="0 0 ${view} ${view}" role="img" aria-label="YouTube video QR code"><rect width="${view}" height="${view}" fill="#ffffff"/><path d="${path}" fill="${ink}" shape-rendering="crispEdges"/></svg>`;
 }
-export function captionsExport(batch: DownloadBatch) {
+export function captionsExport(batch: PrintableDocument) {
   return JSON.stringify(
     {
       schema: "videoalbum.captions-and-links",
@@ -64,7 +68,7 @@ export function captionsExport(batch: DownloadBatch) {
     2,
   ) + "\n";
 }
-export function printableSheet(batch: DownloadBatch, preset: number, numbering: boolean) {
+export function printableSheet(batch: PrintableDocument, preset: number, numbering: boolean) {
   const cards = batch.entries.filter((entry) => entry.qrEligible).map((entry, index) =>
     `<article>${qrSvg(entry.destination, preset)}<p>${numbering ? `${index + 1}. ` : ""}${
       escapeMarkup(entry.caption)

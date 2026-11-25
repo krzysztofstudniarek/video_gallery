@@ -375,14 +375,27 @@ test("existing Unlisted channel videos share the list, paginate and deduplicate 
     await route.fulfill({
       contentType: "application/json",
       headers: { "Access-Control-Allow-Origin": "http://127.0.0.1:5173" },
-      body: JSON.stringify({
-        connected: true,
-        workflowId: data.workflow.id,
-        expiresAt,
-        items,
-        nextPageToken: input.pageToken ? null : "synthetic-cursor",
-        requiresAnonymousPlaybackCheck: true,
-      }),
+      body: JSON.stringify(
+        input.action === "destinations"
+          ? {
+            workflowId: data.workflow.id,
+            expiresAt,
+            entries: (input.videoIds as string[]).map((id) => ({
+              id,
+              caption: "Synthetic channel one",
+              visibility: "unlisted",
+              qrEligible: true,
+              destination: `https://www.youtube.com/watch?v=${id}`,
+            })),
+          }
+          : {
+            connected: true,
+            workflowId: data.workflow.id,
+            expiresAt,
+            items,
+            nextPageToken: input.pageToken ? null : "synthetic-cursor",
+          },
+      ),
     });
   });
   await signIn(page, data.user);
@@ -406,15 +419,20 @@ test("existing Unlisted channel videos share the list, paginate and deduplicate 
     pageToken: "synthetic-cursor",
   });
   await expect(page.getByRole("button", { name: "Load more YouTube videos" })).toHaveCount(0);
-  // The QR handoff must not convert a successful owner metadata read into anonymous playback proof.
+  // Existing Unlisted selections now resolve from trusted metadata without a playback worker.
   expect(
     await resolve(page, data.user.id, [{
       source: "channel",
       workflowId: data.workflow.id,
       videoId: "existing001",
     }]),
-  ).toBeNull();
-  expect(requests.at(-1)).toMatchObject({ action: "verify", videoIds: ["existing001"] });
+  ).toEqual([{
+    source: "channel",
+    workflowId: data.workflow.id,
+    videoId: "existing001",
+    destination: "https://www.youtube.com/watch?v=existing001",
+  }]);
+  expect(requests.at(-1)).toMatchObject({ action: "destinations", videoIds: ["existing001"] });
   expect(await page.evaluate(() => localStorage.getItem("videoalbum.auth"))).not.toContain(
     "existing001",
   );

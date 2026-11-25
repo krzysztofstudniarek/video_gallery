@@ -72,12 +72,14 @@ export async function resolveQrSelection(
   if (!choices.length) throw new Error("Select at least one ready video.");
   const channel = choices.filter(isChannelChoice);
   if (channel.length) {
-    await verifyChannelSelection(client, channel, signal);
-    // #7/#15 must complete the anonymous playback gate before enabling channel QR downloads.
-    // Never mistake successful owner-authorized metadata reads for anonymous playback evidence.
-    throw new Error(
-      "Complete the anonymous playback check before downloading channel-video QR codes.",
-    );
+    if (channel.length !== choices.length) {
+      throw new Error("Download existing channel selections separately from uploaded workflows.");
+    }
+    const verified = await verifyChannelSelection(client, channel, signal);
+    return channel.map((choice, index) => ({
+      ...choice,
+      destination: verified.entries[index].destination,
+    }));
   }
   const uploads = choices.filter((choice): choice is UploadedQrChoice => !isChannelChoice(choice));
   const current = await loadVideoLibrary(client, owner, signal);
