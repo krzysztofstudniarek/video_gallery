@@ -40,6 +40,10 @@ type Options = {
   refreshFails?: boolean;
   rotate?: boolean;
   cleanupDuringRead?: boolean;
+  cleanupDuringVerify?: boolean;
+  visibility?: string;
+  processed?: boolean;
+  videoChannel?: string;
 };
 async function fixture(options: Options = {}) {
   const calls: { url: URL; body: Record<string, unknown> }[] = [];
@@ -66,9 +70,8 @@ async function fixture(options: Options = {}) {
     }
     if (url.pathname.endsWith("/channel_library_context")) {
       assert(body.p_owner === owner);
-      assert(body.p_workflow === null || body.p_workflow === workflow);
       return Response.json(
-        live
+        live && (body.p_workflow === null || body.p_workflow === workflow)
           ? [{
             workflow_id: workflow,
             expires_at: new Date(Date.now() + (options.expired ? -1 : 3600000)).toISOString(),
@@ -122,7 +125,12 @@ async function fixture(options: Options = {}) {
         nextPageToken: "synthetic-next",
       });
     }
-    if (url.pathname.endsWith("/videos")) return Response.json({ items: [video("synthetic01")] });
+    if (url.pathname.endsWith("/videos")) {
+      if (options.cleanupDuringVerify) live = false;
+      return Response.json({
+        items: [video("synthetic01", options.visibility, options.processed, options.videoChannel)],
+      });
+    }
     throw new Error("Unexpected fixture request");
   };
   const handler = channelLibraryHandler((name) => config[name], send);
@@ -261,18 +269,84 @@ Deno.test("cleanup during discovery prevents further provider requests and disca
   assert(!f.calls.some((call) => call.url.pathname.endsWith("/videos")));
 });
 
-Deno.test("fresh selection verification cannot stand in for anonymous playback evidence", async () => {
+Deno.test("fresh selection verification uses API eligibility without requiring playback", async () => {
   const f = await fixture();
   const response = await f.handler(
     f.request({ action: "verify", workflowId: workflow, videoIds: ["synthetic01"] }),
   );
   const body = await response.json();
-  assert(response.status === 200 && body.requiresAnonymousPlaybackCheck === true);
+  assert(response.status === 200 && body.items[0].processed);
+  assert(!("requiresAnonymousPlaybackCheck" in body));
   assert(!JSON.stringify(body).includes("watch?v=") && !JSON.stringify(body).includes("sensitive"));
   const invalid = await f.handler(
     f.request({ action: "verify", workflowId: workflow, videoIds: ["synthetic02"] }),
   );
   assert(invalid.status === 409);
+});
+
+Deno.test("channel destinations contain only freshly verified canonical owner URLs and bounded expiry", async () => {
+  const f = await fixture();
+  const before = Date.now();
+  const response = await f.handler(f.request({
+    action: "destinations",
+    workflowId: workflow,
+    videoIds: ["synthetic01"],
+    owner_id: "forged-owner",
+    destination: "https://evil.test",
+    caption: "forged-caption",
+  }));
+  const body = await response.json();
+  assert(response.status === 200 && body.workflowId === workflow);
+  assert(Date.parse(body.expiresAt) > before && Date.parse(body.expiresAt) <= Date.now() + 300000);
+  assert(
+    body.entries.length === 1 &&
+      body.entries[0].destination === "https://www.youtube.com/watch?v=synthetic01",
+  );
+  assert(body.entries[0].caption === "Synthetic existing video" && body.entries[0].qrEligible);
+  assert(!JSON.stringify(body).includes("sensitive") && !JSON.stringify(body).includes("forged"));
+  assert(!f.calls.some((call) => call.url.pathname.includes("playback")));
+});
+
+Deno.test("channel downloads reject changed privacy, processing, owner/workflow and cleanup races", async () => {
+  for (
+    const options of [
+      { visibility: "private" },
+      { visibility: "public" },
+      { processed: false },
+      { videoChannel: "other-channel" },
+      { cleanupDuringVerify: true },
+      { expired: true },
+      { missing: true },
+      { wrongChannel: true },
+    ]
+  ) {
+    const f = await fixture(options);
+    const response = await f.handler(
+      f.request({ action: "destinations", workflowId: workflow, videoIds: ["synthetic01"] }),
+    );
+    assert(response.status === 409 && !(await response.text()).includes("watch?v="));
+  }
+  const f = await fixture();
+  const response = await f.handler(
+    f.request({ action: "destinations", workflowId: owner, videoIds: ["synthetic01"] }),
+  );
+  assert(
+    response.status === 409 &&
+      !f.calls.some((call) => call.url.hostname.endsWith("googleapis.com")),
+  );
+  for (
+    const videoIds of [
+      [],
+      ["synthetic01", "synthetic01"],
+      ["https://evil.test"],
+      Array.from({ length: 51 }, (_, i) => String(i).padStart(11, "0")),
+    ]
+  ) {
+    assert(
+      (await f.handler(f.request({ action: "destinations", workflowId: workflow, videoIds })))
+        .status === 400,
+    );
+  }
 });
 
 Deno.test("library bounds request sizes and rejects forged IDs/cursors before provider calls", async () => {

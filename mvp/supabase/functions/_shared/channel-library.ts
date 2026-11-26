@@ -106,7 +106,7 @@ export class ChannelLibrary {
     if (items.length !== ids.length || items.some((item) => !item.processed)) {
       throw new ActionError("channel_selection_changed", 409);
     }
-    // Metadata eligibility is distinct from the anonymous playback check owned by #7/#15.
-    return { items, requiresAnonymousPlaybackCheck: true as const };
+    // MVP eligibility uses trusted API metadata; no playback worker is required.
+    return { items };
   }
 }
