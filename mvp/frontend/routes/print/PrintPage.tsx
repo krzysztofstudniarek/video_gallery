@@ -158,7 +158,7 @@ function Print({ owner }: { owner: string }) {
     }
     receiveDelivery(await call<Delivery>({ action: "delivery" }));
     setMessage(
-      "Provider checks completed. Public/Unlisted videos also need the signed-out playback verifier before files can be prepared. Refresh readiness to check its result.",
+      "Processing and visibility checks completed. Verified Public/Unlisted videos are ready for QR files; Private videos are included only in your captions-and-links export.",
     );
   }
   async function prepare() {

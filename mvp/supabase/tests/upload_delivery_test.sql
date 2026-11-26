@@ -17,20 +17,12 @@ select ok(public.upload_delivery_context('00000000-0000-4000-8000-000000000062',
 select throws_ok($$select public.prepare_upload_downloads(owner_id,workflow_id) from fixture$$,'23514',null,'unprocessed job cannot export');
 update public.upload_jobs set state='uploaded',provider_video_id='synthetic61',effective_visibility='unlisted',
  processing_status='succeeded',channel_verified=true,verified_size_bytes=1024,verified_duration_seconds=1,verified_at=clock_timestamp();
-select throws_ok($$select public.prepare_upload_downloads(owner_id,workflow_id) from fixture$$,'23514',null,'owner metadata does not prove anonymous playback');
-select ok(public.request_upload_playback(owner_id,job_id),'preprint queues trusted playback') from fixture;
-select ok(public.claim_upload_playback('30000000-0000-4000-8000-000000000061') is not null,'worker claims bounded playback');
-select ok(not public.finish_upload_playback('30000000-0000-4000-8000-000000000062',true),'unknown worker claim cannot attest');
-update public.upload_jobs set verified_at=clock_timestamp();
-select ok(not public.finish_upload_playback('30000000-0000-4000-8000-000000000061',true),'stale playback cannot attest a changed verification');
-select ok(public.request_upload_playback(owner_id,job_id),'new verification queues safely') from fixture;
-select ok(public.claim_upload_playback('30000000-0000-4000-8000-000000000062') is not null,'new worker claim');
-select ok(public.finish_upload_playback('30000000-0000-4000-8000-000000000062',false),'failed playback recorded');
-select is((select count(*)::int from public.qr_ready_uploads),0,'failed playback blocks QR');
-select public.request_upload_playback(owner_id,job_id) from fixture;
-select public.claim_upload_playback('30000000-0000-4000-8000-000000000063');
-select ok(public.finish_upload_playback('30000000-0000-4000-8000-000000000063',true),'trusted anonymous playback succeeds');
-select is((select count(*)::int from public.qr_ready_uploads),1,'fresh trusted evidence enables QR');
+select is((select count(*)::int from public.qr_ready_uploads),1,'fresh trusted metadata enables QR without playback');
+select ok((select anonymous_playback_verified_at is null from public.upload_jobs limit 1),'no playback attestation was created');
+select ok(not public.request_upload_playback(owner_id,job_id),'retired queue request cannot enqueue work') from fixture;
+select ok(public.claim_upload_playback('30000000-0000-4000-8000-000000000061') is null,'retired worker receives no video identifiers');
+select ok(not public.finish_upload_playback('30000000-0000-4000-8000-000000000061',true),'late worker cannot mutate job snapshots');
+select is((select count(*)::int from videoalbum_private.playback_checks),0,'no queued playback work');
 select is(public.current_upload_destination(owner_id,job_id,(select video_id from public.upload_jobs where id=job_id),workflow_id),
  'https://www.youtube.com/watch?v=synthetic61','current verified job resolves directly') from fixture;
 select ok(not has_function_privilege('authenticated','public.current_upload_destination(uuid,uuid,uuid,uuid)','execute'),'destination lookup is backend-only');

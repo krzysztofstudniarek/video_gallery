@@ -185,6 +185,7 @@ async function backend() {
       id: job,
       workflow_id: workflow,
       video_id: lease,
+      channel_verified: false,
       verified_at: null as string | null,
       anonymous_playback_verified_at: null as string | null,
       state: "queued",
@@ -290,6 +291,7 @@ async function backend() {
           row.job.provider_video_id = args.p_video;
           row.job.effective_visibility = args.p_visibility;
           row.job.processing_status = args.p_processing;
+          row.job.channel_verified = args.p_channel;
           row.job.verified_size_bytes = args.p_size;
           row.job.verified_duration_seconds = args.p_duration;
           row.job.state = args.p_failure ? "failed" : "uploaded";
@@ -385,8 +387,7 @@ Deno.test("production dispatch reserves once, encrypts its capability, preserves
   assert(b.counts().initiations === 1 && b.counts().claimedCount === 1);
   const ready = await b.coordinator.act({ action: "reconcile", jobId: job, videoId: "forged-id" });
   assert(
-    "state" in ready && ready.state === "completed" && !ready.qrEligible &&
-      ready.needsAnonymousPlayback,
+    "state" in ready && ready.state === "completed" && ready.qrEligible,
   );
   assert(b.row.job.provider_video_id === video.id && !b.row.session);
   const status = JSON.stringify(await b.coordinator.act({ action: "status", jobId: job }));
@@ -463,8 +464,7 @@ Deno.test("privacy mismatch blocks readiness; a completed Private upload never b
   await c.coordinator.act(dispatch);
   const completed = await c.coordinator.act({ action: "reconcile", jobId: job });
   assert(
-    "state" in completed && completed.state === "completed" && !completed.qrEligible &&
-      !completed.needsAnonymousPlayback,
+    "state" in completed && completed.state === "completed" && !completed.qrEligible,
   );
 });
 Deno.test("production endpoint authenticates, limits request size and never reflects provider failures", async () => {
@@ -535,17 +535,12 @@ Deno.test("cancelled bookmarks return provider-free receipts and cannot recreate
   assert(!JSON.stringify(receipt).includes("cipher") && b.counts().initiations === 0);
 });
 
-Deno.test("pre-print queues privileged playback and only fresh playback can resolve direct destinations", async () => {
+Deno.test("pre-print resolves API-verified destinations without queuing or requiring playback", async () => {
   const b = await backend();
   await b.coordinator.act(dispatch);
   await b.coordinator.act({ action: "preprint", jobId: job });
-  assert(b.counts().playbackRequests === 1);
+  assert(b.counts().playbackRequests === 0 && b.row.job.anonymous_playback_verified_at === null);
   const choices = [{ jobId: job, workflowId: workflow, videoId: lease }];
-  await rejects(
-    () => b.coordinator.act({ action: "destinations", choices }),
-    "verification_required",
-  );
-  b.row.job.anonymous_playback_verified_at = new Date().toISOString();
   const result = await b.coordinator.act({ action: "destinations", choices });
   assert(result.entries[0].destination === `https://www.youtube.com/watch?v=${video.id}`);
   await rejects(
@@ -563,6 +558,42 @@ Deno.test("pre-print queues privileged playback and only fresh playback can reso
     () => b.coordinator.act({ action: "destinations", choices }),
     "verification_required",
   );
+});
+Deno.test("removing playback preserves every upload destination readiness condition", async () => {
+  for (
+    const patch of [
+      { channel_verified: false },
+      { processing_status: "processing" },
+      { state: "failed" },
+      { requested_visibility: "public", effective_visibility: "public", public_confirmed_at: null },
+      { effective_visibility: "private" },
+      { requested_visibility: "private", effective_visibility: "private" },
+      { effective_visibility: "public" },
+      { provider_video_id: null },
+      { verified_at: null },
+      { verified_at: new Date(Date.now() - 360000).toISOString() },
+      { verified_size_bytes: null },
+      { verified_size_bytes: 1073741825 },
+      { verified_duration_seconds: null },
+      { verified_duration_seconds: 601 },
+    ]
+  ) {
+    const b = await backend();
+    await b.coordinator.act(dispatch);
+    await b.coordinator.act({ action: "preprint", jobId: job });
+    Object.assign(b.row.job, patch);
+    const status = await b.coordinator.act({ action: "status", jobId: job });
+    assert("qrEligible" in status && !status.qrEligible);
+    await rejects(
+      () =>
+        b.coordinator.act({
+          action: "destinations",
+          choices: [{ jobId: job, workflowId: workflow, videoId: lease }],
+        }),
+      "verification_required",
+    );
+    assert(b.counts().playbackRequests === 0);
+  }
 });
 Deno.test("workflow finish requires explicit saved-files confirmation and all download acknowledgements", async () => {
   const b = await backend(), body = { workflowId: workflow, batchId: lease };

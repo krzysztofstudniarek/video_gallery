@@ -26,7 +26,9 @@ in YouTube can affect viewing. Changing a printed destination requires a new pri
 
 After processing, verify the expected channel/job and effective Public or Unlisted visibility
 before QR generation. Public requires explicit per-upload confirmation; Private and a visibility
-mismatch remain ineligible. Verify anonymous playback in the pre-print flow. Preserve all four
+mismatch remain ineligible. The owner removed automatic anonymous playback verification from MVP scope on 25 November
+2026. Use trusted API processing/visibility checks before printing; no worker or attestation is
+required. Owners may test their downloaded codes themselves. Preserve all four
 predefined QR styles and keep captions outside the code's quiet zone.
 
 Offer the finished QR sheet/individual codes and a versioned captions-and-links export for download

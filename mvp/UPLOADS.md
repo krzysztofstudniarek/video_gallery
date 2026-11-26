@@ -129,9 +129,9 @@ Remaining release checks (see the acceptance record for the completed Unlisted p
   historical probe's success is supporting evidence, not a completed production matrix.
 - Upload synthetic Unlisted, explicitly confirmed Public and Private media to authorized test
   accounts in the existing shared project. Record sanitized requested/effective visibility,
-  processing and anonymous-playback results only. Any privacy mismatch blocks readiness.
-- Operate and validate the trusted anonymous-playback worker described below. The implemented
-  destination handoff and download preparation reject missing/stale playback and provider evidence.
+  processing and effective-visibility results only. Any privacy mismatch blocks readiness.
+- Verify fresh API processing/visibility readiness and direct destinations without a playback worker.
+  Destination handoff and download preparation still reject missing/stale provider metadata.
 - Validate the four implemented styles on actual printed sheets with representative iPhone and
   Android cameras. The SVG/A4/JSON handoff does not complete #7's physical-scan acceptance or #8's
   independent privacy/account/lasting-data export work.
@@ -143,37 +143,33 @@ Provider references checked during implementation:
 [video resource](https://developers.google.com/youtube/v3/docs/videos), and
 [video insertion](https://developers.google.com/youtube/v3/docs/videos/insert).
 
-## Trusted playback and delivery — 13 November implementation
+## Metadata verification and delivery — 26 November 2026
 
 `/workflows/:workflowId/print` revalidates the owner and live workflow on direct loads. Navigation
-never starts uploads, player checks, downloads or completion automatically. **Verify destinations
-for printing** performs bounded authenticated provider verification for each job and queues eligible
-Public/Unlisted jobs for the trusted playback worker. Private jobs do not enter the player queue.
+never starts uploads, downloads or completion automatically. **Verify destinations for printing**
+performs bounded authenticated YouTube API verification for each job. Successfully processed,
+channel-owned Public/Unlisted videos with matching requested/effective visibility are immediately
+eligible, with per-upload confirmation required for Public. Private remains JSON-only.
 
-Run `npm run verify:playback` from a trusted local/operations runtime with `SUPABASE_URL`,
-`SUPABASE_SERVICE_ROLE_KEY` and `FRONTEND_ORIGIN` provided privately in its environment. Optionally
-set `PLAYWRIGHT_CHANNEL=chrome` to use installed Chrome. These credentials must never be shipped to
-the frontend or public logs. The command does not load shell/environment files automatically.
+Anonymous playback verification is outside the MVP. No playback worker, player probe, attestation
+or manual verification command is required for uploads or existing Unlisted channel videos. Users
+may test their saved destinations themselves; API eligibility does not guarantee playback for every
+YouTube viewer. The former `verify:playback` npm command is retired. Historical worker sources and
+past evidence are retained for reference, not as an operational prerequisite.
 
-The worker claims at most ten checks and permits at most twelve attempts/job. Each check creates a
-fresh nonpersistent browser context without sign-in state, uses the official YouTube IFrame API,
-and requires the requested video's playback clock to advance while playing. A metadata response,
-oEmbed response or owner checkbox is not playback evidence. Player/network/challenge failures fail
-closed; there is no CAPTCHA bypass or fallback to an authenticated browser. No screenshots, video
-recordings, request logs, downloads or saved media are enabled. Each context closes after a bounded
-45-second check. Only aggregate result counts are printed. A conditional result write rejects stale
-metadata, expired claims/workflows and late results after cancellation/disconnect.
+Migration `20261126000100_remove_playback_gate.sql` removes only the playback condition from the
+security-invoker readiness view. It preserves ownership/RLS, processing, channel, visibility/Public
+confirmation, five-minute freshness, size/duration limits and workflow expiry. Old queue/claim/result
+RPCs remain backend-only compatibility no-ops; pending playback work is erased, and late workers
+cannot receive provider IDs or invalidate download snapshots. Historical columns/signatures remain,
+so existing receipts and generated API types do not change.
 
-This is an explicit bounded worker command, not a hosted scheduler or a claim that Supabase Edge
-Functions can run Chromium. Pilot operation/deployment of the verifier must be established before
-calling the upload-to-print flow ready. Worker unavailability leaves codes blocked. Embedded-player
-restrictions can reject a video that is otherwise watchable directly; that conservative limitation
-needs live validation in the selected project/browser setup.
-
-Provider verification and playback evidence are fresh for at most five minutes. The download batch
-expires no later than the earliest verification deadline or original workflow deadline. New metadata
-verification invalidates older playback. Download preparation checks every remaining job; failed,
-ambiguous, unprocessed or over-limit jobs must be resolved/cancelled before completion.
+Provider metadata verification remains fresh for at most five minutes. The download batch expires
+no later than the earliest verification deadline or original workflow deadline. Download preparation
+checks every remaining job; failed, ambiguous, unprocessed or over-limit jobs must be
+resolved/cancelled before completion. Saved-file acknowledgements and explicit completion remain
+required. Deploy the migration first, then the updated uploads Edge Function, then the frontend;
+these source changes do not deploy themselves. Stop any separately operated old worker.
 
 The browser generates Classic Black, Warm Sepia, Botanical Green and Navy Minimal codes with a
 four-module quiet zone and 32 mm physical size. It offers an A4 HTML sheet for printing/Save as PDF,
@@ -225,3 +221,21 @@ All provider statuses and playback attestations in these local fixtures are synt
 browser verifier test simulates official player events; it is not evidence of real YouTube playback.
 No live Google consent, upload, provider visibility change, grant revocation, deployment or GitHub
 publication was performed during this validation. Shared hosted data was not reset or seeded.
+
+## Playback-gate removal validation — 26 November 2026
+
+Validated in a separate disposable Supabase project on local ports 55320–55326; the running
+compatibility project and shared hosted data were not reset or modified. All migrations were
+reapplied from an empty database, then the standard checks passed:
+
+- `npm run test:db`: nine files, 331 SQL/RLS checks.
+- `npm run types:db` and `npm run types:db:check`: regenerated types exactly match the checked-in
+  declarations; no public type changes.
+- `npm run test:local`: real local Auth/Edge owner isolation, API-only readiness and direct
+  destinations, download acknowledgements, completion, cancellation and expired bookmarks.
+- `PLAYWRIGHT_CHANNEL=chrome npm run test:browser`: all 17 database-backed browser cases.
+- `PLAYWRIGHT_CHANNEL=chrome npm run test:routing`: all 41 routing/download/recovery cases.
+- Formatting, lint, type checks, 82 unit/script tests and the production build passed.
+
+Upload/provider fixtures are synthetic; no live Google/YouTube media, provider settings or hosted
+configuration were changed. The separate validation stack was stopped and removed after checks.

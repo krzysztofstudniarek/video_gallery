@@ -426,7 +426,7 @@ function Uploads({ owner }: { owner: string }) {
                 ? "Private upload completed. Private videos cannot be used for QR codes."
                 : status.qrEligible
                 ? "Verified for QR downloads. Open the workflow to prepare and save your files."
-                : "Upload processing and visibility verified. Open the workflow to verify signed-out playback before generating QR codes."}
+                : "Upload processing and visibility verified. Open the workflow to prepare QR files."}
             </p>
           )}
           {["queued", "transferring"].includes(status.state) && (

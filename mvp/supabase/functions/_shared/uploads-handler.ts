@@ -29,7 +29,7 @@ type JobContext = {
     verified_size_bytes: number | null;
     verified_duration_seconds: number | null;
     verified_at: string | null;
-    anonymous_playback_verified_at: string | null;
+    channel_verified: boolean;
   };
   control: {
     declared_bytes: number;
@@ -157,6 +157,7 @@ export class UploadCoordinator {
   }
   publicStatus(c: JobContext) {
     const complete = c.job.state === "uploaded" && c.job.processing_status === "succeeded" &&
+      c.job.channel_verified &&
       c.job.effective_visibility === c.job.requested_visibility &&
       c.job.verified_size_bytes !== null &&
       c.job.verified_duration_seconds !== null && !c.control.failure_code &&
@@ -164,11 +165,11 @@ export class UploadCoordinator {
       Number(c.job.verified_size_bytes) <= c.limits.max_bytes &&
       Number(c.job.verified_duration_seconds) > 0 &&
       Number(c.job.verified_duration_seconds) <= c.limits.max_seconds;
-    const qrEligible = complete && c.job.requested_visibility !== "private" &&
+    const qrEligible = complete &&
+      ["public", "unlisted"].includes(c.job.effective_visibility ?? "") &&
+      /^[A-Za-z0-9_-]{11}$/.test(c.job.provider_video_id ?? "") &&
       (c.job.requested_visibility !== "public" || !!c.job.public_confirmed_at) &&
-      !!c.job.verified_at && Date.parse(c.job.verified_at) > Date.now() - 5 * 60 * 1000 &&
-      !!c.job.anonymous_playback_verified_at &&
-      Date.parse(c.job.anonymous_playback_verified_at) >= Date.parse(c.job.verified_at);
+      !!c.job.verified_at && Date.parse(c.job.verified_at) > Date.now() - 5 * 60 * 1000;
     return {
       jobId: c.job.id,
       workflowId: c.job.workflow_id,
@@ -187,7 +188,6 @@ export class UploadCoordinator {
       failure: c.control.failure_code,
       pollCount: c.control.poll_count,
       qrEligible,
-      needsAnonymousPlayback: complete && c.job.requested_visibility !== "private" && !qrEligible,
     };
   }
   async act(input: Record<string, unknown>) {
@@ -304,7 +304,6 @@ export class UploadCoordinator {
             ...receipt,
             expiresAt: null,
             qrEligible: false,
-            needsAnonymousPlayback: false,
             pollCount: 0,
           };
         }
@@ -431,13 +430,7 @@ export class UploadCoordinator {
       })
     ) throw new ActionError("workflow_unavailable", 409);
     const current = await this.context(job);
-    const result = this.publicStatus(current);
-    if (input.action === "preprint" && result.needsAnonymousPlayback) {
-      if (!await this.rpc("request_upload_playback", { p_job: job })) {
-        throw new ActionError("playback_budget_or_not_ready", 409);
-      }
-    }
-    return result;
+    return this.publicStatus(current);
   }
 }
 

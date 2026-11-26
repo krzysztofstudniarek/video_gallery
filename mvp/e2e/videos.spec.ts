@@ -94,7 +94,7 @@ async function entry(
     processing_status: "succeeded",
     verified_at: now,
     channel_verified: true,
-    anonymous_playback_verified_at: now,
+    anonymous_playback_verified_at: null,
     verified_size_bytes: 1024,
     verified_duration_seconds: 1,
     ...state,
@@ -176,7 +176,7 @@ test("minimal list selects only trusted eligible uploads; order is deterministic
       ["Synthetic unverified", { verified_at: null, anonymous_playback_verified_at: null }],
       ["Synthetic failed", { state: "failed", processing_status: "failed" }],
       ["Synthetic wrong channel", { channel_verified: false }],
-      ["Synthetic no playback evidence", { anonymous_playback_verified_at: null }],
+      ["Synthetic missing provider size", { verified_size_bytes: null }],
       ["Synthetic oversized", { verified_size_bytes: 1073741825 }],
       ["Synthetic too long", { verified_duration_seconds: 601 }],
     ] as const

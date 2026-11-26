@@ -97,7 +97,7 @@ export async function resolveQrSelection(
   });
   signal.throwIfAborted();
   if (error || !Array.isArray(data?.entries) || data.entries.length !== uploads.length) {
-    throw new Error("A selected video needs fresh destination and playback verification.");
+    throw new Error("A selected video needs fresh processing and visibility verification.");
   }
   return uploads.map((choice) => {
     const entry = data.entries.find((entry: UploadedQrChoice) =>
