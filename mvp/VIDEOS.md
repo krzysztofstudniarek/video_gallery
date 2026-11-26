@@ -40,7 +40,7 @@ screen.
   existing channel videos; they are never saved in lasting fields or browser storage.
 - The latest upload job per entry is chosen by `(created_at DESC, id DESC)`. Only a matching row in
   the security-invoker `qr_ready_uploads` view makes that job selectable. Pending, processing,
-  failed, Private, unverified, wrong-channel, missing-playback and over-limit jobs stay disabled. An
+  failed, Private, unverified, wrong-channel and over-limit jobs stay disabled. An
   older eligible upload is not substituted for a newer pending upload.
 - Only jobs with a live workflow can display upload state or verified visibility. At expiry an
   in-page timer hides that information and disables/clears effective selection, even while idle.
@@ -86,7 +86,7 @@ screen.
   URLs from those trusted IDs. Private, Public, missing, foreign-channel, processing, duplicate and
   malformed selections fail closed. Caller-supplied destinations and captions are ignored. This
   channel path requires no anonymous playback worker or attestation, per the MVP decision of 25
-  November 2026. It does not change the separate uploaded-video playback gate.
+  November 2026. Uploaded videos also use API eligibility without playback verification.
 - The backend returns a temporary document expiring at the earlier of five minutes or the original
   workflow deadline. Every download/print action revalidates all entries against the backend;
   changed metadata, lost authorization or changed privacy clears the preview instead of offering

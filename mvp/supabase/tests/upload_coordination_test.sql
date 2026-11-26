@@ -50,7 +50,7 @@ update videoalbum_private.upload_controls set poll_count=120,next_poll_at=null;
 select ok(not public.upload_poll_claim(owner_id,job_id),'poll budget survives refresh') from test_uploads where owner_id='00000000-0000-4000-8000-000000000051';
 select ok(public.record_upload_result(owner_id,job_id,'synthetic51','public','succeeded',true,1024,1,null),'trusted result recorded') from test_uploads where owner_id='00000000-0000-4000-8000-000000000051';
 select is((select count(*)::int from videoalbum_private.upload_sessions),0,'completed transfer session erased');
-select is((select count(*)::int from public.qr_ready_uploads),0,'metadata verification alone cannot stand in for anonymous playback');
+select is((select count(*)::int from public.qr_ready_uploads),1,'trusted processing and confirmed Public metadata enable QR without playback');
 update videoalbum_private.upload_daily set attempts=60 where bucket='project';
 select is(public.claim_upload_dispatch(owner_id,job_id,'30000000-0000-4000-8000-000000000052'),'project_daily_quota','project Pacific-day budget enforced') from test_uploads where owner_id='00000000-0000-4000-8000-000000000052';
 update videoalbum_private.upload_daily set attempts=1 where bucket='project';

@@ -670,10 +670,16 @@ test("saved downloads survive verification expiry and finish only after explicit
             destination,
           }],
         }
+        : body.action === "preprint"
+        ? { state: "completed", qrEligible: true }
         : { acknowledged: true, completed: body.action === "finish" },
     });
   });
   await page.goto(home + `workflows/${owner}/print`);
+  await page.getByRole("button", { name: "Verify destinations for printing" }).click();
+  await expect(page.getByText(/Processing and visibility checks completed/)).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("playback verifier");
+  expect(actions).toEqual(["delivery", "preprint", "delivery"]);
   await page.getByLabel("QR style").selectOption("3");
   await page.getByRole("checkbox", { name: /I have checked the intended/ }).check();
   await page.getByRole("button", { name: "Prepare verified files" }).click();

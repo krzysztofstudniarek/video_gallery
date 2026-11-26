@@ -27,7 +27,6 @@
     "hooks:install": "git config --local core.hooksPath .githooks",
     "types:db": "node scripts/database-types.mjs",
     "types:db:check": "node scripts/database-types.mjs --check",
-    "verify:playback": "node scripts/playback-worker.mjs",
     "test:routing": "node tests/routing-browser.mjs"
   },
   "dependencies": {

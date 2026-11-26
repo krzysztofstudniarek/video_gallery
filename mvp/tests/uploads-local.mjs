@@ -134,23 +134,10 @@ export async function checkUploads({ config, admin }) {
       }),
       "trusted synthetic provider result",
     );
+    const status = await invoke(a.client, { action: "status", jobId: job });
     assert(
-      (await invoke(a.client, { action: "destinations", choices })).status === 409,
-      "metadata alone cannot enable QR",
-    );
-    await checked(
-      admin.rpc("request_upload_playback", { p_owner: a.owner, p_job: job }),
-      "queue local playback fixture",
-    );
-    const claim = randomUUID();
-    const task = await checked(
-      admin.rpc("claim_upload_playback", { p_claim: claim }),
-      "claim playback fixture",
-    );
-    assert(task.jobId === job, "worker claim binds the expected job");
-    await checked(
-      admin.rpc("finish_upload_playback", { p_claim: claim, p_passed: true }),
-      "attest only synthetic local playback",
+      status.status === 200 && status.body.qrEligible,
+      "API verification enables QR without playback",
     );
     const destinations = await invoke(a.client, { action: "destinations", choices });
     assert(

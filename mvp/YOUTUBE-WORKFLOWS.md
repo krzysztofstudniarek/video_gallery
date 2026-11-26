@@ -77,8 +77,8 @@ an eligible QR code. Never change the user's choice silently.
 
 The backend must verify ownership, successful processing and effective visibility matching the
 requested visibility. Only verified Public/Unlisted can proceed to QR readiness; Private, processing
-failure or a mismatch blocks it. The existing SQL QR gate also requires trusted playback, size and
-duration checks. #15 owns the production upload selector and upload verification path; connecting a
+failure or a mismatch blocks it. The SQL QR gate also requires trusted size/duration checks and fresh metadata.
+Anonymous playback verification is outside the MVP. #15 owns the production upload selector and upload verification path; connecting a
 channel or listing existing Unlisted videos does not prove a new upload honors Public/Unlisted.
 
 ## Provider requirements and submission preparation

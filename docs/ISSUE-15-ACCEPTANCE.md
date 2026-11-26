@@ -5,6 +5,15 @@ verification expiry and stale workflow UI. Closing the implementation issue did 
 live provider/device release check. This record separates owner-reported live evidence from
 repeatable synthetic integration coverage and checks still requiring authorized test accounts/devices.
 
+## Current MVP decision — 26 November 2026
+
+Automatic anonymous playback verification is outside the MVP for uploads and existing channel
+videos. Fresh, trusted ownership/processing/visibility metadata establishes QR eligibility; Private
+remains excluded and Public still needs per-upload confirmation. The readiness migration and updated
+upload endpoint remove the worker gate; old worker RPCs are inert. Historical worker evidence below
+records past behavior and is not an MVP feature or release prerequisite. Actual QR scans remain
+manual product acceptance checks.
+
 ## Evidence recorded on 24 November 2026
 
 | Behavior | Evidence | Remaining live check |
@@ -57,13 +66,13 @@ readiness and requires investigation under the provider/project approval require
    warning and explicitly choose **Use Public** for this specific upload. Prepare/Start the synthetic
    file. Confirm processing succeeds and effective visibility is Public. Verify the final title and
    description in YouTube Studio and that the separate app caption remains in the app. Verify
-   destinations, run the trusted anonymous worker immediately, refresh readiness and download files.
+   destinations through the API processing/visibility check and download files without a worker.
    The provider's API project/approval policy may force Private; treat that as blocked, not a Public
    pass. Do not authorize or execute Public exposure on behalf of an owner without their per-upload
    approval.
 2. **Private upload.** Use a different titled synthetic job, explicitly choose Private and prepare/
    start. Confirm processing/effective Private and owner playback. A signed-out browser should not
-   play it; do not queue Private for the anonymous worker. Its owner JSON export is allowed, while
+   play it. This is an optional manual check, not an app playback gate. Its owner JSON export is allowed, while
    QR/A4/print output must exclude it, including in a mixed Public/Private workflow. A new job must
    start with Unlisted and must not inherit the earlier Public confirmation.
 3. **Pause and reload.** Use a synthetic MP4 larger than 8 MiB and throttle the browser network enough
@@ -81,15 +90,11 @@ readiness and requires investigation under the provider/project approval require
 6. **Completed navigation.** After successful processing, choose **Verify and download this workflow**
    or Home. There must be no pause warning for the completed job. Active work must still warn before
    route departure. A restored completed workflow bookmark must offer no regeneration.
-7. **Download/completion.** Enter the playback worker's credentials privately before clicking Verify;
-   wait for provider checks, run the worker, then Refresh readiness. Within five minutes prepare and
+7. **Download/completion.** Click Verify destinations for printing and wait for API checks. No
+   playback worker is required. Within five minutes prepare and
    save A4, every SVG and JSON. Wait for the enabled saved-files checkbox, let verification expire,
    reload and confirm the checkbox/Finish return without fresh QR preview. Finish only after actually
    saving the files. Reload should show completion; previously saved codes must continue working.
-
-The worker prints only aggregate counts. `checked:0` means no eligible queue entry was found; it does
-not prove playback. If it occurs immediately after a fresh successful provider check, investigate the
-queue rather than repeatedly uploading. Never paste the service-role key into chat or frontend code.
 
 ## Physical print matrix
 
@@ -112,6 +117,6 @@ the style/device matrix. That evidence is retained above without filling unspeci
 ## Operational release gates
 
 Existing quota, fixed seven-day expiry, cleanup, ownership and privileged RPC tests remain required.
-Actual-project quota contention/Pacific rollover, scheduled cleanup, original-deadline backup erasure,
-provider approval and trusted-worker operation need release evidence under #10/#11/#14/#25. This PR's
-synthetic coverage neither establishes those operational gates nor introduces a hosted worker scheduler.
+Actual-project quota contention/Pacific rollover, scheduled cleanup, original-deadline backup erasure
+and provider approval need release evidence under #10/#11/#14/#25. Playback-verifier operation is
+not an MVP gate. Synthetic coverage does not establish those independent operational checks.

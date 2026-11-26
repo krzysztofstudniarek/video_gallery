@@ -10,17 +10,14 @@ export type UploadStatus = {
   failure: string | null;
   pollCount: number;
   qrEligible: boolean;
-  needsAnonymousPlayback: boolean;
 };
 const notices: Record<string, string> = {
   verification_required:
-    "Verify every upload and wait for signed-out playback checks before preparing files. Private uploads need successful processing but never generate QR codes.",
+    "Verify every upload's processing and visibility before preparing files. Private uploads need successful processing but never generate QR codes.",
   download_batch_expired:
     "The download batch expired or its entries changed. Verify and prepare a new batch.",
   downloads_required_or_changed:
     "Save all offered downloads and confirm before finishing. If entries changed, prepare new files.",
-  playback_budget_or_not_ready:
-    "This video is not ready for playback verification, or its bounded verification allowance is used.",
   account_daily_quota:
     "Your daily upload allowance is used. Try again after midnight Pacific time.",
   project_daily_quota:

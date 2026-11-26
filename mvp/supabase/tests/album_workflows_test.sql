@@ -98,7 +98,7 @@ select is((select count(*)::int from public.qr_ready_uploads),0,'wrong channel i
 update public.upload_jobs set channel_verified=true,processing_status='processing';
 select is((select count(*)::int from public.qr_ready_uploads),0,'processing ineligible');
 update public.upload_jobs set processing_status='succeeded',anonymous_playback_verified_at=null;
-select is((select count(*)::int from public.qr_ready_uploads),0,'anonymous playback evidence required');
+select is((select count(*)::int from public.qr_ready_uploads),1,'confirmed Public remains eligible without playback evidence');
 update public.upload_jobs set anonymous_playback_verified_at=now(),verified_size_bytes=1073741825;
 select is((select count(*)::int from public.qr_ready_uploads),0,'oversized media ineligible');
 update public.upload_jobs set verified_size_bytes=1024,verified_duration_seconds=601;

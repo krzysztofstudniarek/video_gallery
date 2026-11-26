@@ -93,7 +93,8 @@ explain that limitation. Recover the same existing job/session rather than initi
 Recheck ownership, cancellation and the original deadline before further work. Restored routes and
 retries do not extend expiry, and unknown outcomes are reconciled before any new initiation.
 
-Print previews must revalidate readiness and anonymous playback through #6/#7/#15. After completion,
+Print previews must revalidate owner/workflow access and API processing/visibility readiness
+through #6/#7/#15; anonymous playback verification is outside the MVP. After completion,
 deletion or expiry, a bookmark shows a safe unavailable/completed state; it cannot regenerate purged
 QR destinations. Finished sheets and captions-and-links exports remain user-kept downloads.
 All printed QR payloads still point directly to YouTube, independently of app URLs and availability.
