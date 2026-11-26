@@ -13,6 +13,8 @@ import {
 import { stopProviderWork } from "../auth/provider-stop";
 import { rememberReturn, returnKey } from "../auth/routing-policy";
 
+import { PrintDrafts } from "./PrintDrafts";
+
 type Account = { owner: string; email?: string; deleting: boolean };
 
 export function App() {
@@ -237,18 +239,20 @@ export function App() {
                 <Link to="/account">Open Account to retry deletion or sign out.</Link>
               </p>
             )}
-            <Outlet
-              context={{
-                owner: owned?.owner ?? null,
-                canAccess: !!owned && !owned.deleting && !locked,
-                accountAvailable: !!owned || locked,
-                confirmDelete,
-                setConfirmDelete,
-                busy,
-                retryDelete: !!owned?.deleting || locked,
-                onDelete: deleteAccount,
-              } satisfies AppAccess}
-            />
+            <PrintDrafts key={`${owned?.owner}:${!!owned && !owned.deleting && !locked}`}>
+              <Outlet
+                context={{
+                  owner: owned?.owner ?? null,
+                  canAccess: !!owned && !owned.deleting && !locked,
+                  accountAvailable: !!owned || locked,
+                  confirmDelete,
+                  setConfirmDelete,
+                  busy,
+                  retryDelete: !!owned?.deleting || locked,
+                  onDelete: deleteAccount,
+                } satisfies AppAccess}
+              />
+            </PrintDrafts>
           </>
         )
         : (

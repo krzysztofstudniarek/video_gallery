@@ -4,11 +4,11 @@ import { onProviderStop } from "../../auth/provider-stop";
 import type { ChannelQrChoice } from "../videos/video-selection";
 import { type ChannelDestinations, verifyChannelSelection } from "../videos/channel-library";
 import { captionsExport, downloadFile, presets, printableSheet, qrSvg } from "./artifacts";
-import { QrPreview } from "./QrPreview";
-import "./print.css";
+import { PrintSheet } from "./PrintSheet";
+import { usePrintDrafts } from "../../app/PrintDrafts";
 
-// Selection and files live only in this mounted screen. No history, local/session storage,
-// upload jobs or persistent provider records are created for existing channel videos.
+// Files live only in this mounted screen. Safe choices live in the owner-scoped app memory.
+// No history, local/session storage, upload jobs or persistent provider records are created.
 export function ChannelQrDownloads({
   choices,
   expiresAt,
@@ -16,8 +16,12 @@ export function ChannelQrDownloads({
   choices: ChannelQrChoice[];
   expiresAt: number;
 }) {
+  const drafts = usePrintDrafts();
+  const draftKey = `channel-print:${choices[0]?.workflowId}`;
+  const draft = drafts.read<{ style: number; numbering: boolean }>(draftKey);
   const [batch, setBatch] = useState<ChannelDestinations | null>(null);
-  const [style, setStyle] = useState(1), [numbering, setNumbering] = useState(true);
+  const [style, setStyle] = useState(draft?.style ?? 1),
+    [numbering, setNumbering] = useState(draft?.numbering ?? true);
   const [busy, setBusy] = useState(false), [message, setMessage] = useState("");
   const [checked, setChecked] = useState(false), [stopped, setStopped] = useState(false);
   const controller = useRef<AbortController | null>(null), active = useRef(false);
@@ -45,6 +49,12 @@ export function ChannelQrDownloads({
     }, Math.max(0, deadline - Date.now()));
     return () => clearTimeout(timer);
   }, [deadline]);
+
+  useEffect(() => {
+    if (!stopped && !controller.current?.signal.aborted) {
+      drafts.write(draftKey, { style, numbering }, expiresAt);
+    }
+  }, [style, numbering, stopped, expiresAt]);
 
   async function perform(task: (signal: AbortSignal) => Promise<void>) {
     const signal = controller.current?.signal;
@@ -147,8 +157,15 @@ export function ChannelQrDownloads({
               disabled={busy || stopped}
               onChange={(e) => setChecked(e.target.checked)}
             />
-            I will keep these sensitive downloads for reprinting.
+            I have checked the intended destinations and access, and will keep these sensitive
+            downloads for reprinting.
           </label>
+        </p>
+        <p>
+          Before printing, open each intended video on YouTube and test viewing while signed out.
+          API processing and visibility checks cannot guarantee playback for every viewer. Keep the
+          downloaded files: after temporary provider data is removed, the app cannot regenerate this
+          selection. Returning here requires a new checklist and file preparation.
         </p>
         <button
           type="button"
@@ -200,17 +217,11 @@ export function ChannelQrDownloads({
         <p role="status">{busy ? "Checking selected videos…" : message}</p>
       </div>
       {batch && (
-        <div className="qr-sheet">
-          <h2>Selected Unlisted videos</h2>
-          <div className="qr-grid">
-            {batch.entries.map((entry, index) => (
-              <article key={entry.id}>
-                <QrPreview destination={entry.destination} preset={style} />
-                <p>{numbering ? `${index + 1}. ` : ""}{entry.caption}</p>
-              </article>
-            ))}
-          </div>
-        </div>
+        <PrintSheet
+          document={{ ...batch, albumTitle: "Selected Unlisted videos", preset: style }}
+          preset={style}
+          numbering={numbering}
+        />
       )}
     </section>
   );

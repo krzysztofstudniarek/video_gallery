@@ -175,7 +175,17 @@ The browser generates Classic Black, Warm Sepia, Botanical Green and Navy Minima
 four-module quiet zone and 32 mm physical size. It offers an A4 HTML sheet for printing/Save as PDF,
 individual SVGs and a version-1 captions-and-links JSON file. Files are generated locally, with no
 provider/QR archive in browser storage or the backend. Private links may appear in the owner's
-sensitive JSON export but never in QR/print output. The chosen preset is saved in lasting app data.
+sensitive JSON export but never in QR/print output. The chosen preset is saved in lasting app data. Style and numbering choices also survive ordinary
+app navigation in owner-scoped memory until the workflow expires. Returning revalidates delivery
+and clears prepared files and the checklist; reload resets unsaved choices. No QR artifacts,
+destinations, access confirmations or download actions are restored from a draft.
+
+Preview and standalone HTML share physical A4 styles and row grouping. Up to three short-caption
+cards share a row; captions over 240 characters use the full 184 mm row width. Rows keep codes and
+captions together across page breaks. Caption whitespace collapses on sheets to avoid blank-line
+page overflow; full original captions remain in the JSON export. Print at 100% with browser
+headers/footers disabled. Existing channel selections use the same layout and pre-print
+destination/access checklist.
 
 Before **Finish workflow**, the backend requires the batch's download acknowledgements and explicit
 saved-files confirmation. Once all required downloads were acknowledged while the batch was fresh,

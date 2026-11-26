@@ -337,7 +337,10 @@ See [the routing contract](../docs/ROUTING.md).
 
 For synthetic built-frontend checks without Supabase or Docker, run `npm run test:routing` after
 installing the Playwright browser (`npx playwright install chromium`, or use an installed Chrome
-with `PLAYWRIGHT_CHANNEL=chrome`). Check the legacy asset base with
+with `PLAYWRIGHT_CHANNEL=chrome`). The PDF print acceptance test also needs Poppler (`pdfinfo`
+and `pdftotext`; install `poppler-utils` on Ubuntu or `poppler` with Homebrew). CI installs these
+tools. It compares actual paginated A4 PDFs from the built preview and saved HTML with 50 codes,
+long/unbroken captions and excessive whitespace. Check the legacy asset base with
 `ROUTING_BASE_PATH=/video_gallery/ npm run test:routing`. These fixtures cover callback/navigation
 behavior and are not live Google/YouTube or RLS evidence. Hosted staging health/CORS and anonymous
 API boundaries are checked separately. Database-reset and fixture-deletion scripts continue to
