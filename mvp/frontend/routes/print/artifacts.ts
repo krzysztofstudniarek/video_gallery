@@ -1,3 +1,4 @@
+import sheetCss from "./print.css?inline";
 import QRCode from "qrcode";
 import { youtubeWatchDestination } from "../videos/video-selection";
 
@@ -68,17 +69,37 @@ export function captionsExport(batch: PrintableDocument) {
     2,
   ) + "\n";
 }
+// The same rows and physical CSS drive the screen preview and standalone HTML.
+// Long captions use a whole row, keeping a 2,000-character app caption and its QR
+// together within A4's printable height. Whitespace collapses to avoid blank-line overflow.
+export function sheetRows(entries: PrintableEntry[]) {
+  const rows: { entry: PrintableEntry; number: number }[][] = [];
+  entries.filter((entry) => entry.qrEligible).forEach((entry, index) => {
+    const card = { entry, number: index + 1 };
+    if (entry.caption.length > 240) rows.push([card]);
+    else {
+      const last = rows.at(-1);
+      if (last && last.length < 3 && last[0].entry.caption.length <= 240) last.push(card);
+      else rows.push([card]);
+    }
+  });
+  return rows;
+}
 export function printableSheet(batch: PrintableDocument, preset: number, numbering: boolean) {
-  const cards = batch.entries.filter((entry) => entry.qrEligible).map((entry, index) =>
-    `<article>${qrSvg(entry.destination, preset)}<p>${numbering ? `${index + 1}. ` : ""}${
-      escapeMarkup(entry.caption)
-    }</p></article>`
+  const rows = sheetRows(batch.entries).map((row) =>
+    `<div class="qr-row${row[0].entry.caption.length > 240 ? " long-caption" : ""}">${
+      row.map(({ entry, number }) =>
+        `<article>${qrSvg(entry.destination, preset)}<p>${numbering ? `${number}. ` : ""}${
+          escapeMarkup(entry.caption)
+        }</p></article>`
+      ).join("")
+    }</div>`
   ).join("");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>${
     escapeMarkup(batch.albumTitle)
-  }</title><style>@page{size:A4;margin:12mm}body{font:10pt sans-serif;margin:0;color:#111;background:white}h1{font-size:16pt}section{display:grid;grid-template-columns:repeat(3,56mm);gap:8mm}article{width:56mm;min-height:52mm;break-inside:avoid;text-align:center}svg{width:32mm;height:32mm}p{margin:3mm;overflow-wrap:anywhere;white-space:pre-wrap}</style></head><body><h1>${
+  }</title><style>${sheetCss}</style></head><body><div class="qr-sheet"><h2>${
     escapeMarkup(batch.albumTitle)
-  }</h1><section>${cards}</section></body></html>`;
+  }</h2>${rows}</div></body></html>`;
 }
 export function downloadFile(name: string, content: string, type: string) {
   const url = URL.createObjectURL(new Blob([content], { type }));

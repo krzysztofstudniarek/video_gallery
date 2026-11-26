@@ -2,7 +2,7 @@ import { Link } from "react-router";
 import { useAppAccess } from "../../app/App";
 import { useEffect, useRef, useState } from "react";
 import { client } from "../../auth/client";
-import { NavigationGuard } from "../../app/NavigationGuard";
+import { usePrintDrafts } from "../../app/PrintDrafts";
 import { onProviderStop } from "../../auth/provider-stop";
 import { ChannelQrDownloads } from "../print/ChannelQrDownloads";
 import { channelItems, type ChannelPage, loadChannelPage } from "./channel-library";
@@ -15,8 +15,11 @@ import {
 } from "./video-selection";
 
 function Videos({ owner }: { owner: string }) {
+  const drafts = usePrintDrafts();
+  const restored = useRef(drafts.read<{ selected: string[]; pages: number }>("videos"));
+  const [pages, setPages] = useState(1);
   const [items, setItems] = useState<VideoItem[] | null>(null);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(restored.current?.selected ?? []);
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
   const [now, setNow] = useState(Date.now);
@@ -30,7 +33,12 @@ function Videos({ owner }: { owner: string }) {
   useEffect(() => {
     const controller = new AbortController();
     setItems(null);
-    setSelected([]);
+    if (revision > 0) {
+      setSelected([]);
+      restored.current = undefined;
+      drafts.remove("videos");
+    }
+    setPages(1);
     setError("");
     moreRequest.current?.abort();
     setMoreLoading(false);
@@ -41,6 +49,8 @@ function Videos({ owner }: { owner: string }) {
     const stop = onProviderStop(() => {
       controller.abort();
       moreRequest.current?.abort();
+      drafts.remove("videos");
+      restored.current = undefined;
       setSelected([]);
       setItems([]);
       setChannelRows([]);
@@ -57,10 +67,21 @@ function Videos({ owner }: { owner: string }) {
     }).catch(() => {
       if (!controller.signal.aborted) setError("Could not load videos. Try again.");
     });
-    void loadChannelPage(controller.signal).then((page) => {
+    void (async () => {
+      let page = await loadChannelPage(controller.signal);
+      const rows = channelItems(page);
+      let count = 1;
+      while (page.nextPageToken && count < (restored.current?.pages ?? 1)) {
+        page = await loadChannelPage(controller.signal, page);
+        rows.push(...channelItems(page));
+        count++;
+      }
+      return { page, rows, count };
+    })().then(({ page, rows, count }) => {
       if (!controller.signal.aborted) {
         setChannel(page);
-        setChannelRows(channelItems(page));
+        setChannelRows([...new Map(rows.map((item) => [item.id, item])).values()]);
+        setPages(count);
       }
     }).catch(() => {
       if (!controller.signal.aborted) {
@@ -147,6 +168,21 @@ function Videos({ owner }: { owner: string }) {
     return () => clearTimeout(timer);
   }, [items, channelRows, channel, now]);
 
+  useEffect(() => {
+    if (items === null || channelLoading) return;
+    const valid = selected.filter((id) =>
+      rows.some((item) => item.id === id && availableChoice(item, Date.now()))
+    );
+    if (valid.length !== selected.length) setSelected(valid);
+    const expiry = Math.min(
+      ...rows.filter((item) => valid.includes(item.id)).map((item) => item.expiresAt ?? 0),
+    );
+    if (valid.length && !error && !channelError) {
+      drafts.write("videos", { selected: valid, pages }, expiry);
+    } else drafts.remove("videos");
+    restored.current = undefined;
+  }, [items, channelLoading, channelRows, selected, pages, error, channelError]);
+
   async function loadMore() {
     if (moreLoading || !channel?.nextPageToken) return;
     const controller = new AbortController();
@@ -157,6 +193,7 @@ function Videos({ owner }: { owner: string }) {
       const page = await loadChannelPage(controller.signal, channel);
       if (!controller.signal.aborted) {
         setChannel(page);
+        setPages((value) => value + 1);
         setChannelRows((
           rows,
         ) => [
@@ -181,14 +218,12 @@ function Videos({ owner }: { owner: string }) {
     <section className="print-screen" aria-labelledby="videos-title">
       <div className="print-controls">
         <h2 id="videos-title">Your videos</h2>
-        <NavigationGuard
-          when={choices.length > 0}
-          message="Leaving clears your current QR selection. Your saved videos are unchanged; reselect them when you return."
-        />
         <p>Select verified videos for QR codes.</p>
         <p>
-          Your selection stays in this tab only. Refreshing, reloading or leaving this screen clears
-          it. Downloaded QR files must be kept for reprinting; the app cannot recover them later.
+          Your selection and print choices stay in this tab during app navigation until the workflow
+          expires. Returning checks eligibility again and clears prepared files and the checklist.
+          Reloading or refreshing clears the selection; select videos again. Downloaded QR files
+          must be kept for reprinting; the app cannot recover them later.
         </p>
         <p>
           <Link to="/uploads">Upload videos</Link>

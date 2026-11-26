@@ -20,11 +20,14 @@ album controls now.
 The [shared navigation layer](../docs/ROUTING.md) mounts this screen at `/videos`, using the router
 from #26. Home remains the post-login default unless a valid bookmark takes precedence. Direct
 loads, reloads and Back/Forward respect the current verified account and workflow expiry.
-Selection/provider data stays in memory, never in route URLs or browser history; refreshing,
-reloading and leaving the screen clear selection. The screen explains that downloaded QR files must
-be kept for reprinting because the app cannot recover them later. Navigation away from a selection
-requires the shared leave confirmation. This integration adds no album CRUD or public sharing
-screen.
+Selection IDs and print choices stay in owner-scoped app memory across ordinary in-app navigation,
+never in route URLs, history or browser storage. Returning reloads the video list (including
+previously loaded channel pages) and keeps only eligible selections. Refreshing or reloading clears
+selection. Workflow expiry, disconnect, sign-out, deletion and owner changes clear memory drafts.
+The screen explains that downloaded QR files must be kept for reprinting because the app cannot
+recover them later. Prepared QR files and pre-print confirmations are discarded when leaving;
+returning never prepares files, downloads, finishes a workflow or starts uploads automatically.
+This integration adds no album CRUD or public sharing screen.
 
 - `frontend/routes/videos/VideosPage.tsx` mounts only for the currently verified, non-deleting
   account. Its owner key resets private state on account changes; sign-out and pending deletion
@@ -149,7 +152,7 @@ selection through this view; browser checks assert one list database request and
 loading/error/expiry coverage.
 
 `npm run test:routing` runs without Docker using labeled synthetic backend responses. It covers
-direct `/videos` entry, reload, Back/Forward, leave confirmation, private-state clearing after
+direct `/videos` entry, reload, safe draft restoration through Back/Forward, private-state clearing after
 sign-out, and discovery/pagination responses crossing workflow expiry. These browser mocks
 complement the SQL/direct-API isolation suite; they are not evidence of database authorization. The
 channel-download browser scenarios exercise all four styles, selected-only ordering, escaped

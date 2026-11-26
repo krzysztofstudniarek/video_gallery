@@ -1,45 +1,76 @@
-.qr-sheet {
-  color: #111;
-  background: white;
-}
-.qr-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 56mm);
-  gap: 8mm;
-}
-.qr-grid article {
-  width: 56mm;
-  min-height: 52mm;
-  text-align: center;
-  break-inside: avoid;
-}
-.qr-grid svg {
-  width: 32mm;
-  height: 32mm;
-}
-.qr-grid p {
-  margin: 3mm;
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
-}
 @page {
   size: A4;
   margin: 12mm;
 }
+.qr-sheet {
+  width: 184mm;
+  max-width: none;
+  color: #111;
+  background: #fff;
+  font: 10pt Arial,sans-serif;
+}
+.qr-sheet h2 {
+  font-size: 16pt;
+  line-height: 1.2;
+  margin: 0 0 8mm;
+  overflow-wrap: anywhere;
+}
+.qr-row {
+  display: block;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin: 0 0 8mm;
+  white-space: nowrap;
+}
+.qr-row article {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 56mm;
+  margin: 0 8mm 0 0;
+  vertical-align: top;
+  text-align: center;
+  white-space: normal;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.qr-row article:last-child {
+  margin-right: 0;
+}
+.qr-row.long-caption article {
+  width: 184mm;
+}
+.qr-sheet svg {
+  display: block;
+  width: 32mm;
+  height: 32mm;
+  margin: 0 auto;
+}
+.qr-sheet article p {
+  font-size: 10pt;
+  line-height: 1.3;
+  margin: 3mm 0 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
 @media print {
+  html,
   body {
     margin: 0;
-    background: white;
+    padding: 0;
+    background: #fff;
     color: #111;
+  }
+  main {
+    margin: 0;
+    padding: 0;
+    max-width: none;
   }
   main > :not(.print-screen),
   .print-controls {
-    display: none !important;
+    display: none!important;
   }
-  .qr-sheet h2 {
-    font-size: 16pt;
-  }
-  .qr-grid {
-    font: 10pt sans-serif;
+  .qr-sheet {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 }

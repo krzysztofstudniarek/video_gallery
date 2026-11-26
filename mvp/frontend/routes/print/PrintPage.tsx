@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router";
 import { useAppAccess } from "../../app/App";
 import { client } from "../../auth/client";
 import { onProviderStop } from "../../auth/provider-stop";
-import { NavigationGuard } from "../../app/NavigationGuard";
+import { usePrintDrafts } from "../../app/PrintDrafts";
 import { uploadCall } from "../uploads/upload-client";
 import {
   captionsExport,
@@ -13,8 +13,7 @@ import {
   printableSheet,
   qrSvg,
 } from "./artifacts";
-import { QrPreview } from "./QrPreview";
-import "./print.css";
+import { PrintSheet } from "./PrintSheet";
 
 type Delivery = {
   completed?: boolean;
@@ -36,6 +35,8 @@ type Delivery = {
 };
 function Print({ owner }: { owner: string }) {
   const { workflowId } = useParams();
+  const drafts = usePrintDrafts();
+  const draftKey = `print:${workflowId}`;
   const [delivery, setDelivery] = useState<Delivery | null>(null),
     [batch, setBatch] = useState<DownloadBatch | null>(null);
   const [style, setStyle] = useState(1),
@@ -69,6 +70,7 @@ function Print({ owner }: { owner: string }) {
     reset();
     setDelivery(null);
     setFinished(false);
+    setChecked(false);
     setMessage("");
     if (!workflowId || !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(workflowId)) {
       setMessage("This workflow bookmark is invalid.");
@@ -76,16 +78,20 @@ function Print({ owner }: { owner: string }) {
     }
     void uploadCall<Delivery>({ action: "delivery", workflowId }, current.signal).then((result) => {
       if (result.completed) {
+        drafts.remove(draftKey);
         setFinished(true);
         return;
       }
       receiveDelivery(result);
-      setStyle(result.preset);
+      const draft = drafts.read<{ style: number; numbering: boolean }>(draftKey);
+      setStyle(draft?.style ?? result.preset);
+      setNumbering(draft?.numbering ?? true);
     }).catch((error) => {
       if (!current.signal.aborted) setMessage(error.message);
     });
     const stop = onProviderStop(() => {
       current.abort();
+      drafts.remove(draftKey);
       setDelivery(null);
       reset();
       setMessage("This workflow stopped. Reload to revalidate account access.");
@@ -127,6 +133,11 @@ function Print({ owner }: { owner: string }) {
     }, Math.max(0, expiry - Date.now()));
     return () => clearTimeout(timer);
   }, [delivery, batch?.expiresAt]);
+  useEffect(() => {
+    if (delivery && !finished && !controller.current?.signal.aborted) {
+      drafts.write(draftKey, { style, numbering }, Date.parse(delivery.expiresAt));
+    }
+  }, [delivery, style, numbering, finished]);
   async function perform(task: () => Promise<void>) {
     if (active.current || controller.current?.signal.aborted) return;
     active.current = true;
@@ -185,6 +196,7 @@ function Print({ owner }: { owner: string }) {
     if (!confirm || !savedBatchId) return;
     await call({ action: "finish", batchId: savedBatchId, confirmSaved: true });
     controller.current?.abort();
+    drafts.remove(draftKey);
     reset();
     setDelivery(null);
     setFinished(true);
@@ -195,10 +207,11 @@ function Print({ owner }: { owner: string }) {
     <section className="print-screen">
       <div className="print-controls">
         <h2>Download and print</h2>
-        <NavigationGuard
-          when={!!batch && !finished}
-          message="Leaving clears this preview. Keep downloaded files for reprinting; return here to revalidate before generating new files."
-        />
+        <p>
+          Style and numbering survive app navigation in this tab until expiry. Returning rechecks
+          access and clears the preview and checklist. Reloading resets unsaved choices. Downloaded
+          files remain your source for reprinting.
+        </p>
         <p>
           Codes open YouTube directly. Anyone with an Unlisted link can watch and share it. Private
           videos are excluded from QR codes.
@@ -386,17 +399,7 @@ function Print({ owner }: { owner: string }) {
         </p>
       </div>
       {batch && qrEntries.length > 0 && (
-        <div className="qr-sheet">
-          <h2>{batch.albumTitle}</h2>
-          <div className="qr-grid">
-            {qrEntries.map((entry, index) => (
-              <article key={entry.jobId}>
-                <QrPreview destination={entry.destination} preset={style} />
-                <p>{numbering ? `${index + 1}. ` : ""}{entry.caption}</p>
-              </article>
-            ))}
-          </div>
-        </div>
+        <PrintSheet document={batch} preset={style} numbering={numbering} />
       )}
     </section>
   );

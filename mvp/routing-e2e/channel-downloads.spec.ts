@@ -52,7 +52,8 @@ async function setup(page: Page, lifetime = 3600000) {
     exact: true,
   }).check();
   await page.getByRole("checkbox", {
-    name: "I will keep these sensitive downloads for reprinting.",
+    name:
+      "I have checked the intended destinations and access, and will keep these sensitive downloads for reprinting.",
   }).check();
   return {
     requests,
@@ -184,6 +185,118 @@ test("changing channel selection invalidates prepared files", async ({ page }) =
     .check();
   await expect(page.locator(".qr-sheet")).toHaveCount(0);
   await expect(
-    page.getByRole("checkbox", { name: "I will keep these sensitive downloads for reprinting." }),
+    page.getByRole("checkbox", {
+      name:
+        "I have checked the intended destinations and access, and will keep these sensitive downloads for reprinting.",
+    }),
   ).not.toBeChecked();
+});
+
+test("navigation restores choices after fresh list checks, but never files or the checklist", async ({ page }) => {
+  const f = await setup(page);
+  await page.getByRole("combobox", { name: "QR style", exact: true }).selectOption("4");
+  await page.getByRole("checkbox", { name: "Number codes", exact: true }).uncheck();
+  await page.getByRole("button", { name: "Prepare selected Unlisted QR files" }).click();
+  await expect(page.locator(".qr-sheet article")).toHaveCount(2);
+  const calls = f.requests.length;
+  let downloads = 0;
+  page.on("download", () => downloads++);
+  await page.getByRole("link", { name: "Home", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Home", exact: true })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByText("2 videos selected for QR codes.")).toBeVisible();
+  expect(f.requests.length).toBeGreaterThan(calls);
+  await expect(page.getByRole("combobox", { name: "QR style", exact: true })).toHaveValue("4");
+  await expect(page.getByRole("checkbox", { name: "Number codes", exact: true })).not.toBeChecked();
+  await expect(page.getByRole("checkbox", { name: /I have checked the intended/ })).not
+    .toBeChecked();
+  await expect(page.getByRole("button", { name: "Prepare selected Unlisted QR files" }))
+    .toBeDisabled();
+  await expect(page.locator(".qr-sheet")).toHaveCount(0);
+  expect(downloads).toBe(0);
+  expect(f.requests.filter((r) => r.action === "destinations")).toHaveLength(1);
+  await page.reload();
+  await expect(page.getByText("0 videos selected for QR codes.")).toBeVisible();
+});
+
+for (const event of ["expiry", "disconnect", "ineligible"] as const) {
+  test(`${event} while away cannot resurrect an old selection`, async ({ page }) => {
+    await page.clock.install();
+    await setup(page, 60000);
+    await page.getByRole("link", { name: "Home", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Home", exact: true })).toBeVisible();
+    if (event === "expiry") await page.clock.fastForward(60001);
+    if (event === "disconnect") {
+      await page.evaluate(() => {
+        const channel = new BroadcastChannel("videoalbum:stop-provider");
+        channel.postMessage("stop");
+        channel.close();
+      });
+    }
+    if (event === "ineligible") {
+      await page.route("**/functions/v1/channel-library", (route) =>
+        route.fulfill({
+          contentType: "application/json",
+          headers: { "Access-Control-Allow-Origin": origin },
+          json: {
+            connected: true,
+            workflowId: owner,
+            expiresAt: new Date(Date.now() + 60000).toISOString(),
+            items: [],
+            nextPageToken: null,
+          },
+        }));
+    }
+    await page.goBack();
+    await expect(page.getByText("0 videos selected for QR codes.")).toBeVisible();
+    await expect(page.locator(".qr-sheet")).toHaveCount(0);
+  });
+}
+
+test("returning reloads previous channel pages and retains only currently eligible selections", async ({ page }) => {
+  await signedIn(page);
+  const requests: Record<string, unknown>[] = [];
+  let eligible = true;
+  const expiresAt = new Date(Date.now() + 3600000).toISOString();
+  await page.route("**/functions/v1/channel-library", (route) => {
+    const input = route.request().postDataJSON();
+    requests.push(input);
+    return route.fulfill({
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": origin },
+      json: {
+        connected: true,
+        workflowId: owner,
+        expiresAt,
+        items: input.pageToken
+          ? [{ id: "existing003", title: "On the second page", processed: eligible }]
+          : [{ id: "existing001", title: "On the first page", processed: true }],
+        nextPageToken: input.pageToken ? null : "next-page",
+      },
+    });
+  });
+  await page.getByRole("link", { name: "Your videos", exact: true }).click();
+  await page.getByRole("button", { name: "Load more YouTube videos" }).click();
+  const choice = page.getByRole("checkbox", {
+    name: "Select On the second page for QR code",
+    exact: true,
+  });
+  await choice.check();
+  await page.getByRole("link", { name: "Home", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Home", exact: true })).toBeVisible();
+  await page.goBack();
+  await expect(choice).toBeChecked();
+  expect(requests.map((input) => input.pageToken ?? null)).toEqual([
+    null,
+    "next-page",
+    null,
+    "next-page",
+  ]);
+  await page.getByRole("link", { name: "Home", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Home", exact: true })).toBeVisible();
+  eligible = false;
+  await page.goBack();
+  await expect(choice).toBeDisabled();
+  await expect(choice).not.toBeChecked();
+  await expect(page.getByText("0 videos selected for QR codes.")).toBeVisible();
 });

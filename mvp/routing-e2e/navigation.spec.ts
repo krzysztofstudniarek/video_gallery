@@ -253,7 +253,7 @@ test("unknown app routes show not-found; assets fail as assets and headers prote
   expect(result.headers()["content-security-policy"]).toContain("frame-ancestors 'none'");
 });
 
-test("leaving a selection is explicit and sign-out then Back cannot expose private content", async ({ page }) => {
+test("leaving preserves safe choices and sign-out then Back cannot expose private content", async ({ page }) => {
   await signedIn(page, "videos");
   await page.route("**/functions/v1/channel-library", (route) =>
     route.fulfill({
@@ -271,12 +271,6 @@ test("leaving a selection is explicit and sign-out then Back cannot expose priva
   await page.getByRole("checkbox", { name: "Select Synthetic private selection for QR code" })
     .check();
   await page.getByRole("link", { name: "Account", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Leave this screen?", exact: true }))
-    .toBeVisible();
-  await page.getByRole("button", { name: "Stay here" }).click();
-  await expect(page).toHaveURL(home + "videos");
-  await page.getByRole("link", { name: "Account", exact: true }).click();
-  await page.getByRole("button", { name: "Leave screen", exact: true }).click();
   await expect(page).toHaveURL(home + "account");
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page.getByRole("button", { name: "Sign in with Google" })).toBeVisible();
@@ -285,7 +279,7 @@ test("leaving a selection is explicit and sign-out then Back cannot expose priva
   await expect(page.getByRole("heading", { name: "Your videos", exact: true })).toHaveCount(0);
 });
 
-test("Back navigation protects selection and returning never restores the old selection", async ({ page }) => {
+test("Back and Forward restore eligible in-memory selection without persisting provider IDs", async ({ page }) => {
   await signedIn(page);
   await page.route("**/functions/v1/channel-library", (route) =>
     route.fulfill({
@@ -302,18 +296,13 @@ test("Back navigation protects selection and returning never restores the old se
   await page.getByRole("link", { name: "Your videos", exact: true }).click();
   await page.getByRole("checkbox", { name: "Select Synthetic Back selection for QR code" }).check();
   await page.goBack();
-  await expect(page.getByRole("button", { name: "Stay here" })).toBeVisible();
-  await page.getByRole("button", { name: "Stay here" }).click();
-  await expect(page).toHaveURL(home + "videos");
-  await page.goBack();
-  await page.getByRole("button", { name: "Leave screen", exact: true }).click();
   await expect(page).toHaveURL(home);
   await page.goForward();
-  await expect(page.getByText("0 videos selected for QR codes.")).toBeVisible();
+  await expect(page.getByText("1 video selected for QR codes.")).toBeVisible();
   const selection = page.getByRole("checkbox", {
     name: "Select Synthetic Back selection for QR code",
   });
-  await selection.check();
+  await expect(selection).toBeChecked();
   const navigationState = await page.evaluate(() =>
     JSON.stringify({
       url: location.href,
